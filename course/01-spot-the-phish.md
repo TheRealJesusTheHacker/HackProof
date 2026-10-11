@@ -15,4 +15,4 @@
 ## If you clicked
 - Change that password immediately (and anywhere you reused it).
 - Turn on 2FA — app-based, not SMS, if you can.
-- Watch the account for a week; report the phish to your bank and to reportphishing@apwg.org.
+- Watch the account for a week; report the phish to your bank and reportphishing@apwg.org.
