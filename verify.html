@@ -170,9 +170,9 @@ const CONFIG = {
 </script>
 <script>
 /* ---------------- VENDORED ED25519 ----------------
-   TweetNaCl (public domain): verify subset (as in game/index.html)
-   + sign path (crypto_sign, keyPairFromSeed, detached.sign) for certificates.
-   Sign path cross-verified against Python cryptography. */
+   TweetNaCl (public domain): verify-only subset, byte-identical to
+   game/index.html. No signing capability ships in this page — certificates
+   are countersigned offline with tools/keygen.py; this page only verifies. */
 (function(nacl) {
 'use strict';
 // Ed25519 verify-only subset of TweetNaCl (public domain) - nacl.sign.detached.verify path only.
@@ -713,72 +713,16 @@ nacl.sign.detached.verify = function(msg, sig, publicKey) {
   for (i = 0; i < msg.length; i++) sm[i+64] = msg[i];
   return (crypto_sign_open(m, sm, sm.length, publicKey) >= 0);
 };
-
-/* ---- SIGN PATH (ported from TweetNaCl reference, public domain) ---- */
-function crypto_sign(sm, m, n, sk) {
-  var d = new Uint8Array(64), h = new Uint8Array(64), r = new Uint8Array(64);
-  var i, j, x = new Float64Array(64);
-  var p = [gf(), gf(), gf(), gf()];
-
-  crypto_hash(d, sk, 32);
-  d[0] &= 248;
-  d[31] &= 127;
-  d[31] |= 64;
-
-  var smlen = n + 64;
-  for (i = 0; i < n; i++) sm[64 + i] = m[i];
-  for (i = 0; i < 32; i++) sm[32 + i] = d[32 + i];
-
-  crypto_hash(r, sm.subarray(32), n+32);
-  reduce(r);
-  scalarbase(p, r);
-  pack(sm, p);
-
-  for (i = 32; i < 64; i++) sm[i] = sk[i];
-  crypto_hash(h, sm, n + 64);
-  reduce(h);
-
-  for (i = 0; i < 64; i++) x[i] = 0;
-  for (i = 0; i < 32; i++) x[i] = r[i];
-  for (i = 0; i < 32; i++) {
-    for (j = 0; j < 32; j++) {
-      x[i+j] += h[i] * d[j];
-    }
-  }
-
-  modL(sm.subarray(32), x);
-
-  return smlen;
-}
-
-nacl.sign.keyPairFromSeed = function(seed) {
-  if (!(seed instanceof Uint8Array) || seed.length !== 32) throw new Error('bad seed size');
-  var publicKey = new Uint8Array(32), secretKey = new Uint8Array(64);
-  var p = [gf(), gf(), gf(), gf()];
-  var d = new Uint8Array(64);
-  crypto_hash(d, seed, 32);
-  d[0] &= 248;
-  d[31] &= 127;
-  d[31] |= 64;
-  scalarbase(p, d);
-  pack(publicKey, p);
-  for (var i = 0; i < 32; i++) secretKey[i] = seed[i];
-  for (i = 0; i < 32; i++) secretKey[32 + i] = publicKey[i];
-  return { publicKey: publicKey, secretKey: secretKey };
-};
-
-nacl.sign.detached.sign = function(msg, secretKey) {
-  if (!(msg instanceof Uint8Array) || !(secretKey instanceof Uint8Array))
-    throw new Error('bad input type');
-  if (secretKey.length !== 64) throw new Error('bad secret key size');
-  var sm = new Uint8Array(64 + msg.length);
-  crypto_sign(sm, msg, msg.length, secretKey);
-  var sig = new Uint8Array(64);
-  for (var i = 0; i < 64; i++) sig[i] = sm[i];
-  return sig;
-};
-
 })(typeof module !== 'undefined' && module.exports ? module.exports : (self.nacl = self.nacl || {}));
+/* Explicit binding for the vendored Ed25519 above (same as game/index.html).
+   The IIFE attaches its API to `self.nacl` in browsers (an implicit global) or to
+   `module.exports` under bundlers — the license code below must not rely
+   on the implicit-global fallback to find it. This resolves to the same
+   object in browsers; anywhere else it fails closed (null -> the verify
+   try/catch reports "Signature check failed", never grants access). */
+var nacl = (typeof self !== "undefined" && self.nacl && self.nacl.sign) ? self.nacl
+  : (typeof module !== "undefined" && module.exports && module.exports.sign) ? module.exports
+  : null;
 
 </script>
 <script>
