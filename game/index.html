@@ -1568,9 +1568,15 @@ async function uiUnlock() {
   S.licenseMsg = "Checking key..."; renderTitleKeep();
   try {
     await unlockFromKey(str);
-    if (remember) { try { localStorage.setItem(CONFIG.LICENSE_STORAGE_KEY, str.trim()); } catch (e) {} }
+    /* PASS 3: a refused write (quota, private mode) must not fail silently —
+       the session is still unlocked in memory; say so. */
+    let saveNote = "";
+    if (remember) {
+      try { localStorage.setItem(CONFIG.LICENSE_STORAGE_KEY, str.trim()); }
+      catch (e) { saveNote = " (Note: this browser refused to store the key — you stay unlocked for this session only.)"; }
+    }
     else { try { localStorage.removeItem(CONFIG.LICENSE_STORAGE_KEY); } catch (e) {} }
-    S.licenseMsg = "Premium unlocked — welcome to the big leagues. 😈";
+    S.licenseMsg = "Premium unlocked — welcome to the big leagues. 😈" + saveNote;
   } catch (e) { S.licenseMsg = e.message; }
   renderTitle();
 }
