@@ -52,8 +52,12 @@
   .btn{display:block; width:100%; text-align:left; background:var(--card); color:var(--text);
     border:1px solid #4a2a7a; border-radius:14px; padding:16px; margin:10px 0;
     font-size:16px; font-weight:600; cursor:pointer; min-height:64px; line-height:1.35;
-    transition:transform .08s, border-color .15s, background .15s; font-family:inherit;}
+    transition:transform .08s, border-color .15s, background .15s; font-family:inherit;
+    touch-action:manipulation; /* PASS 2: no tap delay / double-tap zoom on mobile */}
   .btn:active{transform:scale(.97);}
+  /* PASS 2: tap feedback + freeze other options while the outcome is pending */
+  .btn.picked{border-color:var(--green); background:#16281c; box-shadow:0 0 0 2px rgba(34,197,94,.35);}
+  #app.answering .btn{pointer-events:none;}
   .btn:hover{border-color:var(--purple); background:#241641;}
   .btn.primary{background:linear-gradient(135deg,var(--purple-d),var(--purple)); border:none; text-align:center;
     font-size:18px; box-shadow:0 4px 20px rgba(168,85,247,.4);}
@@ -85,7 +89,8 @@
   .stat .v{font-size:26px; font-weight:800; color:var(--purple-l);}
   .stat .k{font-size:11px; color:var(--dim); letter-spacing:1px; margin-top:4px;}
   .lockrow{display:flex; align-items:center; gap:10px; padding:10px 12px; border:1px solid #3b2163;
-    border-radius:12px; margin:6px 0; background:#140c24; font-size:14px; cursor:pointer;}
+    border-radius:12px; margin:6px 0; background:#140c24; font-size:14px; cursor:pointer;
+    min-height:44px; touch-action:manipulation; /* PASS 2: 44px touch target, no tap delay */}
   .lockrow.locked{opacity:.55;}
   .lockrow .lk{margin-left:auto; font-size:16px;}
   .warn{background:rgba(239,68,68,.10); border:1px solid rgba(239,68,68,.5); border-radius:12px;
@@ -1023,7 +1028,9 @@ const S = {
   license: null,    // { tier, expiry }
   licenseMsg: "",   // status line shown under the key box
   pending: null,    // reserved by renderOutcome
-  pendingCC: null   // active close-call branch choices
+  pendingCC: null,  // active close-call branch choices
+  answered: false   // PASS 2: a pick was already taken on this node/close-call screen
+                    // (ignores double-taps while the outcome is pending)
 };
 
 function newRun() {
@@ -1306,6 +1313,8 @@ function deltaHtml(o) {
 
 function renderNode() {
   renderHUD();
+  S.answered = false; /* PASS 2: fresh pick screen — accept one tap */
+  document.getElementById("app").classList.remove("answering");
   const sc = curScenario(), node = sc.nodes[S.run.nodeIdx];
   app().innerHTML =
     '<div class="card"><div class="tag">' + sc.tag + " — STEP " + (S.run.nodeIdx + 1) + "/" + sc.nodes.length + "</div>" +
@@ -1321,10 +1330,16 @@ function trackVictims(scId, gained) {
 }
 
 function uiPick(i) {
+  if (S.answered) return; /* PASS 2: ignore double-taps while the outcome is pending */
+  S.answered = true;
   const sc = curScenario(), node = sc.nodes[S.run.nodeIdx], opt = node.options[i];
   const before = S.run.victims;
   const res = applyDeltas(opt.v, opt.h);
   trackVictims(sc.id, S.run.victims - before);
+  /* PASS 2: tap feedback on the chosen option; freeze the rest until the next screen */
+  const btns = document.querySelectorAll("#app .btn");
+  if (btns[i]) btns[i].classList.add("picked");
+  document.getElementById("app").classList.add("answering");
   if (opt.v > 0) popup("+" + opt.v + " victims", "good");
   if (opt.h > 0) { popup("+" + opt.h + " heat", "bad"); }
   if (opt.h < 0) popup(opt.h + " heat", "good");
@@ -1354,6 +1369,7 @@ function renderOutcome(lines, pending, warn) {
 
 function renderCloseCall(cc, sc) {
   S.pendingCC = { cc: cc, sc: sc };
+  S.answered = false; /* PASS 2: fresh pick screen — accept one tap */
   renderHUD();
   const branch = b =>
     '<button class="btn" onclick="uiCC(\'' + b + '\')">' +
@@ -1364,16 +1380,24 @@ function renderCloseCall(cc, sc) {
     "<h2>Too close...</h2>" +
     '<div class="warn">' + cc.text + "</div>" +
     branch("layLow") + branch("push") + "</div>";
+  document.getElementById("app").classList.remove("answering");
   document.getElementById("app").classList.remove("shake");
   void document.getElementById("app").offsetWidth;
   document.getElementById("app").classList.add("shake");
 }
 
 function uiCC(which) {
+  if (S.answered) return; /* PASS 2: ignore double-taps while the outcome is pending */
+  S.answered = true;
   const { cc, sc } = S.pendingCC, br = cc[which];
   const before = S.run.victims;
   const res = applyDeltas(br.v, br.h);
   trackVictims(sc.id, S.run.victims - before);
+  /* PASS 2: tap feedback on the chosen branch; freeze the other until the next screen */
+  document.querySelectorAll("#app .btn").forEach(b => {
+    if (b.getAttribute("onclick") === "uiCC('" + which + "')") b.classList.add("picked");
+  });
+  document.getElementById("app").classList.add("answering");
   if (br.v > 0) popup("+" + br.v + " victims", "good");
   if (br.h > 0) popup("+" + br.h + " heat", "bad");
   if (br.h < 0) popup(br.h + " heat", "good");
