@@ -5,6 +5,9 @@ All notable changes to HackProof are documented here.
 ## [Unreleased]
 
 ### Added
+- **Final exam** (`exam.html`) — 90 questions across all 19 modules, shuffled order + shuffled options per attempt, 80% (72/90) pass threshold, premium-gated, full wrong-answer review with explanations
+- **Verifiable certificate** — auto-generates on passing with the student's name (entered at exam start); printable one-page certificate under the Sentinel Safeguard LLC name; Ed25519-countersigned verification codes via `tools/keygen.py sign-cert`
+- **Certificate verifier** (`verify.html`) — offline cryptographic verification of countersigned certificates; unsigned codes show as pending
 - `README.md` — full product documentation: game overview, 19-module course outline, premium pricing
 - `LICENSE` — proprietary commercial license
 - `SECURITY.md` — vulnerability reporting policy and license-key crypto overview
