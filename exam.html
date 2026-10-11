@@ -1,0 +1,1336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>HackProof — Final Exam</title>
+<meta name="description" content="The HackProof final exam: 90 questions across all 19 course modules. Pass at 80% to earn your verifiable certificate.">
+<style>
+:root{
+  --bg:#0a0612; --bg2:#120a1e; --card:#170d28; --line:#2c1847;
+  --purple:#a855f7; --purple2:#7c3aed; --neon:#c084fc; --dim:#9d8bb5;
+  --ink:#efe8fa; --good:#34d399; --bad:#f87171; --gold:#fbbf24;
+  --radius:14px;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:radial-gradient(1200px 600px at 50% -10%, #1c0f33 0%, var(--bg) 55%) fixed, var(--bg);
+  color:var(--ink); font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  line-height:1.55; min-height:100vh;
+}
+.wrap{max-width:720px;margin:0 auto;padding:20px 16px 64px}
+header.brand{display:flex;align-items:center;gap:12px;margin:6px 0 18px}
+.brand .logo{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;font-size:24px;
+  background:linear-gradient(135deg,var(--purple2),#4c1d95);box-shadow:0 0 24px #a855f766}
+.brand h1{font-size:20px;margin:0;letter-spacing:.06em}
+.brand h1 .hp{color:var(--neon)}
+.brand small{display:block;color:var(--dim);font-size:12px;letter-spacing:.14em}
+.card{background:linear-gradient(180deg,var(--card),var(--bg2));border:1px solid var(--line);
+  border-radius:var(--radius);padding:22px 18px;margin:0 0 16px;box-shadow:0 8px 30px #0008}
+.card h2{margin:0 0 10px;font-size:22px;letter-spacing:.02em}
+.card h2 .accent{color:var(--neon)}
+p.lead{color:var(--dim);margin:6px 0 14px}
+label.field{display:block;margin:14px 0 4px;font-size:13px;letter-spacing:.08em;color:var(--neon);text-transform:uppercase}
+input[type=text],textarea{
+  width:100%;background:#0d0718;border:1px solid var(--line);border-radius:10px;color:var(--ink);
+  padding:14px;font-size:17px;font-family:inherit;outline:none}
+input[type=text]:focus,textarea:focus{border-color:var(--purple);box-shadow:0 0 0 3px #a855f733}
+textarea{min-height:110px;resize:vertical;font-size:14px;line-height:1.5}
+.hint{font-size:13px;color:var(--dim);margin:6px 0 0}
+.err{display:none;background:#3b0d1a;border:1px solid #7f1d2e;color:#fecaca;border-radius:10px;
+  padding:12px 14px;margin:12px 0;font-size:14px}
+.err.show{display:block}
+.btn{display:block;width:100%;border:0;border-radius:12px;padding:16px;font-size:17px;font-weight:800;
+  letter-spacing:.04em;cursor:pointer;margin:14px 0 0;font-family:inherit}
+.btn.primary{background:linear-gradient(135deg,var(--purple),var(--purple2));color:#fff;
+  box-shadow:0 6px 24px #a855f755}
+.btn.primary:active{transform:translateY(1px)}
+.btn.ghost{background:transparent;border:1px solid var(--line);color:var(--neon)}
+.btn.small{width:auto;display:inline-block;padding:10px 18px;font-size:14px;margin:8px 8px 0 0}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.progress{height:10px;background:#1d1030;border-radius:99px;overflow:hidden;margin:10px 0 4px;border:1px solid var(--line)}
+.progress>div{height:100%;background:linear-gradient(90deg,var(--purple2),var(--neon));width:0%;transition:width .25s}
+.qmeta{display:flex;justify-content:space-between;align-items:baseline;color:var(--dim);font-size:13px;letter-spacing:.08em;margin-bottom:8px}
+.qtext{font-size:19px;font-weight:650;margin:10px 0 16px;line-height:1.5}
+.opt{display:block;width:100%;text-align:left;background:#100a1c;border:1px solid var(--line);
+  color:var(--ink);border-radius:12px;padding:14px 16px;font-size:16px;margin:10px 0;cursor:pointer;font-family:inherit;line-height:1.45}
+.opt:hover{border-color:var(--purple)}
+.opt.picked{border-color:var(--purple);background:#221239;box-shadow:0 0 0 2px #a855f744}
+.opt .k{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:8px;background:#241538;
+  color:var(--neon);font-weight:800;font-size:13px;margin-right:10px;vertical-align:middle}
+.examnav{display:flex;gap:10px;margin-top:6px}
+.examnav .btn{margin:0}
+.grid90{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin:14px 0}
+.grid90 button{aspect-ratio:1;border-radius:10px;border:1px solid var(--line);background:#100a1c;color:var(--dim);
+  font-weight:700;font-size:14px;cursor:pointer;font-family:inherit}
+.grid90 button.done{background:#2a1650;color:var(--neon);border-color:var(--purple2)}
+.grid90 button.cur{box-shadow:0 0 0 2px var(--neon)}
+.score-big{font-size:56px;font-weight:900;letter-spacing:.02em;margin:6px 0}
+.score-big.pass{color:var(--good);text-shadow:0 0 30px #34d39966}
+.score-big.fail{color:var(--bad);text-shadow:0 0 30px #f8717166}
+.verdict{font-size:15px;letter-spacing:.18em;font-weight:800;margin:4px 0 10px}
+.verdict.pass{color:var(--good)} .verdict.fail{color:var(--bad)}
+.review-item{border:1px solid var(--line);border-radius:12px;padding:14px;margin:12px 0;background:#100a1c}
+.review-item .rq{font-weight:650;margin-bottom:8px}
+.review-item .ra{font-size:14px;margin:4px 0}
+.review-item .ra.yours{color:var(--bad)} .review-item .ra.right{color:var(--good)}
+.review-item .why{font-size:14px;color:var(--dim);border-top:1px dashed var(--line);padding-top:8px;margin-top:8px}
+/* certificate */
+.cert-shell{background:#0d0718;border:1px solid var(--line);border-radius:var(--radius);padding:14px;margin:14px 0}
+.cert{
+  background:linear-gradient(180deg,#fdfbf7,#f5efe4);color:#1c1530;border-radius:8px;
+  padding:34px 26px;text-align:center;position:relative;overflow:hidden;
+  border:10px double #6d28d9;
+}
+.cert::before{content:"";position:absolute;inset:14px;border:1px solid #a855f7aa;pointer-events:none}
+.cert .org{font-size:13px;letter-spacing:.34em;color:#6d28d9;font-weight:800}
+.cert h3{font-size:30px;margin:10px 0 2px;color:#1c1530;letter-spacing:.02em}
+.cert .sub{font-size:14px;color:#5b5470;margin:0 0 18px}
+.cert .label{font-size:12px;letter-spacing:.28em;color:#8a7fa8;text-transform:uppercase;margin:14px 0 2px}
+.cert .name{font-size:34px;font-weight:800;color:#1c1530;font-family:Georgia,"Times New Roman",serif;margin:2px 0 6px;word-wrap:break-word}
+.cert .rule{width:60%;margin:6px auto;border:0;border-top:2px solid #6d28d955}
+.cert .details{font-size:15px;color:#3d3654;margin:8px 0}
+.cert .details b{color:#1c1530}
+.cert .cid{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:15px;letter-spacing:.1em;color:#4c1d95;font-weight:700}
+.cert .sealrow{display:flex;justify-content:space-between;align-items:flex-end;margin:26px 6px 0;text-align:left}
+.cert .sig{font-size:13px;color:#5b5470}
+.cert .sig .line{border-top:1px solid #6d28d9;margin-top:26px;padding-top:4px;font-size:12px}
+.cert .badge{display:inline-block;background:#6d28d9;color:#fff;font-size:11px;font-weight:800;letter-spacing:.14em;
+  border-radius:99px;padding:6px 14px;margin-top:10px}
+.codebox{background:#0d0718;border:1px dashed var(--purple2);border-radius:10px;padding:12px;margin:12px 0}
+.codebox textarea{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;min-height:96px;word-break:break-all}
+footer.site{color:var(--dim);font-size:13px;text-align:center;margin:34px 0 10px}
+footer.site a{color:var(--neon)}
+a{color:var(--neon)}
+.hidden{display:none!important}
+/* print: one perfect page, certificate only */
+@media print{
+  @page{size:letter;margin:0.45in}
+  body{background:#fff}
+  .no-print,.wrap>header.brand,.wrap>footer.site{display:none!important}
+  .wrap{max-width:none;padding:0;margin:0}
+  .card{border:0;box-shadow:none;padding:0;margin:0;background:#fff}
+  .cert-shell{border:0;padding:0;margin:0;background:#fff}
+  .cert{border:12px double #6d28d9}
+  #screen-cert .card>*:not(.cert-shell){display:none}
+  #screen-cert .cert-shell{display:block!important}
+}
+@media (max-width:420px){
+  .qtext{font-size:17px}
+  .cert h3{font-size:24px}
+  .cert .name{font-size:27px}
+  .grid90{grid-template-columns:repeat(5,1fr)}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="brand no-print">
+    <div class="logo">🔐</div>
+    <h1><span class="hp">HACK</span>PROOF<small>FINAL EXAM · SENTINEL SAFEGUARD</small></h1>
+  </header>
+  <div id="app"></div>
+  <footer class="site no-print">
+    HackProof by <b>JesusTheHacker</b> · Sentinel Safeguard LLC<br>
+    <a href="verify.html">Verify a certificate</a> · <a href="game/index.html">Back to the game</a> · <a href="game/buy.html">Get premium</a>
+  </footer>
+</div>
+<script>
+"use strict";
+/* ================= CONFIG ================= */
+const CONFIG = {
+  LICENSE_STORAGE_KEY: "hackproof_license_v1",
+  EXAM_NAME_KEY: "hackproof_exam_name",
+  PASS_PCT: 80,
+  /* LICENSE_PUBLIC_KEY_HEX: Skyler pastes the public key here after running
+     `python3 tools/keygen.py setup` (it prints the key). Until replaced,
+     the exam stays locked. Same value as in game/index.html. */
+  LICENSE_PUBLIC_KEY_HEX: "REPLACE_WITH_YOUR_PUBLIC_KEY_HEX",
+  VERIFY_URL: "https://therealjesusthehacker.github.io/HackProof/verify.html"
+};
+</script>
+<script>
+/* ---------------- VENDORED ED25519 ----------------
+   TweetNaCl (public domain): verify subset (as in game/index.html)
+   + sign path (crypto_sign, keyPairFromSeed, detached.sign) for certificates.
+   Sign path cross-verified against Python cryptography. */
+(function(nacl) {
+'use strict';
+// Ed25519 verify-only subset of TweetNaCl (public domain) - nacl.sign.detached.verify path only.
+var u64 = function(h, l) { this.hi = h|0 >>> 0; this.lo = l|0 >>> 0; };
+var gf = function(init) {
+  var i, r = new Float64Array(16);
+  if (init) for (i = 0; i < init.length; i++) r[i] = init[i];
+  return r;
+};
+
+//  Pluggable, initialized in high-level API below.
+var randombytes = function(/* x, n */) { throw new Error('no PRNG'); };
+
+var _0 = new Uint8Array(16);
+var _9 = new Uint8Array(32); _9[0] = 9;
+
+var gf0 = gf(),
+    gf1 = gf([1]),
+    _121665 = gf([0xdb41, 1]),
+    D = gf([0x78a3, 0x1359, 0x4dca, 0x75eb, 0xd8ab, 0x4141, 0x0a4d, 0x0070, 0xe898, 0x7779, 0x4079, 0x8cc7, 0xfe73, 0x2b6f, 0x6cee, 0x5203]),
+    D2 = gf([0xf159, 0x26b2, 0x9b94, 0xebd6, 0xb156, 0x8283, 0x149a, 0x00e0, 0xd130, 0xeef3, 0x80f2, 0x198e, 0xfce7, 0x56df, 0xd9dc, 0x2406]),
+    X = gf([0xd51a, 0x8f25, 0x2d60, 0xc956, 0xa7b2, 0x9525, 0xc760, 0x692c, 0xdc5c, 0xfdd6, 0xe231, 0xc0a4, 0x53fe, 0xcd6e, 0x36d3, 0x2169]),
+    Y = gf([0x6658, 0x6666, 0x6666, 0x6666, 0x6666, 0x6666, 0x6666, 0x6666, 0x6666, 0x6666, 0x6666, 0x6666, 0x6666, 0x6666, 0x6666, 0x6666]),
+    I = gf([0xa0b0, 0x4a0e, 0x1b27, 0xc4ee, 0xe478, 0xad2f, 0x1806, 0x2f43, 0xd7a7, 0x3dfb, 0x0099, 0x2b4d, 0xdf0b, 0x4fc1, 0x2480, 0x2b83]);
+
+function L32(x, c) { return (x << c) | (x >>> (32 - c)); }
+
+function ld32(x, i) {
+  var u = x[i+3] & 0xff;
+  u = (u<<8)|(x[i+2] & 0xff);
+  u = (u<<8)|(x[i+1] & 0xff);
+  return (u<<8)|(x[i+0] & 0xff);
+}
+
+function dl64(x, i) {
+  var h = (x[i] << 24) | (x[i+1] << 16) | (x[i+2] << 8) | x[i+3];
+  var l = (x[i+4] << 24) | (x[i+5] << 16) | (x[i+6] << 8) | x[i+7];
+  return new u64(h, l);
+}
+
+function st32(x, j, u) {
+  var i;
+  for (i = 0; i < 4; i++) { x[j+i] = u & 255; u >>>= 8; }
+}
+
+function ts64(x, i, u) {
+  x[i]   = (u.hi >> 24) & 0xff;
+  x[i+1] = (u.hi >> 16) & 0xff;
+  x[i+2] = (u.hi >>  8) & 0xff;
+  x[i+3] = u.hi & 0xff;
+  x[i+4] = (u.lo >> 24)  & 0xff;
+  x[i+5] = (u.lo >> 16)  & 0xff;
+  x[i+6] = (u.lo >>  8)  & 0xff;
+  x[i+7] = u.lo & 0xff;
+}
+
+function vn(x, xi, y, yi, n) {
+  var i,d = 0;
+  for (i = 0; i < n; i++) d |= x[xi+i]^y[yi+i];
+  return (1 & ((d - 1) >>> 8)) - 1;
+}
+
+function crypto_verify_16(x, xi, y, yi) {
+  return vn(x,xi,y,yi,16);
+}
+
+function crypto_verify_32(x, xi, y, yi) {
+  return vn(x,xi,y,yi,32);
+}
+
+function set25519(r, a) {
+  var i;
+  for (i = 0; i < 16; i++) r[i] = a[i]|0;
+}
+
+function car25519(o) {
+  var c;
+  var i;
+  for (i = 0; i < 16; i++) {
+      o[i] += 65536;
+      c = Math.floor(o[i] / 65536);
+      o[(i+1)*(i<15?1:0)] += c - 1 + 37 * (c-1) * (i===15?1:0);
+      o[i] -= (c * 65536);
+  }
+}
+
+function sel25519(p, q, b) {
+  var t, c = ~(b-1);
+  for (var i = 0; i < 16; i++) {
+    t = c & (p[i] ^ q[i]);
+    p[i] ^= t;
+    q[i] ^= t;
+  }
+}
+
+function pack25519(o, n) {
+  var i, j, b;
+  var m = gf(), t = gf();
+  for (i = 0; i < 16; i++) t[i] = n[i];
+  car25519(t);
+  car25519(t);
+  car25519(t);
+  for (j = 0; j < 2; j++) {
+    m[0] = t[0] - 0xffed;
+    for (i = 1; i < 15; i++) {
+      m[i] = t[i] - 0xffff - ((m[i-1]>>16) & 1);
+      m[i-1] &= 0xffff;
+    }
+    m[15] = t[15] - 0x7fff - ((m[14]>>16) & 1);
+    b = (m[15]>>16) & 1;
+    m[14] &= 0xffff;
+    sel25519(t, m, 1-b);
+  }
+  for (i = 0; i < 16; i++) {
+    o[2*i] = t[i] & 0xff;
+    o[2*i+1] = t[i]>>8;
+  }
+}
+
+function neq25519(a, b) {
+  var c = new Uint8Array(32), d = new Uint8Array(32);
+  pack25519(c, a);
+  pack25519(d, b);
+  return crypto_verify_32(c, 0, d, 0);
+}
+
+function par25519(a) {
+  var d = new Uint8Array(32);
+  pack25519(d, a);
+  return d[0] & 1;
+}
+
+function unpack25519(o, n) {
+  var i;
+  for (i = 0; i < 16; i++) o[i] = n[2*i] + (n[2*i+1] << 8);
+  o[15] &= 0x7fff;
+}
+
+function A(o, a, b) {
+  var i;
+  for (i = 0; i < 16; i++) o[i] = (a[i] + b[i])|0;
+}
+
+function Z(o, a, b) {
+  var i;
+  for (i = 0; i < 16; i++) o[i] = (a[i] - b[i])|0;
+}
+
+function M(o, a, b) {
+  var i, j, t = new Float64Array(31);
+  for (i = 0; i < 31; i++) t[i] = 0;
+  for (i = 0; i < 16; i++) {
+    for (j = 0; j < 16; j++) {
+      t[i+j] += a[i] * b[j];
+    }
+  }
+  for (i = 0; i < 15; i++) {
+    t[i] += 38 * t[i+16];
+  }
+  for (i = 0; i < 16; i++) o[i] = t[i];
+  car25519(o);
+  car25519(o);
+}
+
+function S(o, a) {
+  M(o, a, a);
+}
+
+function inv25519(o, i) {
+  var c = gf();
+  var a;
+  for (a = 0; a < 16; a++) c[a] = i[a];
+  for (a = 253; a >= 0; a--) {
+    S(c, c);
+    if(a !== 2 && a !== 4) M(c, c, i);
+  }
+  for (a = 0; a < 16; a++) o[a] = c[a];
+}
+
+function pow2523(o, i) {
+  var c = gf();
+  var a;
+  for (a = 0; a < 16; a++) c[a] = i[a];
+  for (a = 250; a >= 0; a--) {
+      S(c, c);
+      if(a !== 1) M(c, c, i);
+  }
+  for (a = 0; a < 16; a++) o[a] = c[a];
+}
+
+function add64() {
+  var a = 0, b = 0, c = 0, d = 0, m16 = 65535, l, h, i;
+  for (i = 0; i < arguments.length; i++) {
+    l = arguments[i].lo;
+    h = arguments[i].hi;
+    a += (l & m16); b += (l >>> 16);
+    c += (h & m16); d += (h >>> 16);
+  }
+
+  b += (a >>> 16);
+  c += (b >>> 16);
+  d += (c >>> 16);
+
+  return new u64((c & m16) | (d << 16), (a & m16) | (b << 16));
+}
+
+function shr64(x, c) {
+  return new u64((x.hi >>> c), (x.lo >>> c) | (x.hi << (32 - c)));
+}
+
+function xor64() {
+  var l = 0, h = 0, i;
+  for (i = 0; i < arguments.length; i++) {
+    l ^= arguments[i].lo;
+    h ^= arguments[i].hi;
+  }
+  return new u64(h, l);
+}
+
+function R(x, c) {
+  var h, l, c1 = 32 - c;
+  if (c < 32) {
+    h = (x.hi >>> c) | (x.lo << c1);
+    l = (x.lo >>> c) | (x.hi << c1);
+  } else if (c < 64) {
+    h = (x.lo >>> c) | (x.hi << c1);
+    l = (x.hi >>> c) | (x.lo << c1);
+  }
+  return new u64(h, l);
+}
+
+function Ch(x, y, z) {
+  var h = (x.hi & y.hi) ^ (~x.hi & z.hi),
+      l = (x.lo & y.lo) ^ (~x.lo & z.lo);
+  return new u64(h, l);
+}
+
+function Maj(x, y, z) {
+  var h = (x.hi & y.hi) ^ (x.hi & z.hi) ^ (y.hi & z.hi),
+      l = (x.lo & y.lo) ^ (x.lo & z.lo) ^ (y.lo & z.lo);
+  return new u64(h, l);
+}
+
+function Sigma0(x) { return xor64(R(x,28), R(x,34), R(x,39)); }
+function Sigma1(x) { return xor64(R(x,14), R(x,18), R(x,41)); }
+function sigma0(x) { return xor64(R(x, 1), R(x, 8), shr64(x,7)); }
+function sigma1(x) { return xor64(R(x,19), R(x,61), shr64(x,6)); }
+
+var K = [
+  new u64(0x428a2f98, 0xd728ae22), new u64(0x71374491, 0x23ef65cd),
+  new u64(0xb5c0fbcf, 0xec4d3b2f), new u64(0xe9b5dba5, 0x8189dbbc),
+  new u64(0x3956c25b, 0xf348b538), new u64(0x59f111f1, 0xb605d019),
+  new u64(0x923f82a4, 0xaf194f9b), new u64(0xab1c5ed5, 0xda6d8118),
+  new u64(0xd807aa98, 0xa3030242), new u64(0x12835b01, 0x45706fbe),
+  new u64(0x243185be, 0x4ee4b28c), new u64(0x550c7dc3, 0xd5ffb4e2),
+  new u64(0x72be5d74, 0xf27b896f), new u64(0x80deb1fe, 0x3b1696b1),
+  new u64(0x9bdc06a7, 0x25c71235), new u64(0xc19bf174, 0xcf692694),
+  new u64(0xe49b69c1, 0x9ef14ad2), new u64(0xefbe4786, 0x384f25e3),
+  new u64(0x0fc19dc6, 0x8b8cd5b5), new u64(0x240ca1cc, 0x77ac9c65),
+  new u64(0x2de92c6f, 0x592b0275), new u64(0x4a7484aa, 0x6ea6e483),
+  new u64(0x5cb0a9dc, 0xbd41fbd4), new u64(0x76f988da, 0x831153b5),
+  new u64(0x983e5152, 0xee66dfab), new u64(0xa831c66d, 0x2db43210),
+  new u64(0xb00327c8, 0x98fb213f), new u64(0xbf597fc7, 0xbeef0ee4),
+  new u64(0xc6e00bf3, 0x3da88fc2), new u64(0xd5a79147, 0x930aa725),
+  new u64(0x06ca6351, 0xe003826f), new u64(0x14292967, 0x0a0e6e70),
+  new u64(0x27b70a85, 0x46d22ffc), new u64(0x2e1b2138, 0x5c26c926),
+  new u64(0x4d2c6dfc, 0x5ac42aed), new u64(0x53380d13, 0x9d95b3df),
+  new u64(0x650a7354, 0x8baf63de), new u64(0x766a0abb, 0x3c77b2a8),
+  new u64(0x81c2c92e, 0x47edaee6), new u64(0x92722c85, 0x1482353b),
+  new u64(0xa2bfe8a1, 0x4cf10364), new u64(0xa81a664b, 0xbc423001),
+  new u64(0xc24b8b70, 0xd0f89791), new u64(0xc76c51a3, 0x0654be30),
+  new u64(0xd192e819, 0xd6ef5218), new u64(0xd6990624, 0x5565a910),
+  new u64(0xf40e3585, 0x5771202a), new u64(0x106aa070, 0x32bbd1b8),
+  new u64(0x19a4c116, 0xb8d2d0c8), new u64(0x1e376c08, 0x5141ab53),
+  new u64(0x2748774c, 0xdf8eeb99), new u64(0x34b0bcb5, 0xe19b48a8),
+  new u64(0x391c0cb3, 0xc5c95a63), new u64(0x4ed8aa4a, 0xe3418acb),
+  new u64(0x5b9cca4f, 0x7763e373), new u64(0x682e6ff3, 0xd6b2b8a3),
+  new u64(0x748f82ee, 0x5defb2fc), new u64(0x78a5636f, 0x43172f60),
+  new u64(0x84c87814, 0xa1f0ab72), new u64(0x8cc70208, 0x1a6439ec),
+  new u64(0x90befffa, 0x23631e28), new u64(0xa4506ceb, 0xde82bde9),
+  new u64(0xbef9a3f7, 0xb2c67915), new u64(0xc67178f2, 0xe372532b),
+  new u64(0xca273ece, 0xea26619c), new u64(0xd186b8c7, 0x21c0c207),
+  new u64(0xeada7dd6, 0xcde0eb1e), new u64(0xf57d4f7f, 0xee6ed178),
+  new u64(0x06f067aa, 0x72176fba), new u64(0x0a637dc5, 0xa2c898a6),
+  new u64(0x113f9804, 0xbef90dae), new u64(0x1b710b35, 0x131c471b),
+  new u64(0x28db77f5, 0x23047d84), new u64(0x32caab7b, 0x40c72493),
+  new u64(0x3c9ebe0a, 0x15c9bebc), new u64(0x431d67c4, 0x9c100d4c),
+  new u64(0x4cc5d4be, 0xcb3e42b6), new u64(0x597f299c, 0xfc657e2a),
+  new u64(0x5fcb6fab, 0x3ad6faec), new u64(0x6c44198c, 0x4a475817)
+];
+
+function crypto_hashblocks(x, m, n) {
+  var z = [], b = [], a = [], w = [], t, i, j;
+
+  for (i = 0; i < 8; i++) z[i] = a[i] = dl64(x, 8*i);
+
+  var pos = 0;
+  while (n >= 128) {
+    for (i = 0; i < 16; i++) w[i] = dl64(m, 8*i+pos);
+    for (i = 0; i < 80; i++) {
+      for (j = 0; j < 8; j++) b[j] = a[j];
+      t = add64(a[7], Sigma1(a[4]), Ch(a[4], a[5], a[6]), K[i], w[i%16]);
+      b[7] = add64(t, Sigma0(a[0]), Maj(a[0], a[1], a[2]));
+      b[3] = add64(b[3], t);
+      for (j = 0; j < 8; j++) a[(j+1)%8] = b[j];
+      if (i%16 === 15) {
+        for (j = 0; j < 16; j++) {
+          w[j] = add64(w[j], w[(j+9)%16], sigma0(w[(j+1)%16]), sigma1(w[(j+14)%16]));
+        }
+      }
+    }
+
+    for (i = 0; i < 8; i++) {
+      a[i] = add64(a[i], z[i]);
+      z[i] = a[i];
+    }
+
+    pos += 128;
+    n -= 128;
+  }
+
+  for (i = 0; i < 8; i++) ts64(x, 8*i, z[i]);
+  return n;
+}
+
+var iv = new Uint8Array([
+  0x6a,0x09,0xe6,0x67,0xf3,0xbc,0xc9,0x08,
+  0xbb,0x67,0xae,0x85,0x84,0xca,0xa7,0x3b,
+  0x3c,0x6e,0xf3,0x72,0xfe,0x94,0xf8,0x2b,
+  0xa5,0x4f,0xf5,0x3a,0x5f,0x1d,0x36,0xf1,
+  0x51,0x0e,0x52,0x7f,0xad,0xe6,0x82,0xd1,
+  0x9b,0x05,0x68,0x8c,0x2b,0x3e,0x6c,0x1f,
+  0x1f,0x83,0xd9,0xab,0xfb,0x41,0xbd,0x6b,
+  0x5b,0xe0,0xcd,0x19,0x13,0x7e,0x21,0x79
+]);
+
+function crypto_hash(out, m, n) {
+  var h = new Uint8Array(64), x = new Uint8Array(256);
+  var i, b = n;
+
+  for (i = 0; i < 64; i++) h[i] = iv[i];
+
+  crypto_hashblocks(h, m, n);
+  n %= 128;
+
+  for (i = 0; i < 256; i++) x[i] = 0;
+  for (i = 0; i < n; i++) x[i] = m[b-n+i];
+  x[n] = 128;
+
+  n = 256-128*(n<112?1:0);
+  x[n-9] = 0;
+  ts64(x, n-8, new u64((b / 0x20000000) | 0, b << 3));
+  crypto_hashblocks(h, x, n);
+
+  for (i = 0; i < 64; i++) out[i] = h[i];
+
+  return 0;
+}
+function add(p, q) {
+  var a = gf(), b = gf(), c = gf(),
+      d = gf(), e = gf(), f = gf(),
+      g = gf(), h = gf(), t = gf();
+
+  Z(a, p[1], p[0]);
+  Z(t, q[1], q[0]);
+  M(a, a, t);
+  A(b, p[0], p[1]);
+  A(t, q[0], q[1]);
+  M(b, b, t);
+  M(c, p[3], q[3]);
+  M(c, c, D2);
+  M(d, p[2], q[2]);
+  A(d, d, d);
+  Z(e, b, a);
+  Z(f, d, c);
+  A(g, d, c);
+  A(h, b, a);
+
+  M(p[0], e, f);
+  M(p[1], h, g);
+  M(p[2], g, f);
+  M(p[3], e, h);
+}
+
+function cswap(p, q, b) {
+  var i;
+  for (i = 0; i < 4; i++) {
+    sel25519(p[i], q[i], b);
+  }
+}
+
+function pack(r, p) {
+  var tx = gf(), ty = gf(), zi = gf();
+  inv25519(zi, p[2]);
+  M(tx, p[0], zi);
+  M(ty, p[1], zi);
+  pack25519(r, ty);
+  r[31] ^= par25519(tx) << 7;
+}
+
+function scalarmult(p, q, s) {
+  var b, i;
+  set25519(p[0], gf0);
+  set25519(p[1], gf1);
+  set25519(p[2], gf1);
+  set25519(p[3], gf0);
+  for (i = 255; i >= 0; --i) {
+    b = (s[(i/8)|0] >> (i&7)) & 1;
+    cswap(p, q, b);
+    add(q, p);
+    add(p, p);
+    cswap(p, q, b);
+  }
+}
+
+function scalarbase(p, s) {
+  var q = [gf(), gf(), gf(), gf()];
+  set25519(q[0], X);
+  set25519(q[1], Y);
+  set25519(q[2], gf1);
+  M(q[3], X, Y);
+  scalarmult(p, q, s);
+}
+
+var L = new Float64Array([0xed, 0xd3, 0xf5, 0x5c, 0x1a, 0x63, 0x12, 0x58, 0xd6, 0x9c, 0xf7, 0xa2, 0xde, 0xf9, 0xde, 0x14, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x10]);
+function modL(r, x) {
+  var carry, i, j, k;
+  for (i = 63; i >= 32; --i) {
+    carry = 0;
+    for (j = i - 32, k = i - 12; j < k; ++j) {
+      x[j] += carry - 16 * x[i] * L[j - (i - 32)];
+      carry = Math.floor((x[j] + 128) / 256);
+      x[j] -= carry * 256;
+    }
+    x[j] += carry;
+    x[i] = 0;
+  }
+  carry = 0;
+  for (j = 0; j < 32; j++) {
+    x[j] += carry - (x[31] >> 4) * L[j];
+    carry = x[j] >> 8;
+    x[j] &= 255;
+  }
+  for (j = 0; j < 32; j++) x[j] -= carry * L[j];
+  for (i = 0; i < 32; i++) {
+    x[i+1] += x[i] >> 8;
+    r[i] = x[i] & 255;
+  }
+}
+
+function reduce(r) {
+  var x = new Float64Array(64), i;
+  for (i = 0; i < 64; i++) x[i] = r[i];
+  for (i = 0; i < 64; i++) r[i] = 0;
+  modL(r, x);
+}
+
+// Note: difference from C - smlen returned, not passed as argument.
+function unpackneg(r, p) {
+  var t = gf(), chk = gf(), num = gf(),
+      den = gf(), den2 = gf(), den4 = gf(),
+      den6 = gf();
+
+  set25519(r[2], gf1);
+  unpack25519(r[1], p);
+  S(num, r[1]);
+  M(den, num, D);
+  Z(num, num, r[2]);
+  A(den, r[2], den);
+
+  S(den2, den);
+  S(den4, den2);
+  M(den6, den4, den2);
+  M(t, den6, num);
+  M(t, t, den);
+
+  pow2523(t, t);
+  M(t, t, num);
+  M(t, t, den);
+  M(t, t, den);
+  M(r[0], t, den);
+
+  S(chk, r[0]);
+  M(chk, chk, den);
+  if (neq25519(chk, num)) M(r[0], r[0], I);
+
+  S(chk, r[0]);
+  M(chk, chk, den);
+  if (neq25519(chk, num)) return -1;
+
+  if (par25519(r[0]) === (p[31]>>7)) Z(r[0], gf0, r[0]);
+
+  M(r[3], r[0], r[1]);
+  return 0;
+}
+
+function crypto_sign_open(m, sm, n, pk) {
+  var i;
+  var t = new Uint8Array(32), h = new Uint8Array(64);
+  var p = [gf(), gf(), gf(), gf()],
+      q = [gf(), gf(), gf(), gf()];
+
+  if (n < 64) return -1;
+
+  if (unpackneg(q, pk)) return -1;
+
+  for (i = 0; i < n; i++) m[i] = sm[i];
+  for (i = 0; i < 32; i++) m[i+32] = pk[i];
+  crypto_hash(h, m, n);
+  reduce(h);
+  scalarmult(p, q, h);
+
+  scalarbase(q, sm.subarray(32));
+  add(p, q);
+  pack(t, p);
+
+  n -= 64;
+  if (crypto_verify_32(sm, 0, t, 0)) {
+    for (i = 0; i < n; i++) m[i] = 0;
+    return -1;
+  }
+
+  for (i = 0; i < n; i++) m[i] = sm[i + 64];
+  return n;
+}
+
+nacl.sign = {};
+nacl.sign.detached = {};
+nacl.sign.detached.verify = function(msg, sig, publicKey) {
+  if (!(msg instanceof Uint8Array) || !(sig instanceof Uint8Array) || !(publicKey instanceof Uint8Array))
+    throw new Error('bad input type');
+  if (sig.length !== 64) throw new Error('bad signature size');
+  if (publicKey.length !== 32) throw new Error('bad public key size');
+  var sm = new Uint8Array(64 + msg.length);
+  var m = new Uint8Array(64 + msg.length);
+  var i;
+  for (i = 0; i < 64; i++) sm[i] = sig[i];
+  for (i = 0; i < msg.length; i++) sm[i+64] = msg[i];
+  return (crypto_sign_open(m, sm, sm.length, publicKey) >= 0);
+};
+
+/* ---- SIGN PATH (ported from TweetNaCl reference, public domain) ---- */
+function crypto_sign(sm, m, n, sk) {
+  var d = new Uint8Array(64), h = new Uint8Array(64), r = new Uint8Array(64);
+  var i, j, x = new Float64Array(64);
+  var p = [gf(), gf(), gf(), gf()];
+
+  crypto_hash(d, sk, 32);
+  d[0] &= 248;
+  d[31] &= 127;
+  d[31] |= 64;
+
+  var smlen = n + 64;
+  for (i = 0; i < n; i++) sm[64 + i] = m[i];
+  for (i = 0; i < 32; i++) sm[32 + i] = d[32 + i];
+
+  crypto_hash(r, sm.subarray(32), n+32);
+  reduce(r);
+  scalarbase(p, r);
+  pack(sm, p);
+
+  for (i = 32; i < 64; i++) sm[i] = sk[i];
+  crypto_hash(h, sm, n + 64);
+  reduce(h);
+
+  for (i = 0; i < 64; i++) x[i] = 0;
+  for (i = 0; i < 32; i++) x[i] = r[i];
+  for (i = 0; i < 32; i++) {
+    for (j = 0; j < 32; j++) {
+      x[i+j] += h[i] * d[j];
+    }
+  }
+
+  modL(sm.subarray(32), x);
+
+  return smlen;
+}
+
+nacl.sign.keyPairFromSeed = function(seed) {
+  if (!(seed instanceof Uint8Array) || seed.length !== 32) throw new Error('bad seed size');
+  var publicKey = new Uint8Array(32), secretKey = new Uint8Array(64);
+  var p = [gf(), gf(), gf(), gf()];
+  var d = new Uint8Array(64);
+  crypto_hash(d, seed, 32);
+  d[0] &= 248;
+  d[31] &= 127;
+  d[31] |= 64;
+  scalarbase(p, d);
+  pack(publicKey, p);
+  for (var i = 0; i < 32; i++) secretKey[i] = seed[i];
+  for (i = 0; i < 32; i++) secretKey[32 + i] = publicKey[i];
+  return { publicKey: publicKey, secretKey: secretKey };
+};
+
+nacl.sign.detached.sign = function(msg, secretKey) {
+  if (!(msg instanceof Uint8Array) || !(secretKey instanceof Uint8Array))
+    throw new Error('bad input type');
+  if (secretKey.length !== 64) throw new Error('bad secret key size');
+  var sm = new Uint8Array(64 + msg.length);
+  crypto_sign(sm, msg, msg.length, secretKey);
+  var sig = new Uint8Array(64);
+  for (var i = 0; i < 64; i++) sig[i] = sm[i];
+  return sig;
+};
+
+})(typeof module !== 'undefined' && module.exports ? module.exports : (self.nacl = self.nacl || {}));
+
+</script>
+<script>
+/* ---------------- LICENSE (exam needs verification only) ----------------
+   Same scheme as game/index.html: Ed25519-signed license, offline check.
+   verifyLicense returns {tier, expiry, S (32-byte secret), wrappedKc}. */
+const License = (() => {
+  function b64ToBytes(s) {
+    const bin = atob(s);
+    const out = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+    return out;
+  }
+  function hexToBytes(h) {
+    if (typeof h !== "string" || !/^[0-9a-fA-F]+$/.test(h) || h.length !== 64)
+      throw new Error("bad public key");
+    const out = new Uint8Array(32);
+    for (let i = 0; i < 32; i++) out[i] = parseInt(h.substr(i * 2, 2), 16);
+    return out;
+  }
+  function te(s) { return new TextEncoder().encode(s); }
+  function parseLicense(str) {
+    const clean = (str || "").trim().replace(/\s+/g, "");
+    if (!clean) throw new Error("Paste your premium license key first.");
+    let obj;
+    try { obj = JSON.parse(new TextDecoder().decode(b64ToBytes(clean))); }
+    catch (e) { throw new Error("That key is garbled — check for typos and try again."); }
+    for (const k of ["id", "tier", "expiry", "S", "wrapped_Kc", "sig"])
+      if (typeof obj[k] === "undefined") throw new Error("That key is missing fields.");
+    return obj;
+  }
+  function canonicalFields(lic) {
+    return JSON.stringify({ id: lic.id, tier: lic.tier, expiry: lic.expiry, S: lic.S, wrapped_Kc: lic.wrapped_Kc });
+  }
+  async function verifyLicense(licenseStr, pubkeyHex) {
+    if (!pubkeyHex || pubkeyHex.indexOf("REPLACE_WITH") === 0)
+      throw new Error("This build isn't linked to licensing yet — check back soon.");
+    const lic = parseLicense(licenseStr);
+    if (lic.tier !== "premium") throw new Error("The exam requires a PREMIUM license.");
+    const msg = te(canonicalFields(lic));
+    const sig = b64ToBytes(lic.sig);
+    const pk = hexToBytes(pubkeyHex);
+    let ok = false;
+    try { ok = nacl.sign.detached.verify(msg, sig, pk); }
+    catch (e) { throw new Error("Signature check failed — that key isn't genuine."); }
+    if (!ok) throw new Error("Signature check failed — that key isn't genuine.");
+    if (typeof lic.expiry !== "number" || lic.expiry * 1000 <= Date.now())
+      throw new Error("This license has expired.");
+    return { id: lic.id, tier: lic.tier, expiry: lic.expiry, S: b64ToBytes(lic.S) };
+  }
+  return { parseLicense, canonicalFields, verifyLicense, b64ToBytes, hexToBytes };
+})();
+</script>
+<script>
+"use strict";
+/* HackProof Final Exam — 90-question bank.
+   m = course module number (1-19). o = options, a = correct option index, why = explanation shown on review. */
+var QUESTIONS = [
+/* ============ MODULE 1 — Passwords & MFA ============ */
+{m:1,q:"An attacker takes your email and password from a breached recipe forum and automatically tries the same pair on your bank, your email, and major shopping sites. What is this attack called?",
+o:["Credential stuffing","A brute-force attack on the bank's servers","A SIM-swap attack","A man-in-the-middle attack"],a:0,
+why:"Credential stuffing = trying stolen username/password pairs on many sites. It works because people reuse passwords — which is why every account needs a unique password."},
+{m:1,q:"Which of these multi-factor authentication methods CANNOT be defeated by a scammer calling your phone carrier and moving your number to their SIM (a SIM swap)?",
+o:["Texted (SMS) verification codes","An authenticator app (Google/Microsoft Authenticator, 2FAS)","Codes sent to your voicemail","Security questions about your childhood"],a:1,
+why:"Authenticator-app codes are generated on your device and never travel through the phone network, so a SIM swap can't intercept them. SMS codes can be."},
+{m:1,q:"You use a password manager with 200 stored passwords. Which password is the single most important one to make long and strong?",
+o:["Your email password","Your bank password","Your social media password","Your password manager's master password"],a:3,
+why:"The master password guards the vault holding every other password. If it falls, all 200 fall with it — so it gets the strongest one you can remember."},
+{m:1,q:"You learn that a forum where you reused your email password was breached. What is the FIRST account you should secure?",
+o:["The forum account itself","Your email account","Your streaming service","Your social media account"],a:1,
+why:"Your email is the master key: password resets for your bank and nearly everything else flow through it. Secure the email first, then work outward."},
+{m:1,q:"After securing a breached email account (new password + MFA), what hidden setting should you check for attacker tampering?",
+o:["Your inbox theme and color scheme","Email forwarding rules and filters you didn't create","Your sent folder for typos","Your contact list for duplicates"],a:1,
+why:"Attackers routinely create inbox rules that auto-delete security alerts ('your password was changed'), so you never see the warnings. Check filters and forwarding rules for anything you didn't make."},
+/* ============ MODULE 2 — Phishing ============ */
+{m:2,q:"You get an 'account locked' email that looks like Apple, warning your Apple ID will be deleted. Which detail is the strongest sign it's phishing?",
+o:["The email uses the word 'urgent'","The sender address is apple-support@notice-appleid.com — not apple.com","The email includes the Apple logo","The email arrived on a Tuesday"],a:1,
+why:"Logos and urgent language are trivially copied. The sender domain is the tell: Apple's real messages come from apple.com. A lookalike domain means it's not Apple."},
+{m:2,q:"You receive a text claiming to be your bank: 'Suspicious activity detected. Tap here to verify.' What is the safest response?",
+o:["Tap the link and log in to check","Reply asking if it's really your bank","Ignore the text; open your bank's own app (or type its address yourself) and check there","Forward the text to a friend for their opinion"],a:2,
+why:"Never trust a link that arrives uninvited. Go to the bank through a channel you chose — its app or a typed address — and verify there. The text is the attacker's chosen battlefield."},
+{m:2,q:"An email contains a QR code and says 'scan to verify your account.' Why is this especially dangerous?",
+o:["QR codes install viruses automatically","Your phone can't show you where the QR code leads before opening it","QR codes only work on public Wi-Fi","Email QR codes expire after one hour"],a:1,
+why:"A QR code hides its destination — you can't hover over it like a link. The scanner just opens whatever URL is encoded, which is usually a pixel-perfect fake login page."},
+{m:2,q:"An unexpected email has an attachment named 'Invoice-1042.pdf' — but your email client shows it's actually an HTML file. What should you do?",
+o:["Open it — the name says it's a PDF","Open it only on your phone, which is safer","Don't open it. Unexpected attachments — especially ones disguised as another file type — are a classic malware delivery method","Rename it to .pdf and then open it"],a:2,
+why:"Attackers disguise malicious files with familiar names. An invoice you weren't expecting, wearing the wrong file type, is a textbook trap. Delete it and verify with the supposed sender through a separate channel."},
+{m:2,q:"You clicked a phishing link and entered your password on a fake login page before realizing. What is the correct FIRST step?",
+o:["Delete the email and hope for the best","Go to the real site yourself (typed address or app) and change the password immediately","Run a virus scan first, then change the password tomorrow","Email the scammer and ask them to delete your info"],a:1,
+why:"Speed matters: the attacker may already be using the password. Change it at the genuine site right away, turn on MFA, and check for tampering (filters, forwarding rules, new logins)."},
+/* ============ MODULE 3 — Social Engineering ============ */
+{m:3,q:"A 'Microsoft technician' calls, opens Windows Event Viewer on your screen, and points to dozens of red errors as proof you're infected. What's the truth?",
+o:["Red errors in Event Viewer always mean an active infection","Event Viewer shows routine warnings on every Windows PC — it's normal noise, not a diagnosis","Only Microsoft employees can read Event Viewer","The errors prove the caller works for Microsoft"],a:1,
+why:"Event Viewer logs routine warnings on every healthy PC. Scammers use its scary-looking output as a prop. It proves nothing — and real Microsoft never cold-calls about your computer."},
+{m:3,q:"Which statement about tech companies and virus warnings is TRUE?",
+o:["Microsoft sometimes calls users about serious infections","Apple shows pop-ups with a phone number for urgent threats","Microsoft, Apple, and your internet provider will NEVER call you or pop up a phone number about a virus","Your ISP will remotely fix your computer if you give them your password"],a:2,
+why:"This is absolute: legitimate tech companies do not call users about viruses and do not show pop-ups with support phone numbers. Any call or pop-up doing so is a scam."},
+{m:3,q:"A caller has you install remote-access software and is now moving your mouse around. What does this mean?",
+o:["They're running a standard diagnostic — let them continue","They've taken control of your computer. Disconnect from the internet immediately and hang up","It means your antivirus is working","Remote access is always safe if the caller sounds professional"],a:1,
+why:"Someone moving your cursor is someone inside your machine — they can open your bank, install malware, and steal files. Cut the connection (unplug/Wi-Fi off), then get help from someone you trust."},
+{m:3,q:"A 'tech support agent' says your computer is infected and demands payment in gift cards to clean it. What does the gift-card demand prove?",
+o:["Nothing — gift cards are a normal payment method for support","That it's a scam: no legitimate company takes gift cards as payment, ever","That the infection is real but the price is negotiable","That you should pay half now and half later"],a:1,
+why:"The gift-card demand is the entire tell. No real business — not Microsoft, not your power company, not the IRS — accepts gift cards. Hang up."},
+{m:3,q:"You get a cold call from someone claiming to be your bank's fraud department, asking you to 'verify' your full card number. Best response?",
+o:["Give them the card number — they called about fraud, so it must be safe","Ask for their employee ID, then give the number","Hang up and call the number on the back of your card yourself","Give them only the last 4 digits to be safe"],a:2,
+why:"Caller ID is spoofed in seconds and 'verify your card' is the oldest trick in the book. End the call and dial the bank yourself on a number you trust. If it was real, they'll confirm."},
+/* ============ MODULE 4 — Wi-Fi & Safe Browsing ============ */
+{m:4,q:"You're on coffee-shop Wi-Fi and your bank's site shows the padlock (https). What can another person on that same network actually see?",
+o:["Everything you type, including your password","Which websites you visit — but not the contents of your encrypted sessions","Nothing at all — the padlock hides everything","Your bank balance but not your login"],a:1,
+why:"HTTPS encrypts the content of your session, so passwords stay hidden. But the Wi-Fi operator (or a snooper) can still see which sites you connect to. For sensitive business, use your phone's hotspot instead."},
+{m:4,q:"A shopping site has the padlock icon and an https address. What does that guarantee?",
+o:["The site is legitimate and safe to buy from","That your connection to the site is encrypted — nothing more","That the products are genuine","That the site is based in your country"],a:1,
+why:"The padlock only means the connection is encrypted. Scammers get free certificates too. A padlock on a fake site just means your data is encrypted on its way to the criminal."},
+{m:4,q:"You need a free video converter. What's the safest way to get one?",
+o:["Click the first Google ad result — ads are vetted","Download it from the program's official website or your device's official app store","Use whichever download button is biggest on a free-download site","Ask a stranger in a forum to email you their copy"],a:1,
+why:"Search ads and free-download sites are prime malware territory. The official site or the official app store is the safe channel — and always check the file extension before running anything."},
+{m:4,q:"A free VPN app promises 'total privacy, no logs, 100% free forever.' What's the realistic concern?",
+o:["There is none — free VPNs are charity projects","Free VPNs are often funded by logging and selling your browsing data — the opposite of privacy","Free VPNs are illegal to operate","Free VPNs only work on Android"],a:1,
+why:"Running servers costs money. If you're not paying, your data is the product. Use a reputable paid VPN if you need one — or skip it; a VPN doesn't protect you from scams anyway."},
+{m:4,q:"Your hotel's Wi-Fi list shows 'Hotel-Guest', 'Hotel-Guest-FREE', and 'Hotel Guest 5G'. What's the safest move?",
+o:["Connect to whichever has the strongest signal","Ask the front desk for the exact official network name, and turn off auto-join for open networks","Connect to all three and see which loads fastest","Open networks are all equally safe"],a:1,
+why:"Attackers set up 'evil twin' networks with convincing names to intercept your traffic. Confirm the real name with staff, and stop your phone from auto-joining any open network it remembers."},
+/* ============ MODULE 5 — Updates & Backups ============ */
+{m:5,q:"Why do security experts say to install software updates promptly instead of postponing them for months?",
+o:["Updates make your computer faster","Attackers study each patch to learn the flaw it fixes, then target people who haven't updated","Updates are required by law","Postponing updates voids your warranty"],a:1,
+why:"Every patch announcement is a roadmap: it tells attackers exactly which vulnerability to exploit and who is still exposed. The longer you wait, the more the attackers know."},
+{m:5,q:"Ransomware hits your computer. Your external backup drive is plugged in and always connected. What likely happened to your backups?",
+o:["They're safe — ransomware only targets the main drive","The ransomware likely encrypted the backup drive too, because it could reach it","External drives are immune to ransomware","Backups are automatically restored by Windows"],a:1,
+why:"Ransomware encrypts everything it can reach — including always-connected drives and cloud sync folders. Keep one backup copy disconnected (unplugged in a drawer) or truly offline."},
+{m:5,q:"What is the 3-2-1 backup rule?",
+o:["Back up 3 times a day, 2 times at night, 1 time on weekends","Keep 3 copies of important data, on 2 different kinds of storage, with 1 copy offsite or offline","Use 3 passwords, 2 devices, 1 cloud account","It refers to 3 antivirus scans per week"],a:1,
+why:"Three copies protects against one failure, two media types protects against one technology failing, and one offsite/offline copy protects against ransomware, fire, and theft."},
+{m:5,q:"The 2017 WannaCry ransomware attack devastated thousands of organizations. What made it especially frustrating?",
+o:["No patch existed at the time","Microsoft had released the fix two months earlier — victims simply hadn't installed it","It only affected brand-new computers","It was spread by USB drives left in parking lots"],a:1,
+why:"WannaCry exploited a flaw Microsoft had already patched. The victims were organizations that delayed updates. Patching is the cheapest, most boring, most effective defense there is."},
+{m:5,q:"Ransomware has locked your files and the note demands payment in cryptocurrency. What's the correct call?",
+o:["Pay immediately — it's the fastest way to get files back","Never pay: payment rarely restores everything, marks you as someone who pays, and funds the next attack","Pay half to show good faith, then negotiate","Pay only if the amount is under $500"],a:1,
+why:"Paying funds criminals, rarely returns all your files, and puts you on a list of people who pay (expect a second hit). Restore from backups instead — this is what they're for."},
+/* ============ MODULE 6 — Mobile Security ============ */
+{m:6,q:"You get a text: 'TOLL AUTHORITY: You have an unpaid toll of $12. Pay within 24 hours to avoid a fine:' with a link. You don't remember driving a toll road. Best move?",
+o:["Tap the link and pay — it's only $12","Reply STOP to unsubscribe","Don't tap the link. Open your toll agency's official app or site yourself (or ignore it if you never use tolls)","Call the number in the text to confirm"],a:2,
+why:"Toll-road smishing is one of the most common text scams: the link leads to a card-harvesting page. Verify through a channel you chose — never the link in the text."},
+{m:6,q:"A simple photo-editing app asks for access to your contacts, location, and microphone. What's the right response?",
+o:["Allow everything — apps need permissions to work","Deny the permissions it doesn't need; a photo app has no business reading your contacts","Delete the app and buy a new phone","Allow it just this once and forget about it"],a:1,
+why:"Least privilege: grant only what the app needs to function. Permission-hungry free apps are often harvesting data to sell — location and contacts are the most valuable."},
+{m:6,q:"Your phone is stolen. What are the correct FIRST three moves, in order?",
+o:["Buy a new phone, change your passwords, file a police report","Use Find My to locate and remotely lock it; remote-wipe it if it's unrecoverable; call your carrier to suspend the line","Text the thief and offer a reward","Wait 24 hours to see if it turns up"],a:1,
+why:"Lock it remotely first (stops access), wipe it if it's gone for good (protects your data), and suspend the line (blocks SIM-swap and call/text abuse). Do this before anything else."},
+{m:6,q:"A caller says they're from your bank and asks you to read back the verification code that just arrived by text. What should you do?",
+o:["Read it back — they need it to verify your identity","Read back only the first 3 digits","Stop. That code is the key to YOUR account — a real bank will never ask you to read it to them","Ask them to text it to you again first"],a:2,
+why:"Verification codes prove account ownership to the service. Reading one to a caller hands them the keys — this is how account takeovers happen. Hang up."},
+{m:6,q:"When is the right time to set up Find My (iPhone) / Find My Device (Android) and test that it works?",
+o:["After your phone is lost or stolen","Right now, while the phone is in your hand — it can't help you if it was never turned on","Only when traveling abroad","Only for expensive phones"],a:1,
+why:"Find My must be enabled BEFORE the loss. Test it today: log into iCloud/Google on a computer and confirm you can see the phone's location."},
+/* ============ MODULE 7 — Scams ============ */
+{m:7,q:"Someone you've messaged online for three weeks says he's a soldier deployed overseas, his camera is broken, and he needs $800 in gift cards for a medical emergency. Name the TWO clearest red flags and the right move.",
+o:["He's in the military and he's overseas — both are red flags; send the money anyway","He won't video call and he demands gift cards; stop, send nothing, save messages and report the profile","He types too fast and uses emojis; block him silently","There are no red flags here — this sounds legitimate"],a:1,
+why:"Never being able to video call + demanding gift cards = the romance-scam script, word for word. No legitimate person or organization takes gift cards. Stop, keep the evidence, report it."},
+{m:7,q:"Why do scammers demand gift cards, crypto, or wire transfers instead of checks or credit cards?",
+o:["Because they're faster for the victim","Because those payments are effectively irreversible and hard to trace — once the numbers are read or the transfer clears, the money is gone","Because banks refuse to process scam payments","Because gift cards have better exchange rates"],a:1,
+why:"Irreversibility is the whole point. A credit card charge can be disputed and reversed; a gift-card code read over the phone is cash handed to a stranger, gone in seconds."},
+{m:7,q:"A 'recruiter' who found YOU over text hires you after a chat interview, then sends a $2,500 check for 'equipment' and asks you to forward $800 to their 'vendor' via a payment app. What happens if you do?",
+o:["You get to keep the equipment and the job","The check bounces days later — it was fake — and the $800 you sent was real money you're now liable for","The vendor sends you extra equipment as a bonus","Nothing — banks insure against this"],a:1,
+why:"This is the classic fake-check scam. The check is counterfeit; your forwarded money is real. You're on the hook with your bank for the full fake deposit."},
+{m:7,q:"A rental listing is half the normal price, the 'landlord' is out of state and can't show it, and they want a deposit via Zelle before you can see the place. What's the safe move?",
+o:["Send the deposit quickly before someone else takes it","Send half the deposit as a show of good faith","Walk away — or insist on an in-person viewing and verify the real owner through county property records first","Ask for more photos to be sure"],a:2,
+why:"Price too good to be true + can't view it + pressure to pay via irreversible methods = the rental-scam script. Never pay for a place you haven't seen in person."},
+{m:7,q:"An unexpected caller demands money with extreme urgency — 'pay right now or else.' What personal rule defeats this pressure tactic?",
+o:["Always pay immediately to avoid trouble","A 24-hour pause plus a second opinion from someone you trust before any unexpected money moves","Negotiate the amount down","Ask them to call back tomorrow at the same time"],a:1,
+why:"Urgency is manufactured so you don't think. A mandatory cooling-off period and a second pair of eyes break the spell — scammers fear your friends' common sense."},
+/* ============ MODULE 8 — Hacked: Now What ============ */
+{m:8,q:"You suspect your accounts are compromised. Why do you change your EMAIL password before your BANK password?",
+o:["Email passwords are easier to remember","Because password resets for your bank — and nearly everything else — go through your email; whoever controls email can reset everything","Banks don't allow password changes after a hack","Email companies require it by policy"],a:1,
+why:"Your email is the master key to your digital life. Lock it first, or the attacker just resets the bank password again through the email they still control."},
+{m:8,q:"Why should you change those passwords from a DIFFERENT, clean device instead of the one you think is compromised?",
+o:["Clean devices have faster internet","The compromised device may be logging your keystrokes — typing a new password into it hands the attacker the new password too","It's just a superstition with no real basis","Clean devices automatically generate stronger passwords"],a:1,
+why:"Keyloggers and spyware record everything you type. New passwords entered on the infected machine go straight to the attacker. Use a trusted device, then clean the compromised one."},
+{m:8,q:"Which of these are legitimate places to report cybercrime or fraud in the US?",
+o:["ReportFraud.ftc.gov (FTC) and ic3.gov (FBI's Internet Crime Complaint Center)","Your local newspaper's tip line and a TV station","The scammer's own website contact form","There is nowhere to report — don't bother"],a:0,
+why:"The FTC's ReportFraud site, the FBI's IC3, the FTC's IdentityTheft.gov, and your local police are the real reporting channels. Reports build the cases that take scammers down."},
+{m:8,q:"After a suspected hack, you notice your email has inbox rules you never created — auto-deleting 'password changed' alerts. What does this mean?",
+o:["Your email provider added new features","An attacker created filters to hide their activity and security warnings from you — delete the rules","It's a harmless glitch","Your spam filter is working correctly"],a:1,
+why:"Hiding security alerts with inbox rules is a standard attacker move. Unknown filters = someone else has been in your account. Remove them and treat the account as compromised."},
+{m:8,q:"You suspect malware on your computer. What's the correct FIRST response?",
+o:["Immediately wipe the computer and reinstall everything","Disconnect it from the network (airplane mode / unplug) to stop data theft, preserve evidence like ransom notes and phishing messages, THEN clean it","Keep using it normally while you research","Post about it on social media"],a:1,
+why:"Isolate first: disconnecting stops data theft in progress and malware spreading to other devices. Preserve evidence before wiping — then clean from a position of control."},
+/* ============ MODULE 9 — Identity Theft ============ */
+{m:9,q:"Why must you freeze your credit at ALL THREE bureaus (Equifax, Experian, TransUnion) instead of just one?",
+o:["It's a legal requirement or the freeze is invalid","The bureaus are independent — a lender pulling from an unfrozen bureau can still approve a fraudulent application","Freezing one automatically freezes the others after 24 hours","You get a discount for freezing all three"],a:1,
+why:"Bureaus don't share freeze status, and different lenders pull different bureaus. One unfrozen bureau is an open door — freeze all three."},
+{m:9,q:"A coworker claims a credit freeze will lower your credit score and stop your current cards from working. What's true?",
+o:["They're right — expect about a 20-point drop","A freeze only blocks NEW credit applications; your existing accounts and your score are completely unaffected","Freezes expire after 90 days","You can never unfreeze once it's placed"],a:1,
+why:"A freeze tells bureaus not to release your report to new creditors. Your score, your cards, your mortgage — all untouched. It's free by federal law."},
+{m:9,q:"Your e-file is rejected: a tax return was already filed with your Social Security number. What do you do?",
+o:["Wait a few days and e-file again — probably a glitch","File a paper return with IRS Form 14039 (Identity Theft Affidavit) attached — unless the IRS already sent you a letter about the suspicious return, in which case follow that letter's instructions","Call your state attorney general and ask them to fix it","Do nothing — the IRS sorts these out automatically"],a:1,
+why:"Form 14039 starts the IRS identity-theft process. But if the IRS already contacted you (e.g., Letter 5071C), follow those instructions instead of filing the form."},
+{m:9,q:"A website offers to place a credit freeze for you — for a $29.99 fee. What should you conclude?",
+o:["That's the standard price — pay it","Freezes are free by federal law. A site charging for one means you're on the wrong site or being scammed","The fee is only charged in some states","Pay it — the bureaus charge each other"],a:1,
+why:"Federal law makes freezes (placing, temporarily lifting, removing) free at all three bureaus. Any fee = wrong site or scam. Go to the bureaus' official freeze pages."},
+{m:9,q:"What is an IRS Identity Protection PIN (IP PIN) and why get one?",
+o:["A 4-digit code for your bank's phone system","A six-digit number, new each year, that only you and the IRS know — once enrolled, no federal tax return can be filed under your SSN without it","A PIN that freezes your credit automatically","A password for the IRS website that never changes"],a:1,
+why:"The IP PIN kills tax-refund identity theft: even with your SSN, a thief can't file a fraudulent return without that year's PIN. Anyone with an SSN can enroll — you don't have to be a victim first."},
+/* ============ MODULE 10 — Privacy ============ */
+{m:10,q:"How do data brokers realistically make phishing scams more convincing?",
+o:["They hack your phone and read your messages","They sell profiles with your real name, address, phone, and habits — scammers use those details to make fake texts and calls feel personal","They sell your passwords directly to scammers","They don't — brokers only sell to legitimate businesses"],a:1,
+why:"The 'how did they know my address?' mystery is solved: they bought it. Real personal details make fake messages feel real. Brokers trade in details; passwords come from breaches, not brokers."},
+{m:10,q:"Your friend says 'I have nothing to hide, so privacy settings are pointless.' What's the strongest response?",
+o:["They're right — privacy only matters for criminals","Privacy is about control: your data powers scams, stalking, and fraud against ordinary people — every fact about you is a tool someone can use","Only celebrities need privacy settings","The government already knows everything anyway"],a:1,
+why:"'Nothing to hide' misses the point. Scammers don't care about your secrets — they want your name, address, routine, and relatives to run cons. Privacy settings raise the cost of targeting you."},
+{m:10,q:"You grant a free weather app 'always allow' location access. What's the realistic risk?",
+o:["None — weather apps can't share data","The app may sell your precise location history to data brokers, mapping your home, work, and daily routine for sale to anyone","It will only drain your battery faster","Location data is protected by law and can never be sold"],a:1,
+why:"Free apps routinely monetize location through brokers. 'Always' access builds a map of your life. Set it to 'while using' or 'never' — and delete apps you don't use."},
+{m:10,q:"You register your number on the National Do Not Call Registry (donotcall.gov). What will this accomplish?",
+o:["It will stop all scam calls immediately","It cuts legitimate telemarketing calls — but scammers are criminals who ignore registries, so scam calls continue","It blocks all unknown callers automatically","It reports scammers to the police"],a:1,
+why:"The registry binds law-abiding telemarketers, not criminals. Still worth doing — fewer total calls means the scam calls that remain stand out more."},
+{m:10,q:"You use Google's 'Results about you' tool to remove a search result showing your home address. What did you actually accomplish?",
+o:["The information is deleted from the original website","It stops showing up in a casual Google search — but the data still exists on the original site","It deletes your Google account","Nothing — the tool doesn't work"],a:1,
+why:"The tool removes the result from Google search, which is where most snoopers stop looking. But the source site still has it — you must also opt out at the source."},
+/* ============ MODULE 11 — Family Safety ============ */
+{m:11,q:"Your 10-year-old finds a website offering 'FREE Robux — just log in to verify!' What's the truth?",
+o:["Some of these are legitimate Roblox promotions","It's a phishing scam — the 'login' steals the account. Real game companies never give away currency through random websites","It's safe as long as nothing is downloaded","It works but Roblox takes a cut"],a:1,
+why:"The login form IS the theft. 'Free currency' sites exist for one purpose: harvesting kids' accounts. Drill the rule in: free Robux sites are always fake."},
+{m:11,q:"Your child's new gaming 'friend' wants to move to private DMs and says 'don't tell your parents, they'll ruin it.' What's the right move?",
+o:["Let it play out — kids need privacy","Treat 'keep it secret from your parents' as an immediate red flag: talk to your child, review the messages together, block the account, and report it if anything was inappropriate","Take the device away for a month with no explanation","Message the 'friend' yourself to investigate"],a:1,
+why:"Secrecy from parents is the predator playbook's core move. Stay calm, look together, block, report. Punishing the child only teaches them to hide the next one better."},
+{m:11,q:"What's the most realistic protection against your child's game account being stolen?",
+o:["A complicated password the child memorizes","Two-factor authentication on the account, plus the rule that no one legitimate ever needs your password — not game staff, not YouTubers","Only playing on weekends","Using the same password as their school account"],a:1,
+why:"2FA stops most account theft even when the password leaks. And 'no one legitimate needs your password' is the single rule that kills every 'I'm from support' con."},
+{m:11,q:"You suspect an adult is exploiting your child online. What should you do FIRST?",
+o:["Confront the person directly","Stop the contact, preserve evidence (screenshots, usernames — delete nothing), and report to the National Center for Missing & Exploited Children (CyberTipline.org) and local police","Delete everything so your child isn't embarrassed","Wait to see if it happens again"],a:1,
+why:"Evidence first, confrontation never. Screenshots and usernames are what law enforcement needs. Report to CyberTipline.org and police — don't tip off the suspect."},
+{m:11,q:"What's the single most protective thing a parent can do about their kids' online safety?",
+o:["Install the strictest possible parental controls and say nothing","Keep the conversation open so the child reports weird encounters — a kid who tells you 'someone asked me for a picture' is safer than a locked-down kid who hides everything","Ban all devices until age 18","Only allow educational apps"],a:1,
+why:"Controls are one layer; determined kids bypass them. The relationship is the real protection: make it safe to report ('you'll never be in trouble for telling me'), and charge devices overnight outside bedrooms."},
+/* ============ MODULE 12 — Seniors ============ */
+{m:12,q:"Your grandmother gets a panicked call from someone who sounds like your cousin: he's in jail, needs bail money wired NOW, and 'don't tell Mom.' What's the right response?",
+o:["Wire the money immediately — you can't risk it being real","Hang up, call your cousin directly on a number you already have, and check the family code word — 'don't tell anyone' is the scammer's shield","Ask the caller for the cousin's Social Security number to verify","Call the number the 'lawyer' gave you to confirm"],a:1,
+why:"The secrecy request is the tell — it keeps you from checking. Always verify through a separate trusted channel, and never use contact info the caller provides."},
+{m:12,q:"Your dad's computer shows a full-screen 'Microsoft Security Alert' with a phone number to call. What's true?",
+o:["Microsoft sometimes does this for serious infections — he should call","It's a scam — Microsoft and Apple never show pop-ups with phone numbers or call users about viruses. Close the browser (or restart) and don't call","He should call but withhold payment info","The warning is real but the number is fake — Google Microsoft's real number instead"],a:1,
+why:"Tech companies don't do this, period. The pop-up manufactures panic; closing it ends the attack. Never call the number on the screen."},
+{m:12,q:"What's the best way to START the scam-protection conversation with an aging parent?",
+o:["Tell them directly that older people are easy targets","Lead with yourself — 'I almost got scammed, let's set up protections together' — a team effort with concrete tools like a family code word","Wait until after they've been scammed so the lesson sticks","Send them articles and hope they read them"],a:1,
+why:"Dignity first: nobody absorbs advice that starts with 'you're vulnerable.' A team framing plus concrete tools (code word, the hang-up rule) actually sticks — and revisit it yearly."},
+{m:12,q:"Why does a family code word ALSO defeat AI voice-cloning scams?",
+o:["Scammers can't pronounce code words","A cloned voice can imitate how someone sounds, but it can't know a secret it was never told — the code word moves verification from recognition (broken) to shared knowledge (unbroken)","Code words are legally required for emergency calls","The AI software crashes on unknown words"],a:1,
+why:"Voice recognition as a security check died around 2023. Shared secrets didn't. 'What's the code word?' settles a cloned-voice call in five seconds."},
+{m:12,q:"Your mom was scammed once last year. Why should the whole family now be MORE vigilant, not less?",
+o:["Past victims land on 'sucker lists' bought and sold between scammers — expect more attempts, so tighten every protection","Lightning never strikes twice","Scammers feel guilty and leave victims alone afterward","The police now monitor all her calls"],a:0,
+why:"Victim lists are a traded commodity. One successful scam marks the person as a proven payer. After any scam: bank alerts, credit freeze, call screening — everything tightened."},
+/* ============ MODULE 13 — AI Scams ============ */
+{m:13,q:"It's 11pm. A call comes in and it genuinely sounds like your son, crying, saying he's been arrested and needs bail wired immediately. 'Don't hang up,' the caller says. What's the right move?",
+o:["Stay on the line and wire the money — it really sounds like him","Hang up immediately, call your son on his real number, and ask for the family code word","Ask the 'officer' for badge and case details to verify","Wire half now to show good faith while you check"],a:1,
+why:"'Don't hang up' is the scammer's leash — it stops you from verifying. Break it. The real person is one call away on a number you trust, and the code word settles it instantly."},
+{m:13,q:"Why is 'look for bad spelling' no longer useful advice for spotting phishing?",
+o:["Scammers now hire professional editors","AI writes flawless, personalized phishing at scale — perfect grammar, your real job title, real logos. The old tells are dead","Email providers auto-correct scam emails","Spelling was never a useful tell"],a:1,
+why:"AI killed the typo tell. Modern phishing is grammatically perfect and personalized with scraped data. The new tells: urgency + secrecy, link mismatches, and unexpected 2FA codes."},
+{m:13,q:"A phishing email has perfect grammar, your company's real logo, and references your actual job title and a real vendor. What should you conclude?",
+o:["It must be legitimate — scammers can't get those details right","AI can personalize phishing at scale from public data — verify through a separate channel (type the address yourself, call the company) instead of clicking","Your company's IT department has been hacked","Perfect grammar means it passed the spam filter, so it's safe"],a:1,
+why:"Personalization is cheap now; LinkedIn and breach data feed it. Legitimacy is proven through independent verification, never through how convincing the email looks."},
+{m:13,q:"You receive a two-factor login code you did NOT request. What does this mean and what should you do?",
+o:["It's a glitch — enter it on the site to clear it","Someone has your password and is trying to log in right now. Don't enter the code anywhere — go change your password instead","Your authenticator app is broken","Forward the code to your email for safekeeping"],a:1,
+why:"An unrequested code means an attacker is at your login screen with your password, waiting on the second factor. Don't hand it to them — lock them out with a new password."},
+{m:13,q:"A video of a famous billionaire 'endorsing' a crypto investment platform is all over social media. What's the correct read?",
+o:["Celebrity endorsements are regulated, so it must be real","It's almost certainly an AI deepfake — no legitimate investment opportunity arrives via a social media video, no matter whose face is on it","It's real if the video is longer than 60 seconds","Only believe it if friends shared it"],a:1,
+why:"Deepfake endorsements are a documented scam factory. Real investments don't recruit through viral videos. Face, voice, and production value prove nothing anymore."},
+/* ============ MODULE 14 — Small Business ============ */
+{m:14,q:"What's the single highest-impact security step a small business can take?",
+o:["Buying expensive antivirus software","Turning on multi-factor authentication for business email and financial accounts — email compromise lets attackers reset other accounts, impersonate you to customers, and intercept payments","Hiring an IT consultant for a one-time audit","Upgrading to a faster internet plan"],a:1,
+why:"Your business email can reset your bank, invoice your customers as 'you,' and reroute payments. MFA on email blocks the most common and most damaging attack path — and it's free."},
+{m:14,q:"Your bookkeeper gets an email that looks like your regular supplier: 'We've updated our banking details — use the new account for this month's payment.' What's the right move?",
+o:["Update the details and pay — it looks legitimate","Call the supplier at a phone number you already have (not one in the email) and confirm before sending anything","Reply to the email asking if it's real","Pay half now, half after they confirm"],a:1,
+why:"Changed bank details are the #1 business-email-compromise pattern. Verify through a channel the attacker doesn't control. Replying to the email just talks to the scammer."},
+{m:14,q:"An employee leaves on Friday. What's the security-critical offboarding step?",
+o:["Nothing urgent — handle it next week","Disable their accounts and change shared passwords THAT DAY — email, social media, point-of-sale, everything","Just ask them to delete passwords from their phone","Change the Wi-Fi password only"],a:1,
+why:"Same-day deprovisioning. Lingering access is how ex-employees — or anyone who compromises their old device — walk right back in months later."},
+{m:14,q:"Your business email is sending invoices to customers, but you didn't send them — and you find an inbox rule silently forwarding your mail to an unknown address. What happened?",
+o:["Your email provider is testing features","Business email compromise: an attacker is inside your email, hiding their activity with forwarding rules while impersonating you to steal customer payments","A software bug duplicated your invoices","Your customers are forwarding your mail themselves"],a:1,
+why:"This is textbook BEC: hijack the inbox, hide with rules, learn your invoicing patterns, then email customers 'updated bank details' from your address. Lock the account down immediately."},
+{m:14,q:"A 'vendor' calls your newest employee with an urgent, confidential request to wire money today, saying the boss approved it. What policy stops this?",
+o:["Caller ID verification","A two-person rule: any wire, ACH change, or new vendor payment gets confirmed by a second person — or by calling the vendor at a known number. No exceptions","Banning all phone calls at work","Only the boss is allowed to send wires"],a:1,
+why:"Urgency + secrecy + a new employee = the BEC formula. A mandatory second pair of eyes (or a callback on a known number) breaks it every time."},
+/* ============ MODULE 15 — Glossary ============ */
+{m:15,q:"What's the difference between smishing and vishing?",
+o:["Smishing is phishing by SMS text; vishing is phishing by voice phone call","Smishing targets phones; vishing targets computers","They're two names for the same thing","Smishing is legal marketing; vishing is illegal"],a:0,
+why:"The channel is the difference: smishing = SMS, vishing = voice. Same goal (trick you into acting), different medium — and both are everywhere."},
+{m:15,q:"What makes 'spear phishing' more dangerous than ordinary phishing?",
+o:["It uses a spear-shaped USB device","It's aimed at YOU specifically, using your real name, job, or details to seem legitimate","It only targets fish markets","It's sent exclusively on weekends"],a:1,
+why:"Generic phishing blasts thousands hoping someone bites; spear phishing researches one target. Personal details make it far more convincing — verify independently, as always."},
+{m:15,q:"What is ransomware?",
+o:["Software that speeds up your computer for a fee","Malware that locks (encrypts) your files and demands payment for the key — and paying doesn't guarantee you get them back","A type of firewall","A backup program"],a:1,
+why:"Ransomware holds your files hostage. The defense is backups you can restore from — because paying criminals is a gamble that funds the next attack."},
+{m:15,q:"In criminal slang, what is a 'fullz'?",
+o:["A fully updated antivirus program","A complete stolen identity profile — name, SSN, date of birth, address — sold on illicit markets for a few dollars","A type of firewall rule","A backup that finished successfully"],a:1,
+why:"A 'fullz' is everything needed to impersonate you: name, SSN, DOB, address. It sells for pocket change — which is why a credit freeze (making the SSN useless) matters more than secrecy."},
+/* ============ MODULE 16 — Smart Home ============ */
+{m:16,q:"You put all your smart cameras and plugs on a separate guest Wi-Fi network from your laptop and phone. Why does this help?",
+o:["It makes your Wi-Fi faster","If a smart device gets hacked, the attacker can't easily reach your computers — the damage is contained","Guest networks are invisible to attackers","It lets you use a weaker password on the guest network"],a:1,
+why:"Network segmentation limits the blast radius: a hacked camera on the guest network is isolated from the devices holding your banking, email, and files."},
+{m:16,q:"Which of these is the most dangerous thing to leave unchanged on a smart device?",
+o:["Your smart TV's screensaver","Your camera's factory default password (like admin/12345)","Your smart speaker's wake word","Your router's Wi-Fi network name"],a:1,
+why:"Factory passwords are printed in manuals and tried automatically worldwide — the 2016 Mirai botnet seized hundreds of thousands of devices exactly this way. Change every default password."},
+{m:16,q:"What's the smartest use of the mic-off button on a smart speaker?",
+o:["Press it only during phone calls","Leave the mic off permanently","Press it during sensitive conversations and whenever the speaker isn't actively being used","The button is decorative and does nothing"],a:2,
+why:"The mic-off button physically cuts the microphone. Use it during private conversations and when you don't need voice control — convenience shouldn't mean a live mic 24/7."},
+{m:16,q:"Your smart speaker sits near a living-room window and is linked to your smart door lock. What's the risk?",
+o:["There is none — speakers recognize their owner's voice perfectly","Someone outside can speak (or play a recording) through the window and command the speaker to unlock the door","The speaker will unlock the door during thunderstorms","Window glass blocks all sound"],a:1,
+why:"Smart speakers generally can't distinguish you from a recording played nearby. Voice-match helps, but never link voice control to door locks — or disable purchasing and sensitive actions."},
+/* ============ MODULE 17 — Social Media ============ */
+{m:17,q:"Your aunt gets a Facebook message from a profile with YOUR name and photo, asking her to buy gift cards for an 'emergency.' What's the right move?",
+o:["Buy the cards — it might really be you","Call you at your real phone number to verify before doing anything","Reply asking for more details about the emergency","Send a smaller amount to be safe"],a:1,
+why:"Cloned profiles are one of the most common social media scams. Never send money or codes based on a message alone — verify through a channel you already trust."},
+{m:17,q:"Which two-factor method best protects your Instagram account against a SIM-swap attack?",
+o:["Texted (SMS) codes","An authenticator app on your phone","Email codes","Answering a security question"],a:1,
+why:"A SIM swap intercepts your texts — including SMS 2FA codes. An authenticator app generates codes on your device, out of the carrier's reach."},
+{m:17,q:"You're flying out for a two-week vacation. What's the safest posting plan?",
+o:["Post the boarding pass and daily countdowns","Post live updates to a private story only","Enjoy the trip and post the photos AFTER you're home","Post your hotel name so friends know where to reach you"],a:2,
+why:"Real-time vacation posts advertise an empty house — and boarding passes leak your full name and booking code. Post after you're home."},
+{m:17,q:"Your password-reset security questions are 'What street did you grow up on?' and 'What was your first pet's name?' Why is this risky?",
+o:["Security questions are unhackable","The answers are probably findable on your public social media posts — hometown, high school, pet names","Nobody ever guesses security questions","The questions are too hard to remember"],a:1,
+why:"Your profile is a public diary: hometown, pet names, birthdays. Attackers harvest these to beat 'forgot password.' Treat security-question answers like passwords — or better, don't use ones with public answers."},
+/* ============ MODULE 18 — Seasonal Scams ============ */
+{m:18,q:"You get a call from 'the IRS': you owe back taxes and must pay immediately with gift cards or face arrest. What should you do?",
+o:["Buy the gift cards — you don't want to be arrested","Ask for their badge number to verify","Hang up — the IRS's first contact is always by mail, and it never demands gift cards or threatens arrest by phone","Pay a smaller amount to make them go away"],a:2,
+why:"The IRS doesn't operate this way, ever: first contact by mail, no gift cards, no arrest threats by phone. Badge numbers and callback numbers are easily faked. Hang up."},
+{m:18,q:"After a major hurricane, you want to donate to a relief charity you saw on social media. What's the safest first step?",
+o:["Donate immediately — speed matters","Look it up on the IRS Tax Exempt Organization Search and donate through the charity's own website","Send money to the payment-app link in the post","Donate only if the post has lots of shares"],a:1,
+why:"Disaster scams spin up fake charities within hours. Verify it's a real tax-exempt org and donate on its own site — never through a post's link or a personal payment app. Shares prove nothing."},
+{m:18,q:"A text says your package couldn't be delivered: click a link and pay a $2.99 redelivery fee with your card. Why is this a scam?",
+o:["Delivery companies never send texts at all","Real carriers don't collect fees or card details through random texted links — track the package on the carrier's official site instead","$2.99 is too cheap to be real","Small fees like this are always legitimate"],a:1,
+why:"The tiny fee is bait for your card number. Real carriers don't operate this way. Got a tracking number? Type the carrier's address yourself and check it there."},
+{m:18,q:"A holiday deal on an unknown website offers a $400 game console for $79, with a countdown timer screaming 'only 2 left!' What's the right read?",
+o:["Buy two before they sell out","Too good to be true + manufactured urgency = classic fake-store pattern. Verify the seller independently before paying a cent","Countdown timers are proof of legitimacy","Unknown sites always have the best prices"],a:1,
+why:"Impossible prices plus urgency is the fake storefront formula: you pay, nothing ships (or a counterfeit arrives). Check reviews, contact info, and the domain's age — or buy from a retailer you know."},
+/* ============ MODULE 19 — Health Scams ============ */
+{m:19,q:"A friendly caller says they're from Medicare, offering a free genetic cancer screening 'fully covered' — they just need your Medicare number to confirm eligibility. What should you do?",
+o:["Give them the number — it's free and Medicare is calling","Decline and hang up — Medicare never cold-calls offering free services for your number; this is a known billing-fraud scheme","Give the number but ask them to call back tomorrow","Accept the test but refuse to give the number"],a:1,
+why:"Medicare doesn't cold-call with free offers. This is documented fraud: scammers bill Medicare for tests you never needed, using your number. Real testing goes through YOUR doctor."},
+{m:19,q:"An online pharmacy sells your prescription for 80% less than your local pharmacy — no prescription required. What's the right call?",
+o:["Order it — the savings are worth it","Order a small amount first to test","Don't order — legitimate pharmacies always require a prescription; no-prescription sites are a hallmark of counterfeit operations","Order it but pay with a prepaid card to be safe"],a:2,
+why:"'No prescription required' is the defining red flag of an illegal pharmacy. Counterfeits can contain wrong doses, no active ingredient, or poison. Your health isn't a bargain hunt."},
+{m:19,q:"You receive a breach letter: a billing company exposed your name, Social Security number, and treatment dates. What's the most protective single step?",
+o:["Throw the letter away — breaches happen all the time","Change your email password","Freeze your credit with all three bureaus and monitor your Explanation of Benefits statements","Call the billing company and demand they delete your data"],a:2,
+why:"An exposed SSN is an identity-theft starter kit: freeze all three bureaus (free, blocks new accounts) and watch your EOB statements for medical care you never received."},
+{m:19,q:"Medical bills arrive for care you never received — a surgery in a state you've never visited. What's happening and what do you do?",
+o:["It's a billing error — ignore it","It's medical identity theft: someone used your info for care. Dispute it, check your Explanation of Benefits statements, and treat it like identity theft (freeze credit, file reports)","Pay the bill to protect your credit","Call the hospital and give them your SSN to sort it out"],a:1,
+why:"Medical identity theft pollutes your records (imagine an ER seeing someone else's blood type under your name) and your credit. Dispute every charge, review EOBs, freeze your credit, and report it."}
+];
+
+</script>
+<script>
+"use strict";
+/* ================= HACKPROOF EXAM APP ================= */
+(function(){
+const $ = (s)=>document.querySelector(s);
+const app = $("#app");
+function esc(s){return String(s).replace(/[&<>"']/g,(c)=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+function shuffled(arr){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); const t=a[i]; a[i]=a[j]; a[j]=t; }
+  return a;
+}
+const state = { name:"", lic:null, order:[], optMap:[], answers:new Array(90).fill(-1), cur:0 };
+
+function gateScreen(msg){
+  const savedLic = localStorage.getItem(CONFIG.LICENSE_STORAGE_KEY) || "";
+  const savedName = localStorage.getItem(CONFIG.EXAM_NAME_KEY) || "";
+  app.innerHTML =
+  '<div class="card no-print" id="screen-gate">'+
+    '<h2>The Final <span class="accent">Exam</span></h2>'+
+    '<p class="lead">90 questions across all 19 course modules. Score <b>80% or higher</b> and your '+
+    '<b>Sentinel Safeguard Certificate of Cyber Security Awareness Course Completion</b> generates instantly.</p>'+
+    '<div class="err'+(msg?" show":"")+'" id="gate-err">'+esc(msg||"")+'</div>'+
+    '<label class="field" for="gate-name">Your full name — exactly as it should appear on your certificate</label>'+
+    '<input type="text" id="gate-name" placeholder="e.g. Alex Rivera" value="'+esc(savedName)+'" autocomplete="name">'+
+    '<label class="field" for="gate-lic">Premium license key</label>'+
+    '<textarea id="gate-lic" placeholder="Paste your premium license key here">'+esc(savedLic)+'</textarea>'+
+    '<p class="hint">The exam tests the full premium course, so it requires a premium license. '+
+    '<a href="game/buy.html">Get premium — $5 in BTC</a></p>'+
+    '<button class="btn primary" id="gate-go">Begin the exam</button>'+
+  '</div>';
+  $("#gate-go").onclick = function(){
+    const name = $("#gate-name").value.trim();
+    const licStr = $("#gate-lic").value.trim();
+    const err = $("#gate-err");
+    if(name.length < 2){ err.textContent = "Enter your name — it goes on your certificate."; err.classList.add("show"); return; }
+    err.classList.remove("show");
+    const btn = $("#gate-go"); btn.disabled = true; btn.textContent = "Verifying license…";
+    License.verifyLicense(licStr, CONFIG.LICENSE_PUBLIC_KEY_HEX).then(function(lic){
+      state.name = name; state.lic = lic;
+      try{ localStorage.setItem(CONFIG.EXAM_NAME_KEY, name); localStorage.setItem(CONFIG.LICENSE_STORAGE_KEY, licStr); }catch(e){}
+      startExam();
+    }).catch(function(e){
+      err.textContent = (e && e.message) || "License check failed.";
+      err.classList.add("show");
+      btn.disabled = false; btn.textContent = "Begin the exam";
+    });
+  };
+}
+
+function startExam(){
+  state.order = shuffled(QUESTIONS.map(function(_,i){return i;}));
+  state.optMap = state.order.map(function(qi){
+    const q = QUESTIONS[qi];
+    const idx = shuffled(q.o.map(function(_,i){return i;}));
+    return { order: idx, answer: idx.indexOf(q.a) };
+  });
+  state.answers = new Array(90).fill(-1);
+  state.cur = 0;
+  renderQ();
+}
+
+function renderQ(){
+  const qi = state.order[state.cur];
+  const q = QUESTIONS[qi];
+  const om = state.optMap[state.cur];
+  const letters = ["A","B","C","D"];
+  const answered = state.answers.filter(function(a){return a>=0;}).length;
+  let nav = "";
+  for(let i=0;i<90;i++){
+    nav += '<button class="'+(state.answers[i]>=0?"done":"")+(i===state.cur?" cur":"")+'" data-i="'+i+'">'+(i+1)+'</button>';
+  }
+  let opts = "";
+  om.order.forEach(function(oi,pos){
+    opts += '<button class="opt'+(state.answers[state.cur]===pos?" picked":"")+'" data-pos="'+pos+'">'+
+      '<span class="k">'+letters[pos]+'</span>'+esc(q.o[oi])+'</button>';
+  });
+  app.innerHTML =
+  '<div class="card no-print" id="screen-exam">'+
+    '<div class="qmeta"><span>QUESTION '+(state.cur+1)+' / 90</span><span>'+answered+' answered</span></div>'+
+    '<div class="progress"><div style="width:'+Math.round(answered/90*100)+'%"></div></div>'+
+    '<div class="qtext">'+esc(q.q)+'</div>'+ opts +
+    '<div class="examnav">'+
+      '<button class="btn ghost" id="q-prev"'+(state.cur===0?" disabled":"")+'>← Back</button>'+
+      '<button class="btn ghost" id="q-next"'+(state.cur===89?" disabled":"")+'>Next →</button>'+
+    '</div>'+
+    '<button class="btn primary" id="q-submit">Submit exam</button>'+
+    '<div class="grid90 no-print" id="qnav">'+nav+'</div>'+
+  '</div>';
+  const optBtns = app.querySelectorAll(".opt");
+  optBtns.forEach(function(b){ b.onclick=function(){ state.answers[state.cur]=+b.dataset.pos; renderQ(); }; });
+  $("#q-prev").onclick=function(){ if(state.cur>0){state.cur--; renderQ();} window.scrollTo(0,0); };
+  $("#q-next").onclick=function(){ if(state.cur<89){state.cur++; renderQ();} window.scrollTo(0,0); };
+  const navBtns = $("#qnav").querySelectorAll("button");
+  navBtns.forEach(function(b){ b.onclick=function(){ state.cur=+b.dataset.i; renderQ(); window.scrollTo(0,0); }; });
+  $("#q-submit").onclick=function(){
+    const un = state.answers.filter(function(a){return a<0;}).length;
+    if(un>0 && !confirm(un+" question"+(un>1?"s":"")+" unanswered. Submit anyway?")) return;
+    grade();
+  };
+}
+
+function grade(){
+  let correct = 0;
+  const wrong = [];
+  for(let i=0;i<90;i++){
+    const qi = state.order[i];
+    const q = QUESTIONS[qi];
+    const om = state.optMap[i];
+    if(state.answers[i]===om.answer) correct++;
+    else wrong.push({i:i, qi:qi, picked:state.answers[i], om:om});
+  }
+  const pct = Math.round(correct/90*100);
+  renderResult(correct, pct, correct>=72, wrong);
+}
+
+function renderResult(correct, pct, pass, wrong){
+  const letters=["A","B","C","D"];
+  let html =
+  '<div class="card no-print" id="screen-result">'+
+    '<h2>Your <span class="accent">Score</span></h2>'+
+    '<div class="score-big '+(pass?"pass":"fail")+'">'+pct+'%</div>'+
+    '<div class="verdict '+(pass?"pass":"fail")+'">'+(pass?"PASSED":"NOT PASSED")+'</div>'+
+    '<p class="lead">'+correct+' of 90 correct — '+(pass?"you earned it.":"80% (72) is required to pass. Review the course and try again.")+'</p>'+
+    (pass?"":'<button class="btn primary" id="retry">Retake the exam</button>')+
+    '<h2 style="margin-top:18px">Review <span class="accent">('+wrong.length+')</span></h2>';
+  wrong.forEach(function(w){
+    const q = QUESTIONS[w.qi];
+    const yourText = w.picked>=0 ? q.o[w.om.order[w.picked]] : "(no answer)";
+    const rightText = q.o[w.om.order[w.om.answer]];
+    html += '<div class="review-item"><div class="rq">'+esc(q.q)+'</div>'+
+      '<div class="ra yours">✗ You: '+esc(yourText)+'</div>'+
+      '<div class="ra right">✓ Correct: '+esc(rightText)+'</div>'+
+      '<div class="why">'+esc(q.why)+'</div></div>';
+  });
+  html += '</div>';
+  app.innerHTML = html;
+  window.scrollTo(0,0);
+  if(!pass){ $("#retry").onclick=function(){ gateScreen(""); }; return; }
+  renderCert(correct, pct);
+}
+
+function b64e(bytes){ let s=""; for(let i=0;i<bytes.length;i++) s+=String.fromCharCode(bytes[i]); return btoa(s); }
+function certId(){
+  const c = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const r = crypto.getRandomValues(new Uint8Array(6));
+  let s = "";
+  for(let i=0;i<6;i++) s += c[r[i] % c.length];
+  return "HP-" + s.slice(0,3) + "-" + s.slice(3);
+}
+
+function renderCert(correct, pct){
+  const cid = certId();
+  const date = new Date().toISOString().slice(0,10);
+  const payload = { v:1, cert_id:cid, name:state.name, score:correct, pct:pct, date:date, lic_id:state.lic.id };
+  const code = b64e(new TextEncoder().encode(JSON.stringify(payload)));
+  const card = document.createElement("div");
+  card.className = "card"; card.id = "screen-cert";
+  card.innerHTML =
+    '<h2 class="no-print">Your <span class="accent">Certificate</span></h2>'+
+    '<p class="lead no-print">Congratulations, '+esc(state.name)+'. This is yours — print it, frame it, share it.</p>'+
+    '<div class="cert-shell"><div class="cert">'+
+      '<div class="org">SENTINEL SAFEGUARD LLC</div>'+
+      '<h3>Certificate of Completion</h3>'+
+      '<p class="sub">Cyber Security Awareness Course</p>'+
+      '<div class="label">This certifies that</div>'+
+      '<div class="name">'+esc(state.name)+'</div>'+
+      '<hr class="rule">'+
+      '<div class="details">has successfully completed the <b>HackProof Cyber Security Awareness Course</b><br>'+
+      'Final exam score: <b>'+pct+'%</b> ('+correct+'/90) · '+esc(date)+'</div>'+
+      '<div class="label">Certificate ID</div>'+
+      '<div class="cid">'+esc(cid)+'</div>'+
+      '<div class="sealrow"><div class="sig"><div class="line">JesusTheHacker · Sentinel Safeguard LLC</div></div>'+
+      '<div class="badge" id="cert-badge">⧗ PENDING VERIFICATION</div></div>'+
+    '</div></div>'+
+    '<div class="no-print">'+
+      '<button class="btn primary" id="cert-print">🖨 Print / Save PDF</button>'+
+      '<h2 style="margin-top:18px">Get your <span class="accent">verified seal</span></h2>'+
+      '<p class="lead">Email the code below to <b>Sentinelsafeguard@outlook.com</b> — you will get back a '+
+      'countersigned code. Paste it here and your certificate earns its verified seal, checkable by anyone at the verify page.</p>'+
+      '<div class="codebox"><textarea id="cert-unsigned" readonly>'+esc(code)+'</textarea></div>'+
+      '<button class="btn ghost small" id="copy-unsigned">Copy code</button>'+
+      '<label class="field" for="cert-signed">Countersigned code</label>'+
+      '<textarea id="cert-signed" placeholder="Paste the countersigned code here"></textarea>'+
+      '<div class="err" id="cert-err"></div>'+
+      '<button class="btn primary" id="cert-verify-btn">Apply verified seal</button>'+
+      '<p class="hint"><a href="verify.html">Open the certificate verifier →</a></p>'+
+    '</div>';
+  app.appendChild(card);
+  $("#cert-print").onclick=function(){ window.print(); };
+  $("#copy-unsigned").onclick=function(){ const t=$("#cert-unsigned"); t.select(); try{document.execCommand("copy");}catch(e){} };
+  $("#cert-verify-btn").onclick=function(){
+    const err=$("#cert-err"); err.classList.remove("show");
+    verifySignedCert($("#cert-signed").value.trim()).then(function(ok){
+      if(!ok) throw new Error("bad");
+      const b=$("#cert-badge"); b.textContent="✓ VERIFIED"; b.style.background="#059669";
+    }).catch(function(){
+      err.textContent="That code did not verify — check for typos or request a fresh one.";
+      err.classList.add("show");
+    });
+  };
+}
+
+function verifySignedCert(str){
+  return new Promise(function(resolve,reject){
+    try{
+      const clean=(str||"").trim().replace(/\s+/g,"");
+      if(!clean) throw new Error("empty");
+      const raw=JSON.parse(new TextDecoder().decode(License.b64ToBytes(clean)));
+      if(!raw.payload||!raw.sig) throw new Error("not signed");
+      const msg=new TextEncoder().encode(JSON.stringify(raw.payload));
+      const sig=License.b64ToBytes(raw.sig);
+      const pk=License.hexToBytes(CONFIG.LICENSE_PUBLIC_KEY_HEX);
+      resolve(nacl.sign.detached.verify(msg,sig,pk));
+    }catch(e){ reject(e); }
+  });
+}
+
+gateScreen("");
+})();
+</script>
+</body>
+</html>
