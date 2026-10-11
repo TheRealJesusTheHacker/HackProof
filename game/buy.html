@@ -7,7 +7,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Get HackProof Premium — $5 in BTC</title>
 <style>
   :root{ --bg:#0a0612; --card:#1a0f2e; --card2:#221338; --purple:#a855f7; --purple-d:#7c3aed;
@@ -32,7 +32,11 @@
   .btn.ghost{background:transparent; border:1px dashed #4a2a7a; color:var(--dim); box-shadow:none;}
   .addrbox{background:#0d0718; border:1px solid #4a2a7a; border-radius:12px; padding:14px; margin:12px 0;
     font-family:monospace; font-size:13px; line-height:1.6; word-break:break-all; color:var(--purple-l);
-    cursor:pointer; user-select:all;}
+    cursor:pointer; user-select:all;
+    /* PASS 4 (a11y): the address is a real <button> now — normalize button defaults. */
+    width:100%; text-align:left;}
+  /* PASS 4 (a11y): every focusable element shows a clear visible indicator. */
+  :focus-visible{outline:3px solid var(--purple-l); outline-offset:2px;}
   .qrwrap{text-align:center; margin:14px 0;}
   .qrwrap img{width:220px; height:220px; border:8px solid #fff; border-radius:12px; background:#fff;}
   .price{font-size:40px; font-weight:900; color:var(--green); text-shadow:0 0 24px rgba(34,197,94,.4);}
@@ -63,14 +67,15 @@
     <div class="qrwrap"><img id="qr" alt="Bitcoin payment QR code"></div>
     <div class="center"><button class="btn ghost" id="retry" style="display:none" onclick="loadRate()">↻ Retry rate</button></div>
     <div class="tag">SEND EXACTLY TO THIS ADDRESS</div>
-    <div class="addrbox" id="addr" onclick="copyAddr()" title="Tap to copy">bc1qvydns2fmyjzj55wzxq7ta28nxdhcmu9l9m6yg0</div>
-    <div class="center" style="font-size:12px;color:var(--dim)">Tap the address to copy it</div>
+    <!-- PASS 4 (a11y): real <button> so keyboard users can copy too; feedback is text, not color-only. -->
+    <button type="button" class="addrbox" id="addr" onclick="copyAddr()" aria-label="Bitcoin payment address. Activate to copy.">bc1qvydns2fmyjzj55wzxq7ta28nxdhcmu9l9m6yg0</button>
+    <div class="center" id="addr-hint" style="font-size:12px;color:var(--dim)">Tap the address (or press Enter) to copy it</div>
   </div>
   <div class="card">
     <div class="tag">HOW IT WORKS</div>
     <div class="step"><div class="n">1</div><div class="brief"><b>Send the exact BTC amount</b> shown above to the address. The QR code has the address + amount prefilled (BIP21) — just scan with your wallet.</div></div>
     <div class="step"><div class="n">2</div><div class="brief"><b>Email your transaction ID</b> to <b>Sentinelsafeguard@outlook.com</b> so we can match your payment.</div></div>
-    <div class="step"><div class="n">3</div><div class="brief"><b>You'll receive your license key.</b> Paste it into the game's "Enter license key" box to unlock all 8 scams + 16 field-manual modules.</div></div>
+    <div class="step"><div class="n">3</div><div class="brief"><b>You'll receive your license key.</b> Paste it into the license key box on the game's title screen to unlock all 8 scams + 16 field-manual modules.</div></div>
     <div class="banner"><b>Your license key decrypts the premium content</b> — without it, it's just noise. Guard it like a password.</div>
   </div>
   <div class="card">
@@ -88,7 +93,9 @@
       <div>Digital goods delivered instantly — all sales final. If your key doesn't work, we'll make it right.</div>
     </div>
   </div>
-  <a href="index.html" style="text-decoration:none"><button class="btn ghost">← Back to the game</button></a>
+  <!-- PASS 4 (a11y): anchor styled as the button — nesting a <button>
+       inside an <a> is invalid HTML and confuses assistive tech. -->
+  <a href="index.html" class="btn ghost" style="text-decoration:none">← Back to the game</a>
 </div>
 <div class="footer">© 2026 JesusTheHacker / Sentinel Safeguard LLC. All rights reserved.<br>HackProof is proprietary commercial software.</div>
 <!-- HackProof QR encoder: original clean-room implementation, zero third-party code. -->
@@ -506,11 +513,16 @@ async function loadRate() {
 
 function copyAddr() {
   const t = BTC_ADDRESS;
+  /* PASS 4 (a11y): copy confirmation is TEXT ("Copied ✓"), not just the
+     green border flash — color alone doesn't tell everyone. */
   const done = () => {
     const el = document.getElementById("addr");
+    const hint = document.getElementById("addr-hint");
     const old = el.style.borderColor;
+    const oldT = hint ? hint.textContent : "";
     el.style.borderColor = "#22c55e";
-    setTimeout(() => (el.style.borderColor = old), 1200);
+    if (hint) hint.textContent = "Copied ✓";
+    setTimeout(() => { el.style.borderColor = old; if (hint) hint.textContent = oldT; }, 1200);
   };
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(t).then(done).catch(() => {});
