@@ -1371,10 +1371,11 @@ function renderCloseCall(cc, sc) {
   S.pendingCC = { cc: cc, sc: sc };
   S.answered = false; /* PASS 2: fresh pick screen — accept one tap */
   renderHUD();
+  /* PASS 2: delta badges sit top-right, matching the node option buttons */
   const branch = b =>
-    '<button class="btn" onclick="uiCC(\'' + b + '\')">' +
+    '<button class="btn" onclick="uiCC(\'' + b + '\')">' + deltaHtml(cc[b]) +
     '<span class="opt-label">' + cc[b].label + "</span>" +
-    '<span class="sub">' + cc[b].sub + "</span>" + deltaHtml(cc[b]) + "</button>";
+    '<span class="sub">' + cc[b].sub + "</span></button>";
   app().innerHTML =
     '<div class="card"><div class="tag">⚠️ CLOSE CALL</div>' +
     "<h2>Too close...</h2>" +
@@ -1401,6 +1402,8 @@ function uiCC(which) {
   if (br.v > 0) popup("+" + br.v + " victims", "good");
   if (br.h > 0) popup("+" + br.h + " heat", "bad");
   if (br.h < 0) popup(br.h + " heat", "good");
+  /* PASS 2: streak-bonus popup (uiPick had it; uiCC was missing it) */
+  if (res.streakBonus) setTimeout(() => popup("🔥 STREAK x" + S.run.streak + "  +" + res.streakBonus, "streak"), 350);
   renderHUD();
   const warn = heatWarning();
   if (res.busted) { setTimeout(() => renderBusted(), 650); return; }
