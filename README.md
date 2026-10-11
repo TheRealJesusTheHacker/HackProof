@@ -60,6 +60,19 @@ The **free tier** (modules 01–03, micro-lessons, and the first 3 game scenario
 - **Security educators** who need training material that isn't boring.
 - **Curious minds** who learn best by doing — especially by doing the forbidden thing in a safe sandbox.
 
+## 🎓 The Final Exam + Verifiable Certificate
+
+Finish the course, then prove it. The **90-question final exam** covers all 19 modules — shuffled questions and
+shuffled answers every attempt, so no two sittings are alike.
+
+- **Pass at 80% (72/90)** and your **Sentinel Safeguard Certificate of Cyber Security Awareness Course Completion**
+  generates instantly — with your name on it, ready to print or save as PDF.
+- Every certificate carries a **cryptographically signed verification code**. Anyone can check it at the
+  [verify page](https://therealjesusthehacker.github.io/HackProof/verify.html) — no fakes.
+- The exam requires a premium license (it tests the full premium course).
+
+▶️ **Take the exam:** https://therealjesusthehacker.github.io/HackProof/exam.html
+
 ## 💳 Get Premium — $5 in Bitcoin
 
 Premium is a one-time **$5 USD in BTC**. Pay from the buy page and get your license key:
