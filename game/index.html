@@ -1239,6 +1239,8 @@ function renderHUD() {
 
 /* ---------- title ---------- */
 function renderTitle() {
+  /* PASS 3: lift the pending-pick button freeze (see renderOutcome). */
+  document.getElementById("app").classList.remove("answering");
   S.run = null; renderHUD();
   const scenRows = CONTENT_MANIFEST.filter(e => e.type === "scenario")
     .sort((a, b) => a.order - b.order).map(m => {
@@ -1355,6 +1357,9 @@ function uiPick(i) {
 
 function renderOutcome(lines, pending, warn) {
   S.pending = pending;
+  /* PASS 3: the pick is resolved — unfreeze buttons or CONTINUE is dead
+     (pointer-events:none from the pending-pick freeze would persist). */
+  document.getElementById("app").classList.remove("answering");
   renderHUD();
   app().innerHTML =
     '<div class="card"><div class="tag">IT PLAYS OUT</div>' +
@@ -1417,6 +1422,8 @@ function uiContinue() {
 }
 
 function renderDefense(sc) {
+  /* PASS 3: lift the pending-pick button freeze (see renderOutcome). */
+  document.getElementById("app").classList.remove("answering");
   renderHUD();
   S.run.flagsShown.push({ scenario: sc.title, flags: sc.defense.flags });
   const scs = getRunScenarios();
@@ -1440,6 +1447,8 @@ function uiDefenseNext() {
 
 /* ---------- upgrade ---------- */
 function renderUpgrade() {
+  /* PASS 3: lift the pending-pick button freeze (see renderOutcome). */
+  document.getElementById("app").classList.remove("answering");
   S.run = null; renderHUD();
   const premScen = CONTENT_MANIFEST.filter(e => e.type === "scenario" && e.tier === "premium")
     .sort((a, b) => a.order - b.order).map(m => "<div>🔒 " + m.title + "</div>").join("");
@@ -1457,6 +1466,8 @@ function renderUpgrade() {
 
 /* ---------- busted ---------- */
 function renderBusted() {
+  /* PASS 3: lift the pending-pick button freeze (see renderOutcome). */
+  document.getElementById("app").classList.remove("answering");
   const r = S.run, scs = getRunScenarios();
   const cleared = r.scIdx;
   app().innerHTML =
@@ -1478,6 +1489,8 @@ function renderBusted() {
 
 /* ---------- end of run ---------- */
 function renderEnd() {
+  /* PASS 3: lift the pending-pick button freeze (see renderOutcome). */
+  document.getElementById("app").classList.remove("answering");
   const r = S.run, rank = rankFor(r.victims);
   const debrief = r.flagsShown.map(g =>
     "<h2>" + g.scenario + "</h2>" +
@@ -1529,6 +1542,8 @@ function fallbackCopy(t, done) {
 function renderModule(id) {
   const entry = CONTENT_MANIFEST.find(e => e.id === id);
   if (!entry || !isUnlocked(id)) { renderUpgrade(); return; }
+  /* PASS 3: lift the pending-pick button freeze (see renderOutcome). */
+  document.getElementById("app").classList.remove("answering");
   const body = getModuleBody(entry);
   app().innerHTML =
     '<div class="card"><div class="tag">📖 FIELD MANUAL</div>' +
