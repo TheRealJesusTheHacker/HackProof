@@ -30,9 +30,13 @@ GOING LIVE (4 commands, all on your own machine):
   1. python3 tools/keygen.py setup
        -> generates keys in ~/.hackproof/, prints your PUBLIC key.
 
-  2. Paste the printed PUBLIC key hex into game/index.html:
+  2. Paste the printed PUBLIC key hex into ALL THREE files
+     (replacing the REPLACE_WITH_YOUR_PUBLIC_KEY_HEX placeholder),
+     then commit + deploy:
+       game/index.html
+       exam.html
+       verify.html
        CONFIG.LICENSE_PUBLIC_KEY_HEX = "<paste here>"
-     (replacing the REPLACE_ME placeholder), then commit + deploy.
 
   3. python3 tools/keygen.py build-pack
        -> encrypts content/premium/ (5 scenarios + 16 modules) with Kc,
@@ -42,6 +46,14 @@ GOING LIVE (4 commands, all on your own machine):
   4. python3 tools/keygen.py mint --tier premium --days 365
        -> prints a license key. Email it to the paying customer.
           They paste it into the game's "Enter license key" box.
+
+  5. When a student passes the final exam and emails you their
+     certificate code:
+       python3 tools/keygen.py sign-cert <code>
+       (or: python3 tools/keygen.py sign-cert - < code.txt)
+     -> prints the COUNTERSIGNED code. Email it back; they paste
+        it into exam.html to earn the verified seal. Anyone can
+        check it at verify.html.
 
 Requires: pip install cryptography
 
@@ -63,6 +75,7 @@ import argparse
 import base64
 import json
 import os
+import re
 import sys
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -246,6 +259,44 @@ def cmd_build_pack(keydir, content_dir, game_dir):
     print("Commit + deploy both.")
 
 
+def cmd_sign_cert(keydir, code):
+    """Countersign a student's certificate code.
+
+    The student emails you the UNSIGNED code from exam.html
+    (base64 of the cert payload). You sign the canonical JSON
+    and email back the SIGNED code. exam.html / verify.html
+    verify the Ed25519 signature against your public key.
+
+    Byte-compatibility note: the browser verifies
+    JSON.stringify(parsed_payload) — separators (",", ":"),
+    key insertion order preserved, raw UTF-8. We reproduce
+    exactly that here with separators=(",", ":") and
+    ensure_ascii=False.
+    """
+    priv, _ = load_keys(keydir)
+    clean = re.sub(r"\s+", "", code or "")
+    try:
+        payload = json.loads(base64.b64decode(clean).decode("utf-8"))
+    except Exception:
+        sys.exit("Not a valid certificate code (bad base64/JSON).")
+    if (not isinstance(payload, dict) or payload.get("v") != 1
+            or "cert_id" not in payload or "name" not in payload
+            or "sig" in payload):
+        sys.exit("Not an unsigned HackProof certificate payload.")
+    canonical = json.dumps(payload, separators=(",", ":"),
+                           ensure_ascii=False).encode("utf-8")
+    sig = priv.sign(canonical)
+    signed = {"payload": payload, "sig": b64e(sig)}
+    out = b64e(json.dumps(signed, separators=(",", ":"),
+                          ensure_ascii=False).encode("utf-8"))
+    print("COUNTERSIGNED CERTIFICATE — email this to the student:")
+    print(out)
+    print()
+    print("cert: %s  name: %s  score: %s%%  date: %s" %
+          (payload.get("cert_id"), payload.get("name"),
+           payload.get("pct"), payload.get("date")))
+
+
 def main():
     ap = argparse.ArgumentParser(description="HackProof license + pack tooling")
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -259,6 +310,9 @@ def main():
     b.add_argument("--keydir", default=DEFAULT_KEYDIR)
     b.add_argument("--content", default=os.path.join(REPO_ROOT, "content", "premium"))
     b.add_argument("--game", default=os.path.join(REPO_ROOT, "game"))
+    c = sub.add_parser("sign-cert", help="countersign a student's certificate code")
+    c.add_argument("--keydir", default=DEFAULT_KEYDIR)
+    c.add_argument("code", help="unsigned certificate code from the student (or - for stdin)")
     args = ap.parse_args()
     if args.cmd == "setup":
         cmd_setup(args.keydir)
@@ -266,6 +320,11 @@ def main():
         cmd_mint(args.keydir, args.tier, args.days)
     elif args.cmd == "build-pack":
         cmd_build_pack(args.keydir, args.content, args.game)
+    elif args.cmd == "sign-cert":
+        code = args.code
+        if code == "-":
+            code = sys.stdin.read()
+        cmd_sign_cert(args.keydir, code)
 
 
 if __name__ == "__main__":
