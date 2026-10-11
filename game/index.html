@@ -70,7 +70,8 @@
   .flag .t{color:var(--red); font-weight:800; font-size:13px; letter-spacing:1px;}
   .flag p{margin:6px 0 0; font-size:14px; line-height:1.5; color:#e8e2f5;}
   .popup{position:fixed; left:50%; top:38%; transform:translate(-50%,-50%) scale(.6); z-index:200;
-    font-size:44px; font-weight:900; opacity:0; pointer-events:none; text-shadow:0 2px 18px #000;}
+    font-size:clamp(30px,9.5vw,44px); font-weight:900; opacity:0; pointer-events:none;
+    text-shadow:0 2px 18px #000; max-width:94vw; text-align:center; white-space:nowrap;}
   .popup.show{animation:pop 1.1s ease-out forwards;}
   .popup.good{color:var(--green);} .popup.bad{color:var(--orange);} .popup.streak{color:var(--gold);}
   @keyframes pop{0%{opacity:0; transform:translate(-50%,-50%) scale(.5);}
@@ -1203,11 +1204,13 @@ function setFooter() {
     "&copy; 2026 JesusTheHacker / Sentinel Safeguard LLC. All rights reserved.";
 }
 
-/** Animated floating popup (+N victims, +N heat, streaks). */
+/** Animated floating popup (+N victims, +N heat, streaks).
+    PASS 2: concurrent popups stagger vertically so they never overlap. */
 function popup(text, cls) {
   const d = document.createElement("div");
   d.className = "popup " + cls;
   d.textContent = text;
+  d.style.top = "calc(38% - " + (document.querySelectorAll(".popup").length * 64) + "px)";
   document.body.appendChild(d);
   requestAnimationFrame(() => d.classList.add("show"));
   setTimeout(() => d.remove(), 1200);
