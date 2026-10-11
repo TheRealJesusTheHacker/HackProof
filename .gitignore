@@ -1,0 +1,35 @@
+# OS / editor junk
+.DS_Store
+Thumbs.db
+*~
+*.swp
+*.swo
+.idea/
+.vscode/
+*.sublime-*
+
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Key material — NEVER commit
+*.key
+*.pem
+*private*
+.hackproof/
+ed25519-private*
+content-master.key*
+
+# Premium pack sources — encrypted pack ships separately, sources stay local
+premium-src/
+premium-pack/
+*.hpack
+
+# Build / temp
+dist/
+build/
+*.tmp
+*.bak
