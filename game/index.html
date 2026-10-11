@@ -1,0 +1,1338 @@
+<!DOCTYPE html>
+<!--
+  Copyright (c) 2026 JesusTheHacker. All rights reserved.
+  No copying, redistribution, or derivative works without written permission.
+  "YOU ARE THE SCAMMER" - a defensive-education game by Sentinel Safeguard LLC.
+  Proprietary commercial software. Not open source. No license is granted by
+  possession of this file beyond the terms in TERMS.md.
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>YOU ARE THE SCAMMER — HackProof</title>
+<style>
+  :root{
+    --bg:#0a0612; --bg2:#120a1f; --card:#1a0f2e; --card2:#221338;
+    --purple:#a855f7; --purple-d:#7c3aed; --purple-l:#d8b4fe;
+    --green:#22c55e; --red:#ef4444; --orange:#f97316; --gold:#fbbf24;
+    --text:#f3efff; --dim:#9d8fb8;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  body{
+    margin:0; background:radial-gradient(1200px 800px at 50% -10%, #1d0f38 0%, var(--bg) 60%) fixed, var(--bg);
+    color:var(--text); font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
+    min-height:100vh; padding:0 0 90px;
+  }
+  #app{max-width:560px; margin:0 auto; padding:14px;}
+  .hud{position:sticky; top:0; z-index:50; background:rgba(10,6,18,.96); backdrop-filter:blur(6px);
+    border-bottom:1px solid #2c1a4d; padding:10px 14px; margin:0 -14px 12px;}
+  .hud-row{display:flex; justify-content:space-between; align-items:center; gap:8px;}
+  .pill{background:var(--card); border:1px solid #3b2163; border-radius:999px;
+    padding:6px 14px; font-weight:700; font-size:14px;}
+  .pill .n{color:var(--green); font-size:17px;}
+  .heatbar{height:12px; background:#241536; border-radius:999px; margin-top:8px; overflow:hidden; border:1px solid #3b2163;}
+  .heatfill{height:100%; width:0%; border-radius:999px; transition:width .6s cubic-bezier(.2,.9,.2,1.2);
+    background:linear-gradient(90deg,#a855f7,#f97316,#ef4444);}
+  .heatbar.danger .heatfill{animation:pulse .7s infinite alternate;}
+  @keyframes pulse{from{filter:brightness(1);}to{filter:brightness(1.6);}}
+  .heatlabel{font-size:11px; color:var(--dim); letter-spacing:2px; margin-top:4px; display:flex; justify-content:space-between;}
+  h1{font-size:34px; margin:6px 0; line-height:1.05;}
+  h1 .p{color:var(--purple); text-shadow:0 0 24px rgba(168,85,247,.6);}
+  h2{font-size:22px; margin:8px 0;}
+  .card{background:linear-gradient(160deg,var(--card),var(--card2)); border:1px solid #3b2163;
+    border-radius:16px; padding:18px; margin:12px 0; box-shadow:0 6px 24px rgba(0,0,0,.4);}
+  .tag{display:inline-block; font-size:11px; letter-spacing:2px; color:var(--purple-l);
+    background:rgba(168,85,247,.14); border:1px solid rgba(168,85,247,.4);
+    padding:4px 10px; border-radius:999px; margin-bottom:8px;}
+  .brief{font-size:15px; line-height:1.55; color:#e6dcf7;}
+  .banner{background:rgba(168,85,247,.10); border:1px dashed rgba(168,85,247,.55); border-radius:12px;
+    padding:12px 14px; font-size:13px; line-height:1.5; color:var(--purple-l); margin:12px 0;}
+  .banner b{color:#fff;}
+  .btn{display:block; width:100%; text-align:left; background:var(--card); color:var(--text);
+    border:1px solid #4a2a7a; border-radius:14px; padding:16px; margin:10px 0;
+    font-size:16px; font-weight:600; cursor:pointer; min-height:64px; line-height:1.35;
+    transition:transform .08s, border-color .15s, background .15s; font-family:inherit;}
+  .btn:active{transform:scale(.97);}
+  .btn:hover{border-color:var(--purple); background:#241641;}
+  .btn.primary{background:linear-gradient(135deg,var(--purple-d),var(--purple)); border:none; text-align:center;
+    font-size:18px; box-shadow:0 4px 20px rgba(168,85,247,.4);}
+  .btn.danger{background:linear-gradient(135deg,#7f1d1d,#ef4444); border:none; text-align:center;}
+  .btn.ghost{background:transparent; border-style:dashed; text-align:center; color:var(--dim);}
+  .btn .sub{display:block; font-size:13px; font-weight:400; color:var(--dim); margin-top:6px; line-height:1.4;}
+  .btn .delta{float:right; font-size:13px; font-weight:700; white-space:nowrap;}
+  .dv{color:var(--green);} .dh{color:var(--orange);}
+  .opt-label{font-size:17px;}
+  .out{background:#150b26; border-left:4px solid var(--purple); border-radius:0 12px 12px 0;
+    padding:14px; margin:10px 0; font-size:15px; line-height:1.55;}
+  .out .who{color:var(--purple-l); font-weight:700; font-size:13px; letter-spacing:1px;}
+  .flag{border-left:4px solid var(--red);}
+  .flag .t{color:var(--red); font-weight:800; font-size:13px; letter-spacing:1px;}
+  .flag p{margin:6px 0 0; font-size:14px; line-height:1.5; color:#e8e2f5;}
+  .popup{position:fixed; left:50%; top:38%; transform:translate(-50%,-50%) scale(.6); z-index:200;
+    font-size:44px; font-weight:900; opacity:0; pointer-events:none; text-shadow:0 2px 18px #000;}
+  .popup.show{animation:pop 1.1s ease-out forwards;}
+  .popup.good{color:var(--green);} .popup.bad{color:var(--orange);} .popup.streak{color:var(--gold);}
+  @keyframes pop{0%{opacity:0; transform:translate(-50%,-50%) scale(.5);}
+    18%{opacity:1; transform:translate(-50%,-60%) scale(1.15);}
+    70%{opacity:1;} 100%{opacity:0; transform:translate(-50%,-140%) scale(1);}}
+  .shake{animation:shake .4s;}
+  @keyframes shake{0%,100%{transform:translateX(0);}25%{transform:translateX(-7px);}75%{transform:translateX(7px);}}
+  .big-score{font-size:64px; font-weight:900; color:var(--green); text-shadow:0 0 30px rgba(34,197,94,.5); margin:4px 0;}
+  .stat-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:14px 0;}
+  .stat{background:#150b26; border:1px solid #3b2163; border-radius:12px; padding:12px; text-align:center;}
+  .stat .v{font-size:26px; font-weight:800; color:var(--purple-l);}
+  .stat .k{font-size:11px; color:var(--dim); letter-spacing:1px; margin-top:4px;}
+  .lockrow{display:flex; align-items:center; gap:10px; padding:10px 12px; border:1px solid #3b2163;
+    border-radius:12px; margin:6px 0; background:#140c24; font-size:14px; cursor:pointer;}
+  .lockrow.locked{opacity:.55;}
+  .lockrow .lk{margin-left:auto; font-size:16px;}
+  .warn{background:rgba(239,68,68,.10); border:1px solid rgba(239,68,68,.5); border-radius:12px;
+    padding:12px 14px; font-size:14px; margin:10px 0; color:#fecaca; line-height:1.5;}
+  .okbox{background:rgba(34,197,94,.08); border:1px solid rgba(34,197,94,.4); border-radius:12px;
+    padding:12px 14px; font-size:14px; margin:10px 0; color:#bbf7d0; line-height:1.5;}
+  .footer{max-width:560px; margin:26px auto 0; padding:14px; font-size:12px; color:var(--dim);
+    text-align:center; line-height:1.6; border-top:1px solid #241536;}
+  .center{text-align:center;} .mt{margin-top:18px;}
+  .sharebox{background:#0d0718; border:1px dashed #4a2a7a; border-radius:12px; padding:12px;
+    font-family:monospace; font-size:12.5px; line-height:1.7; white-space:pre-wrap; color:var(--purple-l);}
+  textarea.keybox{width:100%; min-height:74px; background:#0d0718; color:var(--purple-l); border:1px solid #4a2a7a;
+    border-radius:12px; padding:12px; font-family:monospace; font-size:12px; resize:vertical;}
+  .checkrow{display:flex; gap:10px; align-items:flex-start; font-size:13px; color:var(--dim); margin:10px 0; line-height:1.5;}
+  .checkrow input{margin-top:3px; transform:scale(1.3);}
+  .module-body{font-size:14.5px; line-height:1.65; color:#e8e2f5; white-space:pre-wrap;}
+  .module-body h1{font-size:20px;} .module-body h2{font-size:17px; color:var(--purple-l);}
+</style>
+</head>
+<body>
+<div id="hud"></div>
+<div id="app"></div>
+<div class="footer" id="footer"></div>
+<script>
+"use strict";
+/* ============================================================
+   YOU ARE THE SCAMMER — HackProof
+   (c) 2026 JesusTheHacker. Proprietary. All rights reserved.
+   Single-file game. Sections:
+     1. CONFIG          - all tunable values, no magic numbers
+     2. CONTENT MANIFEST- every scenario + course module (premium
+                         entries carry titles only — NEVER content)
+     3. DATA            - free scenario scripts + free course bodies
+     4. LICENSE        - offline license validation + premium-pack
+                         decryption (Ed25519 + AES-256-GCM + HKDF)
+     5. GAME LOGIC      - state machine, scoring, streaks, heat
+     6. UI              - rendering + input, screen by screen
+   ============================================================ */
+
+/* ---------------- 1. CONFIG ---------------- */
+const CONFIG = {
+  HEAT_MAX: 100,            // heat level that ends the run (BUSTED)
+  HEAT_WARN_1: 50,          // "feds are sniffing around"
+  HEAT_WARN_2: 75,          // "someone filed a report with your number on it"
+  HEAT_WARN_3: 90,          // "that was TOO close"
+  STREAK_HEAT_LIMIT: 6,     // an option with heat above this breaks the streak
+  STREAK_EVERY: 3,          // award streak bonus every N consecutive clean picks
+  STREAK_BONUS_VICTIMS: 5,  // victims awarded per streak bonus
+  FREE_SCENARIO_COUNT: 3,   // scenarios playable without a license
+  FREE_COURSE_COUNT: 3,     // course modules readable without a license
+  LICENSE_STORAGE_KEY: "hackproof_license_v1",
+  WRAP_INFO: "hackproof-wrap", // HKDF info string for license key-wrap (must match keygen.py)
+  /* LICENSE_PUBLIC_KEY_HEX: Skyler pastes the public key here after running
+     `python3 tools/keygen.py setup` (it prints the key). Until replaced,
+     license validation is disabled and premium stays locked. */
+  LICENSE_PUBLIC_KEY_HEX: "REPLACE_WITH_YOUR_PUBLIC_KEY_HEX",
+  RANKS: [
+    { min: 0,   title: "SCRIPT KIDDIE", flavor: "You installed the tools. The tools installed YOU. The feds aren't worried yet — your mom is." },
+    { min: 25,  title: "PHISH FRY",     flavor: "Small-time, but the lures are landing. A few grandmas are telling their grandkids about you at bingo." },
+    { min: 55,  title: "CON ARTIST",    flavor: "Smooth. Calculated. You could sell sunscreen to a vampire. The heat is learning your name, though." },
+    { min: 85,  title: "HUSTLER",       flavor: "You're running plays in your sleep. Every victim is a lesson you never had to learn the hard way." },
+    { min: 115, title: "KINGPIN",       flavor: "Untouchable. Legendary. The one scammers whisper about in group chats. (In a video game. Obviously.)" }
+  ]
+};
+
+/* ---------------- 2. CONTENT MANIFEST ----------------
+   Single source of truth for everything the game can serve.
+   tier "free"  = playable/readable with no license.
+   tier "premium" = needs a valid premium license. Premium entries
+   carry TITLES ONLY here — never scenario content, flags, or
+   module bodies. The encrypted premium pack holds the content.
+   Gate checks go through isUnlocked(id) — one function.        */
+const CONTENT_MANIFEST = [
+  { id: "phishing",    title: "The Locked Account",  type: "scenario", tier: "free",    order: 0 },
+  { id: "smishing",    title: "Missed Package",      type: "scenario", tier: "free",    order: 1 },
+  { id: "techsupport", title: "The Cold Call",       type: "scenario", tier: "free",    order: 2 },
+  { id: "marketplace", title: "Too Good To Be True", type: "scenario", tier: "premium", order: 3 },
+  { id: "romance",     title: "The Long Con",        type: "scenario", tier: "premium", order: 4 },
+  { id: "qrmeter",     title: "Sticker Shock",       type: "scenario", tier: "premium", order: 5 },
+  { id: "crypto",      title: "Double Your Money",   type: "scenario", tier: "premium", order: 6 },
+  { id: "giftcard",    title: "The Boss Needs You",  type: "scenario", tier: "premium", order: 7 },
+  { id: "course-01", title: "Spot the Phish: The 60-Second Email Check", type: "course", tier: "free",    order: 100 },
+  { id: "course-02", title: "Smishing Basics: Don't Trust the Text",     type: "course", tier: "free",    order: 101 },
+  { id: "course-03", title: "Tech Support Calls: Hang Up",               type: "course", tier: "free",    order: 102 },
+  { id: "course-04", title: "Gift Card Scams",          type: "course", tier: "premium", order: 103 },
+  { id: "course-05", title: "QR Code Scams",           type: "course", tier: "premium", order: 104 },
+  { id: "course-06", title: "Crypto Scams",            type: "course", tier: "premium", order: 105 },
+  { id: "course-07", title: "Romance Scams",           type: "course", tier: "premium", order: 106 },
+  { id: "course-08", title: "Marketplace Scams",       type: "course", tier: "premium", order: 107 },
+  { id: "course-09", title: "Smishing Deep Dive",      type: "course", tier: "premium", order: 108 },
+  { id: "course-10", title: "Vishing Defense",         type: "course", tier: "premium", order: 109 },
+  { id: "course-11", title: "Passwords & 2FA",         type: "course", tier: "premium", order: 110 },
+  { id: "course-12", title: "AI & Deepfake Scams",     type: "course", tier: "premium", order: 111 },
+  { id: "course-13", title: "Account Takeover Defense",type: "course", tier: "premium", order: 112 },
+  { id: "course-14", title: "Public Wi-Fi & Travel",   type: "course", tier: "premium", order: 113 },
+  { id: "course-15", title: "Already Got Scammed?",    type: "course", tier: "premium", order: 114 },
+  { id: "course-16", title: "Protecting Family",       type: "course", tier: "premium", order: 115 },
+  { id: "course-17", title: "Small Business Scams",    type: "course", tier: "premium", order: 116 },
+  { id: "course-18", title: "SIM Swap Defense",        type: "course", tier: "premium", order: 117 },
+  { id: "course-19", title: "Your Scam Radar",         type: "course", tier: "premium", order: 118 }
+];
+
+// [DATA-BEGIN]
+/* ---------------- 3. DATA (free tier, plaintext) ---------------- */
+const SCENARIOS_FREE = [
+{
+  id: "phishing", title: "The Locked Account", tag: "SCAM 1/8 — PHISHING",
+  briefing: ["Your crew just bought 10,000 email addresses.", "Mission: make them panic, click, and hand over the keys."],
+  nodes: [
+    { prompt: "Pick your lure. How do you get them to click?",
+      options: [
+        { label: "Blast a generic 'account locked' to all 10k", sub: "Spray and pray. Volume is a strategy.",
+          v: 6, h: 4, out: ["6,000 inboxes, 400 clicks, 90 logins. The funnel works.", "GRANDMA EDNA replies: 'dear hacker, my grandson does computers. he's tracing you. love, edna.' She CC'd the FBI. Heat +4."] },
+        { label: "Spoof the bank's real domain lookalike", sub: "Secure-login-yourbank.com. Nobody reads URLs.",
+          v: 8, h: 6,
+          closeCall: { text: "An IT guy at a credit union just traced your lookalike domain to your bulletproof host — and he's LIVE-TWEETING the takedown. The registrar is 10 minutes from killing the domain. What now?",
+            layLow: { label: "Lay low — burn the domain, go quiet", sub: "Lose the momentum, save your skin.", v: -2, h: -6,
+              out: ["Domain burned, host wiped, you vanish for a week.", "The IT guy tweets 'they ghosted lol'. You live. That was TOO close."] },
+            push: { label: "Push through — spin up 3 mirror domains", sub: "The campaign must go on.", v: 4, h: 6,
+              out: ["Mirrors are live before the takedown finishes. The phish keeps phishing.", "But the registrar flagged your payment method. Every new domain is now a countdown."] } } },
+        { label: "Spear-phish one rich guy personally", sub: "'Hi Dave, it's your wealth manager.' Slow. Surgical.",
+          v: 4, h: 2, out: ["Dave clicks. Dave types. Dave has a LOT of money.", "One victim, zero noise. Quality over quantity."] }
+      ] },
+    { prompt: "They clicked. Where does the link go?",
+      options: [
+        { label: "Bit.ly short link", sub: "Hides the ugly URL. Looks clean in the email.",
+          v: 3, h: 3, out: ["Short, sweet, clickable. Bit.ly's abuse team will kill it in ~6 hours.", "You milk it for 5. Efficiency!"] },
+        { label: "Fake login page on the lookalike domain", sub: "Pixel-perfect bank page. Harvests everything.",
+          v: 7, h: 6,
+          closeCall: { text: "A security researcher just submitted your fake bank page to a phishing blacklist — it's going red in Chrome within the hour. Browsers will scream 'DANGEROUS' at your victims. Move?",
+            layLow: { label: "Lay low — rotate to a fresh domain", sub: "Abandon ship before the blacklist lands.", v: -2, h: -7,
+              out: ["New domain, new page, same scam. The blacklist hits an empty house.", "Close call. You can feel the heat on your neck."] },
+            push: { label: "Push through — squeeze the last hour", sub: "Maximum harvest before the red screen.", v: 5, h: 6,
+              out: ["One glorious hour: logins pour in as the blacklist propagates.", "Then Chrome turns your page into a crime scene. Worth it? The feds think so."] } } },
+        { label: "Just ask them to REPLY with their credentials", sub: "No link, no domain, no blacklist. Just vibes.",
+          v: 5, h: 5, out: ["'Reply with your username and password to unlock.' 200 people do it.", "No infrastructure to burn. The replies just... arrive. Beautiful."] }
+      ] },
+    { prompt: "They're typing. How greedy do you get on the harvest page?",
+      options: [
+        { label: "Login only — keep it simple", sub: "Low friction. High conversion.",
+          v: 4, h: 3, out: ["Usernames and passwords roll in. Clean, quiet, sellable.", "The crew nods approvingly. Discipline pays."] },
+        { label: "Login + SSN + 'verify your identity'", sub: "Full identity kit. Maximum resale value.",
+          v: 8, h: 7, out: ["Fullz complete: logins, SSNs, mother's maiden names. The dark-web listing writes itself.", "One victim is a fraud analyst. She's already writing the report with YOUR infrastructure in it."] },
+        { label: "Login + card number 'for reactivation fee'", sub: "$1.99 to unlock your account. Sure.",
+          v: 6, h: 7, out: ["The $1.99 'fee' is just the cover — the card numbers are the product.", "A bank's fraud model just lit up like a Christmas tree. Your BIN range is flagged."] }
+      ] }
+  ],
+  defense: { title: "DEBRIEF — where you got sloppy", flags: [
+    { t: "THE SENDER ADDRESS", p: "Display names lie. 'Your Bank' via secure-login-yourbank-totally-real.com is not your bank. On mobile, tap the name to reveal the real address." },
+    { t: "URGENCY IS THE WEAPON", p: "'Locked in 24 hours!' Panic shuts down thinking — that's the entire point. Real banks don't threaten you by email." },
+    { t: "GENERIC GREETING", p: "'Dear Customer' = mass blast. Your actual bank knows your name." },
+    { t: "HOVER THE LINK", p: "On desktop, hover before clicking. If the URL isn't the bank's real domain, delete the email." },
+    { t: "BANKS NEVER ASK", p: "No legitimate bank asks for passwords, PINs, or full SSNs by email. Ever. That alone kills 99% of phish." },
+    { t: "WHEN IN DOUBT, GO DIRECT", p: "Open the bank's app or type the address yourself. Never log in through an email link." }
+  ] }
+},
+{
+  id: "smishing", title: "Missed Package", tag: "SCAM 2/8 — SMISHING",
+  briefing: ["Nobody ordered anything. Everybody's expecting a package.", "Mission: turn anticipation into tapped links."],
+  nodes: [
+    { prompt: "Draft the text. What's the hook?",
+      options: [
+        { label: "Plain text, no link — 'call this number about your package'", sub: "Old school. Gets past link filters.",
+          v: 3, h: 2, out: ["No link, no blacklist. Just a phone number and curiosity.", "The 'support agent' (you) harvests card numbers by voice. Slow, but invisible."] },
+        { label: "'USPS: missed delivery' + short link", sub: "The classic. Everyone's waiting on something.",
+          v: 6, h: 6, out: ["12,000 texts sent. 900 taps. The 'tracking page' asks for a $1.50 redelivery fee.", "The fee is bait — the card form is the trap. 300 cards harvested by dinner."] },
+        { label: "Fake USPS site demanding a redelivery fee", sub: "Full fake portal. Maximum harvest per tap.",
+          v: 8, h: 6,
+          closeCall: { text: "A carrier's abuse team just flagged your short link — it's dying in 20 minutes, and they forwarded the domain to law enforcement. Your move?",
+            layLow: { label: "Lay low — kill the campaign, rotate numbers", sub: "Live to text another day.", v: -3, h: -8,
+              out: ["Campaign dead, numbers burned, domain abandoned. You kept the 200 cards you already got.", "The abuse team finds an empty room. No heat, no foul."] },
+            push: { label: "Push through — blast the remaining list NOW", sub: "20 minutes of glory.", v: 5, h: 6,
+              out: ["You hammer the remaining 8,000 numbers in 18 minutes. Cards flood in.", "Then the link dies mid-blast — and the carrier's report now has your sending infrastructure in it."] } } }
+      ] },
+    { prompt: "Some targets tapped but didn't pay. Follow up?",
+      options: [
+        { label: "One polite reminder tomorrow", sub: "'Your package is still waiting.' Gentle nudge.",
+          v: 3, h: 3, out: ["The reminder converts another 8%. Polite crime is still crime.", "Nobody reports a 'reminder.' You're learning."] },
+        { label: "Triple-text the holdouts at midnight", sub: "Urgency + sleep deprivation. Aggressive.",
+          v: 6, h: 6, out: ["3 AM: 'FINAL NOTICE: package will be returned.' Panic taps at dawn.", "One recipient is a journalist. She's writing about 'the midnight package texts.' Great."] },
+        { label: "Call the tappers, pose as USPS support", sub: "Voice adds legitimacy. And pressure.",
+          v: 5, h: 5, out: ["'Hi, this is USPS support following up on your delivery.'", "Half of them hand over card numbers to 'verify the redelivery.' The other half hang up."] }
+      ] }
+  ],
+  defense: { title: "DEBRIEF — where you got sloppy", flags: [
+    { t: "CARRIERS DON'T TEXT YOU LINKS", p: "USPS, FedEx, UPS — they don't send 'missed delivery' texts with payment links out of nowhere. Track in the official app instead." },
+    { t: "THE FEE IS THE TELL", p: "A $1.50 'redelivery fee' isn't the scam — the card form behind it is. Real redelivery doesn't work like this." },
+    { t: "SHORT LINKS HIDE UGLY TRUTHS", p: "bit.ly and t.ly hide the real destination. If a stranger's text needs a disguised link, it doesn't deserve your tap." },
+    { t: "THE REPLY HOOK", p: "'Reply YES to confirm' just tells the scammer your number is live and human. Don't reply — block and report (forward to 7726)." },
+    { t: "MIDNIGHT URGENCY", p: "'FINAL NOTICE at 3 AM' is engineered panic. Real packages wait. Scams don't." }
+  ] }
+},
+{
+  id: "techsupport", title: "The Cold Call", tag: "SCAM 3/8 — TECH SUPPORT",
+  briefing: ["Nobody's computer sent you anything. But they'll believe it did.", "Mission: get inside their machine, then inside their wallet."],
+  nodes: [
+    { prompt: "You dial. They pick up. What's the hook?",
+      options: [
+        { label: "'Your computer sent us critical error reports'", sub: "Vague, technical, scary. Works on everyone over 50.",
+          v: 5, h: 4, out: ["'Ma'am, your PC reported 47 critical errors last night.' She gasps.", "You walk her to the Event Viewer — full of harmless warnings you call 'infections.' She's terrified. Perfect."] },
+        { label: "'This is Microsoft Security — your license expired'", sub: "Authority + deadline. The double tap.",
+          v: 7, h: 7, out: ["'Your Windows license expired, sir. Your computer will lock in 2 hours.'", "He's already asking where to pay. You haven't even asked for access yet. Amateurs panic; pros monetize panic."] },
+        { label: "'Your IP was flagged for illegal activity'", sub: "Fear of the law. Nobody asks questions when cops are implied.",
+          v: 6, h: 6,
+          closeCall: { text: "The 'victim' just said 'hold on, my son is a cop, let me get him.' You can hear footsteps. He's coming to the phone. What now?",
+            layLow: { label: "Lay low — hang up immediately", sub: "Abort. That number is burned.", v: -3, h: -6,
+              out: ["Click. Dial tone. You burn the number and the 'Microsoft' caller ID.", "The son finds nothing but a dead line. Close call — your palms are sweating."] },
+            push: { label: "Push through — double down with badge numbers", sub: "'I AM with the cyber crimes unit.' Commit to the bit.", v: 4, h: 6,
+              out: ["'Sir, I'm Agent Miller, badge 4471, cyber crimes.' The son pauses...", "...then laughs and says 'cool story, I'm tracing this call.' You hang up. Too late? Probably too late."] } } }
+      ] },
+    { prompt: "They're scared. How do you get inside the machine?",
+      options: [
+        { label: "Walk them to a remote-access tool", sub: "'Type this address, click download.' Now you're driving.",
+          v: 8, h: 6, out: ["You're moving their mouse. They're watching a stranger drive their computer and thanking you for it.", "Bank tabs open. Passwords saved in the browser. It's all just... there."] },
+        { label: "Have them read you their passwords", sub: "No software, no trace. Just trust.",
+          v: 4, h: 3, out: ["'Read me the password on the sticky note, ma'am.' She does.", "No malware, no logs, no evidence. Just a voice on the phone and a password in your notes."] },
+        { label: "Sell a $299 'lifetime protection plan'", sub: "The upsell. Recurring revenue from fear.",
+          v: 6, h: 5, out: ["'For $299 we'll monitor your PC forever.' They pay. There is no monitoring.", "One customer calls back monthly to 'check.' You just say 'all clear!' Best subscription business ever."] }
+      ] },
+    { prompt: "You're in. Time to get paid. What's the play?",
+      options: [
+        { label: "Gift cards — scratch and read the codes", sub: "Untraceable, irreversible, instant.",
+          v: 7, h: 7, out: ["'The repair is $400 — pay in Apple gift cards.' They drive to the store. They scratch. They read.", "Codes drained in 4 minutes. The 'technician' has left the building."] },
+        { label: "Wire transfer to 'secure your funds'", sub: "'Hackers are in your bank — move it here, quick!'",
+          v: 5, h: 7, out: ["'Your bank account is compromised — wire it to our secure holding account NOW.'", "The wire goes through. Wires don't come back. The bank's fraud team is now very interested in 'holding accounts.'"] },
+        { label: "Keep it small — one card, in and out", sub: "Modest theft. Minimal footprint.",
+          v: 3, h: 2, out: ["One $100 card. No drama, no reports, no heat.", "The crew calls you soft. The crew also isn't being investigated."] }
+      ] }
+  ],
+  defense: { title: "DEBRIEF — where you got sloppy", flags: [
+    { t: "NOBODY MONITORS YOUR PC", p: "Microsoft and Apple do not call you. Ever. 'Your computer sent us errors' is fiction — nobody is watching your home PC." },
+    { t: "THE EVENT VIEWER TRICK", p: "That scary list of 'errors' is normal Windows noise, present on every PC on earth. It's not evidence of anything." },
+    { t: "REMOTE ACCESS = GAME OVER", p: "The moment a stranger is moving your mouse, they've won. Never install remote-access tools at a caller's direction." },
+    { t: "GIFT CARDS = SCAM", p: "No legitimate tech support takes gift cards. That payment method alone is a confession." },
+    { t: "HANG UP, CALL BACK", p: "Worried? Hang up and call the company's real support number from their official site. This one habit kills the whole scam." }
+  ] }
+}
+];
+// [DATA-END]
+
+/* Free course module bodies (plaintext — also shipped as course/*.md) */
+const COURSES_FREE = [
+  { id: "course-01", title: "Spot the Phish: The 60-Second Email Check", body:
+"Phishing = a fake email (or site) that harvests your login. The 'account locked' email is the most common lure on earth.\n\nTHE 60-SECOND CHECK\n1. Sender address. Not the display name — the ADDRESS. security@yourbank-secure.com is not your bank.\n2. The greeting. 'Dear Customer' = mass blast. Your bank knows your name.\n3. Urgency. 'Locked in 24 hours!' Panic is the point — it stops you from checking #1.\n4. The link. Hover (don't click). Does it go to the real domain?\n5. The ask. Banks never ask for passwords, PINs, or full SSNs by email. Ever.\n\nTHE ONE HABIT\nNever log in from an email link. Open the app or type the address yourself. This single habit defeats nearly all phishing.\n\nIF YOU CLICKED\nChange that password immediately (and anywhere you reused it). Turn on app-based 2FA. Watch the account for a week." },
+  { id: "course-02", title: "Smishing Basics: Don't Trust the Text", body:
+"Smishing = phishing by text message. 'Missed package,' 'bank alert,' 'toll due' — all designed to make you tap a link.\n\nTHE TELLS\n- Links from strangers, especially shortened ones (bit.ly, t.ly).\n- The fee trap: 'Pay $1.50 redelivery fee' — the fee isn't the scam, the card form is.\n- 'Reply YES to confirm' — confirms your number is live and human.\n- Codes you didn't ask for = someone logging in AS YOU right now.\n\nTHE RULES\n- Don't tap links in unexpected texts. Open the official app instead.\n- Don't reply to scam texts (not even STOP). Block and report: forward to 7726 (SPAM).\n- Your bank's real alerts never ask for passwords or full card numbers by text.\n\nIF YOU TAPPED\nEntered card details? Call your bank now and replace the card. Entered a password? Change it everywhere you reused it." },
+  { id: "course-03", title: "Tech Support Calls: Hang Up", body:
+"The scam: someone calls claiming to be Microsoft/Apple/your 'security team.' Your computer sent 'error reports.' They'll 'fix' it — if you give them access and pay.\n\nTHE SCRIPT\n1. The hook: 'Your PC is infected / your license expired.'\n2. The proof: Windows Event Viewer (harmless warnings) presented as 'viruses.'\n3. The access: 'Install this remote tool.' Now they're inside.\n4. The payment: gift cards, wire, or fake 'refund' overpayment.\n\nTHE TRUTH\n- Nobody monitors your home PC. Microsoft and Apple do not call you. Ever.\n- Real support never cold-calls, never demands remote access, never takes gift cards.\n\nTHE RULE\nHang up. If worried, call the company's real support number yourself — from their official site, not the caller.\n\nIF YOU GAVE ACCESS\nDisconnect from the internet, get the machine professionally cleaned, and change every password you typed since — from a clean device." }
+];
+
+/* Encrypted premium pack (ciphertext). Written by `tools/keygen.py build-pack`.
+   Without a valid license key this is random bytes — the game cannot read it. */
+const PREMIUM_PACK_B64 = /*__PREMIUM_PACK__*/ "";
+
+/* ---------------- 3b. ED25519 (vendored) ----------------
+   Verify-only subset of TweetNaCl (public domain).
+   Used for: nacl.sign.detached.verify (license signatures). */
+(function(nacl) {
+'use strict';
+// Ed25519 verify-only subset of TweetNaCl (public domain) - nacl.sign.detached.verify path only.
+var u64 = function(h, l) { this.hi = h|0 >>> 0; this.lo = l|0 >>> 0; };
+var gf = function(init) {
+  var i, r = new Float64Array(16);
+  if (init) for (i = 0; i < init.length; i++) r[i] = init[i];
+  return r;
+};
+
+//  Pluggable, initialized in high-level API below.
+var randombytes = function(/* x, n */) { throw new Error('no PRNG'); };
+
+var _0 = new Uint8Array(16);
+var _9 = new Uint8Array(32); _9[0] = 9;
+
+var gf0 = gf(),
+    gf1 = gf([1]),
+    _121665 = gf([0xdb41, 1]),
+    D = gf([0x78a3, 0x1359, 0x4dca, 0x75eb, 0xd8ab, 0x4141, 0x0a4d, 0x0070, 0xe898, 0x7779, 0x4079, 0x8cc7, 0xfe73, 0x2b6f, 0x6cee, 0x5203]),
+    D2 = gf([0xf159, 0x26b2, 0x9b94, 0xebd6, 0xb156, 0x8283, 0x149a, 0x00e0, 0xd130, 0xeef3, 0x80f2, 0x198e, 0xfce7, 0x56df, 0xd9dc, 0x2406]),
+    X = gf([0xd51a, 0x8f25, 0x2d60, 0xc956, 0xa7b2, 0x9525, 0xc760, 0x692c, 0xdc5c, 0xfdd6, 0xe231, 0xc0a4, 0x53fe, 0xcd6e, 0x36d3, 0x2169]),
+    Y = gf([0x6658, 0x6666, 0x6666, 0x6666, 0x6666, 0x6666, 0x6666, 0x6666, 0x6666, 0x6666, 0x6666, 0x6666, 0x6666, 0x6666, 0x6666, 0x6666]),
+    I = gf([0xa0b0, 0x4a0e, 0x1b27, 0xc4ee, 0xe478, 0xad2f, 0x1806, 0x2f43, 0xd7a7, 0x3dfb, 0x0099, 0x2b4d, 0xdf0b, 0x4fc1, 0x2480, 0x2b83]);
+
+function L32(x, c) { return (x << c) | (x >>> (32 - c)); }
+
+function ld32(x, i) {
+  var u = x[i+3] & 0xff;
+  u = (u<<8)|(x[i+2] & 0xff);
+  u = (u<<8)|(x[i+1] & 0xff);
+  return (u<<8)|(x[i+0] & 0xff);
+}
+
+function dl64(x, i) {
+  var h = (x[i] << 24) | (x[i+1] << 16) | (x[i+2] << 8) | x[i+3];
+  var l = (x[i+4] << 24) | (x[i+5] << 16) | (x[i+6] << 8) | x[i+7];
+  return new u64(h, l);
+}
+
+function st32(x, j, u) {
+  var i;
+  for (i = 0; i < 4; i++) { x[j+i] = u & 255; u >>>= 8; }
+}
+
+function ts64(x, i, u) {
+  x[i]   = (u.hi >> 24) & 0xff;
+  x[i+1] = (u.hi >> 16) & 0xff;
+  x[i+2] = (u.hi >>  8) & 0xff;
+  x[i+3] = u.hi & 0xff;
+  x[i+4] = (u.lo >> 24)  & 0xff;
+  x[i+5] = (u.lo >> 16)  & 0xff;
+  x[i+6] = (u.lo >>  8)  & 0xff;
+  x[i+7] = u.lo & 0xff;
+}
+
+function vn(x, xi, y, yi, n) {
+  var i,d = 0;
+  for (i = 0; i < n; i++) d |= x[xi+i]^y[yi+i];
+  return (1 & ((d - 1) >>> 8)) - 1;
+}
+
+function crypto_verify_16(x, xi, y, yi) {
+  return vn(x,xi,y,yi,16);
+}
+
+function crypto_verify_32(x, xi, y, yi) {
+  return vn(x,xi,y,yi,32);
+}
+
+function set25519(r, a) {
+  var i;
+  for (i = 0; i < 16; i++) r[i] = a[i]|0;
+}
+
+function car25519(o) {
+  var c;
+  var i;
+  for (i = 0; i < 16; i++) {
+      o[i] += 65536;
+      c = Math.floor(o[i] / 65536);
+      o[(i+1)*(i<15?1:0)] += c - 1 + 37 * (c-1) * (i===15?1:0);
+      o[i] -= (c * 65536);
+  }
+}
+
+function sel25519(p, q, b) {
+  var t, c = ~(b-1);
+  for (var i = 0; i < 16; i++) {
+    t = c & (p[i] ^ q[i]);
+    p[i] ^= t;
+    q[i] ^= t;
+  }
+}
+
+function pack25519(o, n) {
+  var i, j, b;
+  var m = gf(), t = gf();
+  for (i = 0; i < 16; i++) t[i] = n[i];
+  car25519(t);
+  car25519(t);
+  car25519(t);
+  for (j = 0; j < 2; j++) {
+    m[0] = t[0] - 0xffed;
+    for (i = 1; i < 15; i++) {
+      m[i] = t[i] - 0xffff - ((m[i-1]>>16) & 1);
+      m[i-1] &= 0xffff;
+    }
+    m[15] = t[15] - 0x7fff - ((m[14]>>16) & 1);
+    b = (m[15]>>16) & 1;
+    m[14] &= 0xffff;
+    sel25519(t, m, 1-b);
+  }
+  for (i = 0; i < 16; i++) {
+    o[2*i] = t[i] & 0xff;
+    o[2*i+1] = t[i]>>8;
+  }
+}
+
+function neq25519(a, b) {
+  var c = new Uint8Array(32), d = new Uint8Array(32);
+  pack25519(c, a);
+  pack25519(d, b);
+  return crypto_verify_32(c, 0, d, 0);
+}
+
+function par25519(a) {
+  var d = new Uint8Array(32);
+  pack25519(d, a);
+  return d[0] & 1;
+}
+
+function unpack25519(o, n) {
+  var i;
+  for (i = 0; i < 16; i++) o[i] = n[2*i] + (n[2*i+1] << 8);
+  o[15] &= 0x7fff;
+}
+
+function A(o, a, b) {
+  var i;
+  for (i = 0; i < 16; i++) o[i] = (a[i] + b[i])|0;
+}
+
+function Z(o, a, b) {
+  var i;
+  for (i = 0; i < 16; i++) o[i] = (a[i] - b[i])|0;
+}
+
+function M(o, a, b) {
+  var i, j, t = new Float64Array(31);
+  for (i = 0; i < 31; i++) t[i] = 0;
+  for (i = 0; i < 16; i++) {
+    for (j = 0; j < 16; j++) {
+      t[i+j] += a[i] * b[j];
+    }
+  }
+  for (i = 0; i < 15; i++) {
+    t[i] += 38 * t[i+16];
+  }
+  for (i = 0; i < 16; i++) o[i] = t[i];
+  car25519(o);
+  car25519(o);
+}
+
+function S(o, a) {
+  M(o, a, a);
+}
+
+function inv25519(o, i) {
+  var c = gf();
+  var a;
+  for (a = 0; a < 16; a++) c[a] = i[a];
+  for (a = 253; a >= 0; a--) {
+    S(c, c);
+    if(a !== 2 && a !== 4) M(c, c, i);
+  }
+  for (a = 0; a < 16; a++) o[a] = c[a];
+}
+
+function pow2523(o, i) {
+  var c = gf();
+  var a;
+  for (a = 0; a < 16; a++) c[a] = i[a];
+  for (a = 250; a >= 0; a--) {
+      S(c, c);
+      if(a !== 1) M(c, c, i);
+  }
+  for (a = 0; a < 16; a++) o[a] = c[a];
+}
+
+function add64() {
+  var a = 0, b = 0, c = 0, d = 0, m16 = 65535, l, h, i;
+  for (i = 0; i < arguments.length; i++) {
+    l = arguments[i].lo;
+    h = arguments[i].hi;
+    a += (l & m16); b += (l >>> 16);
+    c += (h & m16); d += (h >>> 16);
+  }
+
+  b += (a >>> 16);
+  c += (b >>> 16);
+  d += (c >>> 16);
+
+  return new u64((c & m16) | (d << 16), (a & m16) | (b << 16));
+}
+
+function shr64(x, c) {
+  return new u64((x.hi >>> c), (x.lo >>> c) | (x.hi << (32 - c)));
+}
+
+function xor64() {
+  var l = 0, h = 0, i;
+  for (i = 0; i < arguments.length; i++) {
+    l ^= arguments[i].lo;
+    h ^= arguments[i].hi;
+  }
+  return new u64(h, l);
+}
+
+function R(x, c) {
+  var h, l, c1 = 32 - c;
+  if (c < 32) {
+    h = (x.hi >>> c) | (x.lo << c1);
+    l = (x.lo >>> c) | (x.hi << c1);
+  } else if (c < 64) {
+    h = (x.lo >>> c) | (x.hi << c1);
+    l = (x.hi >>> c) | (x.lo << c1);
+  }
+  return new u64(h, l);
+}
+
+function Ch(x, y, z) {
+  var h = (x.hi & y.hi) ^ (~x.hi & z.hi),
+      l = (x.lo & y.lo) ^ (~x.lo & z.lo);
+  return new u64(h, l);
+}
+
+function Maj(x, y, z) {
+  var h = (x.hi & y.hi) ^ (x.hi & z.hi) ^ (y.hi & z.hi),
+      l = (x.lo & y.lo) ^ (x.lo & z.lo) ^ (y.lo & z.lo);
+  return new u64(h, l);
+}
+
+function Sigma0(x) { return xor64(R(x,28), R(x,34), R(x,39)); }
+function Sigma1(x) { return xor64(R(x,14), R(x,18), R(x,41)); }
+function sigma0(x) { return xor64(R(x, 1), R(x, 8), shr64(x,7)); }
+function sigma1(x) { return xor64(R(x,19), R(x,61), shr64(x,6)); }
+
+var K = [
+  new u64(0x428a2f98, 0xd728ae22), new u64(0x71374491, 0x23ef65cd),
+  new u64(0xb5c0fbcf, 0xec4d3b2f), new u64(0xe9b5dba5, 0x8189dbbc),
+  new u64(0x3956c25b, 0xf348b538), new u64(0x59f111f1, 0xb605d019),
+  new u64(0x923f82a4, 0xaf194f9b), new u64(0xab1c5ed5, 0xda6d8118),
+  new u64(0xd807aa98, 0xa3030242), new u64(0x12835b01, 0x45706fbe),
+  new u64(0x243185be, 0x4ee4b28c), new u64(0x550c7dc3, 0xd5ffb4e2),
+  new u64(0x72be5d74, 0xf27b896f), new u64(0x80deb1fe, 0x3b1696b1),
+  new u64(0x9bdc06a7, 0x25c71235), new u64(0xc19bf174, 0xcf692694),
+  new u64(0xe49b69c1, 0x9ef14ad2), new u64(0xefbe4786, 0x384f25e3),
+  new u64(0x0fc19dc6, 0x8b8cd5b5), new u64(0x240ca1cc, 0x77ac9c65),
+  new u64(0x2de92c6f, 0x592b0275), new u64(0x4a7484aa, 0x6ea6e483),
+  new u64(0x5cb0a9dc, 0xbd41fbd4), new u64(0x76f988da, 0x831153b5),
+  new u64(0x983e5152, 0xee66dfab), new u64(0xa831c66d, 0x2db43210),
+  new u64(0xb00327c8, 0x98fb213f), new u64(0xbf597fc7, 0xbeef0ee4),
+  new u64(0xc6e00bf3, 0x3da88fc2), new u64(0xd5a79147, 0x930aa725),
+  new u64(0x06ca6351, 0xe003826f), new u64(0x14292967, 0x0a0e6e70),
+  new u64(0x27b70a85, 0x46d22ffc), new u64(0x2e1b2138, 0x5c26c926),
+  new u64(0x4d2c6dfc, 0x5ac42aed), new u64(0x53380d13, 0x9d95b3df),
+  new u64(0x650a7354, 0x8baf63de), new u64(0x766a0abb, 0x3c77b2a8),
+  new u64(0x81c2c92e, 0x47edaee6), new u64(0x92722c85, 0x1482353b),
+  new u64(0xa2bfe8a1, 0x4cf10364), new u64(0xa81a664b, 0xbc423001),
+  new u64(0xc24b8b70, 0xd0f89791), new u64(0xc76c51a3, 0x0654be30),
+  new u64(0xd192e819, 0xd6ef5218), new u64(0xd6990624, 0x5565a910),
+  new u64(0xf40e3585, 0x5771202a), new u64(0x106aa070, 0x32bbd1b8),
+  new u64(0x19a4c116, 0xb8d2d0c8), new u64(0x1e376c08, 0x5141ab53),
+  new u64(0x2748774c, 0xdf8eeb99), new u64(0x34b0bcb5, 0xe19b48a8),
+  new u64(0x391c0cb3, 0xc5c95a63), new u64(0x4ed8aa4a, 0xe3418acb),
+  new u64(0x5b9cca4f, 0x7763e373), new u64(0x682e6ff3, 0xd6b2b8a3),
+  new u64(0x748f82ee, 0x5defb2fc), new u64(0x78a5636f, 0x43172f60),
+  new u64(0x84c87814, 0xa1f0ab72), new u64(0x8cc70208, 0x1a6439ec),
+  new u64(0x90befffa, 0x23631e28), new u64(0xa4506ceb, 0xde82bde9),
+  new u64(0xbef9a3f7, 0xb2c67915), new u64(0xc67178f2, 0xe372532b),
+  new u64(0xca273ece, 0xea26619c), new u64(0xd186b8c7, 0x21c0c207),
+  new u64(0xeada7dd6, 0xcde0eb1e), new u64(0xf57d4f7f, 0xee6ed178),
+  new u64(0x06f067aa, 0x72176fba), new u64(0x0a637dc5, 0xa2c898a6),
+  new u64(0x113f9804, 0xbef90dae), new u64(0x1b710b35, 0x131c471b),
+  new u64(0x28db77f5, 0x23047d84), new u64(0x32caab7b, 0x40c72493),
+  new u64(0x3c9ebe0a, 0x15c9bebc), new u64(0x431d67c4, 0x9c100d4c),
+  new u64(0x4cc5d4be, 0xcb3e42b6), new u64(0x597f299c, 0xfc657e2a),
+  new u64(0x5fcb6fab, 0x3ad6faec), new u64(0x6c44198c, 0x4a475817)
+];
+
+function crypto_hashblocks(x, m, n) {
+  var z = [], b = [], a = [], w = [], t, i, j;
+
+  for (i = 0; i < 8; i++) z[i] = a[i] = dl64(x, 8*i);
+
+  var pos = 0;
+  while (n >= 128) {
+    for (i = 0; i < 16; i++) w[i] = dl64(m, 8*i+pos);
+    for (i = 0; i < 80; i++) {
+      for (j = 0; j < 8; j++) b[j] = a[j];
+      t = add64(a[7], Sigma1(a[4]), Ch(a[4], a[5], a[6]), K[i], w[i%16]);
+      b[7] = add64(t, Sigma0(a[0]), Maj(a[0], a[1], a[2]));
+      b[3] = add64(b[3], t);
+      for (j = 0; j < 8; j++) a[(j+1)%8] = b[j];
+      if (i%16 === 15) {
+        for (j = 0; j < 16; j++) {
+          w[j] = add64(w[j], w[(j+9)%16], sigma0(w[(j+1)%16]), sigma1(w[(j+14)%16]));
+        }
+      }
+    }
+
+    for (i = 0; i < 8; i++) {
+      a[i] = add64(a[i], z[i]);
+      z[i] = a[i];
+    }
+
+    pos += 128;
+    n -= 128;
+  }
+
+  for (i = 0; i < 8; i++) ts64(x, 8*i, z[i]);
+  return n;
+}
+
+var iv = new Uint8Array([
+  0x6a,0x09,0xe6,0x67,0xf3,0xbc,0xc9,0x08,
+  0xbb,0x67,0xae,0x85,0x84,0xca,0xa7,0x3b,
+  0x3c,0x6e,0xf3,0x72,0xfe,0x94,0xf8,0x2b,
+  0xa5,0x4f,0xf5,0x3a,0x5f,0x1d,0x36,0xf1,
+  0x51,0x0e,0x52,0x7f,0xad,0xe6,0x82,0xd1,
+  0x9b,0x05,0x68,0x8c,0x2b,0x3e,0x6c,0x1f,
+  0x1f,0x83,0xd9,0xab,0xfb,0x41,0xbd,0x6b,
+  0x5b,0xe0,0xcd,0x19,0x13,0x7e,0x21,0x79
+]);
+
+function crypto_hash(out, m, n) {
+  var h = new Uint8Array(64), x = new Uint8Array(256);
+  var i, b = n;
+
+  for (i = 0; i < 64; i++) h[i] = iv[i];
+
+  crypto_hashblocks(h, m, n);
+  n %= 128;
+
+  for (i = 0; i < 256; i++) x[i] = 0;
+  for (i = 0; i < n; i++) x[i] = m[b-n+i];
+  x[n] = 128;
+
+  n = 256-128*(n<112?1:0);
+  x[n-9] = 0;
+  ts64(x, n-8, new u64((b / 0x20000000) | 0, b << 3));
+  crypto_hashblocks(h, x, n);
+
+  for (i = 0; i < 64; i++) out[i] = h[i];
+
+  return 0;
+}
+function add(p, q) {
+  var a = gf(), b = gf(), c = gf(),
+      d = gf(), e = gf(), f = gf(),
+      g = gf(), h = gf(), t = gf();
+
+  Z(a, p[1], p[0]);
+  Z(t, q[1], q[0]);
+  M(a, a, t);
+  A(b, p[0], p[1]);
+  A(t, q[0], q[1]);
+  M(b, b, t);
+  M(c, p[3], q[3]);
+  M(c, c, D2);
+  M(d, p[2], q[2]);
+  A(d, d, d);
+  Z(e, b, a);
+  Z(f, d, c);
+  A(g, d, c);
+  A(h, b, a);
+
+  M(p[0], e, f);
+  M(p[1], h, g);
+  M(p[2], g, f);
+  M(p[3], e, h);
+}
+
+function cswap(p, q, b) {
+  var i;
+  for (i = 0; i < 4; i++) {
+    sel25519(p[i], q[i], b);
+  }
+}
+
+function pack(r, p) {
+  var tx = gf(), ty = gf(), zi = gf();
+  inv25519(zi, p[2]);
+  M(tx, p[0], zi);
+  M(ty, p[1], zi);
+  pack25519(r, ty);
+  r[31] ^= par25519(tx) << 7;
+}
+
+function scalarmult(p, q, s) {
+  var b, i;
+  set25519(p[0], gf0);
+  set25519(p[1], gf1);
+  set25519(p[2], gf1);
+  set25519(p[3], gf0);
+  for (i = 255; i >= 0; --i) {
+    b = (s[(i/8)|0] >> (i&7)) & 1;
+    cswap(p, q, b);
+    add(q, p);
+    add(p, p);
+    cswap(p, q, b);
+  }
+}
+
+function scalarbase(p, s) {
+  var q = [gf(), gf(), gf(), gf()];
+  set25519(q[0], X);
+  set25519(q[1], Y);
+  set25519(q[2], gf1);
+  M(q[3], X, Y);
+  scalarmult(p, q, s);
+}
+
+var L = new Float64Array([0xed, 0xd3, 0xf5, 0x5c, 0x1a, 0x63, 0x12, 0x58, 0xd6, 0x9c, 0xf7, 0xa2, 0xde, 0xf9, 0xde, 0x14, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x10]);
+function modL(r, x) {
+  var carry, i, j, k;
+  for (i = 63; i >= 32; --i) {
+    carry = 0;
+    for (j = i - 32, k = i - 12; j < k; ++j) {
+      x[j] += carry - 16 * x[i] * L[j - (i - 32)];
+      carry = Math.floor((x[j] + 128) / 256);
+      x[j] -= carry * 256;
+    }
+    x[j] += carry;
+    x[i] = 0;
+  }
+  carry = 0;
+  for (j = 0; j < 32; j++) {
+    x[j] += carry - (x[31] >> 4) * L[j];
+    carry = x[j] >> 8;
+    x[j] &= 255;
+  }
+  for (j = 0; j < 32; j++) x[j] -= carry * L[j];
+  for (i = 0; i < 32; i++) {
+    x[i+1] += x[i] >> 8;
+    r[i] = x[i] & 255;
+  }
+}
+
+function reduce(r) {
+  var x = new Float64Array(64), i;
+  for (i = 0; i < 64; i++) x[i] = r[i];
+  for (i = 0; i < 64; i++) r[i] = 0;
+  modL(r, x);
+}
+
+// Note: difference from C - smlen returned, not passed as argument.
+function unpackneg(r, p) {
+  var t = gf(), chk = gf(), num = gf(),
+      den = gf(), den2 = gf(), den4 = gf(),
+      den6 = gf();
+
+  set25519(r[2], gf1);
+  unpack25519(r[1], p);
+  S(num, r[1]);
+  M(den, num, D);
+  Z(num, num, r[2]);
+  A(den, r[2], den);
+
+  S(den2, den);
+  S(den4, den2);
+  M(den6, den4, den2);
+  M(t, den6, num);
+  M(t, t, den);
+
+  pow2523(t, t);
+  M(t, t, num);
+  M(t, t, den);
+  M(t, t, den);
+  M(r[0], t, den);
+
+  S(chk, r[0]);
+  M(chk, chk, den);
+  if (neq25519(chk, num)) M(r[0], r[0], I);
+
+  S(chk, r[0]);
+  M(chk, chk, den);
+  if (neq25519(chk, num)) return -1;
+
+  if (par25519(r[0]) === (p[31]>>7)) Z(r[0], gf0, r[0]);
+
+  M(r[3], r[0], r[1]);
+  return 0;
+}
+
+function crypto_sign_open(m, sm, n, pk) {
+  var i;
+  var t = new Uint8Array(32), h = new Uint8Array(64);
+  var p = [gf(), gf(), gf(), gf()],
+      q = [gf(), gf(), gf(), gf()];
+
+  if (n < 64) return -1;
+
+  if (unpackneg(q, pk)) return -1;
+
+  for (i = 0; i < n; i++) m[i] = sm[i];
+  for (i = 0; i < 32; i++) m[i+32] = pk[i];
+  crypto_hash(h, m, n);
+  reduce(h);
+  scalarmult(p, q, h);
+
+  scalarbase(q, sm.subarray(32));
+  add(p, q);
+  pack(t, p);
+
+  n -= 64;
+  if (crypto_verify_32(sm, 0, t, 0)) {
+    for (i = 0; i < n; i++) m[i] = 0;
+    return -1;
+  }
+
+  for (i = 0; i < n; i++) m[i] = sm[i + 64];
+  return n;
+}
+
+nacl.sign = {};
+nacl.sign.detached = {};
+nacl.sign.detached.verify = function(msg, sig, publicKey) {
+  if (!(msg instanceof Uint8Array) || !(sig instanceof Uint8Array) || !(publicKey instanceof Uint8Array))
+    throw new Error('bad input type');
+  if (sig.length !== 64) throw new Error('bad signature size');
+  if (publicKey.length !== 32) throw new Error('bad public key size');
+  var sm = new Uint8Array(64 + msg.length);
+  var m = new Uint8Array(64 + msg.length);
+  var i;
+  for (i = 0; i < 64; i++) sm[i] = sig[i];
+  for (i = 0; i < msg.length; i++) sm[i+64] = msg[i];
+  return (crypto_sign_open(m, sm, sm.length, publicKey) >= 0);
+};
+})(typeof module !== 'undefined' && module.exports ? module.exports : (self.nacl = self.nacl || {}));
+
+/*__LICENSE_BEGIN__*/
+/* ---------------- 4. LICENSE ----------------
+   Offline license validation + premium-pack decryption.
+   Crypto: Ed25519 (vendored TweetNaCl) for the signature,
+   WebCrypto HKDF-SHA256 + AES-256-GCM for the key wrap/pack.
+   License keys are never logged, never put in URLs.          */
+const License = (() => {
+  /** Decode standard base64 to bytes. Throws on garbage. */
+  function b64ToBytes(s) {
+    const bin = atob(s);
+    const out = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+    return out;
+  }
+  /** Decode hex string to bytes. Throws on garbage. */
+  function hexToBytes(h) {
+    if (typeof h !== "string" || !/^[0-9a-fA-F]+$/.test(h) || h.length % 2 !== 0 || h.length !== 64)
+      throw new Error("bad public key");
+    const out = new Uint8Array(h.length / 2);
+    for (let i = 0; i < out.length; i++) out[i] = parseInt(h.substr(i * 2, 2), 16);
+    return out;
+  }
+  function te(s) { return new TextEncoder().encode(s); }
+
+  /** Parse + shape-check a license key string. Returns the license object. */
+  function parseLicense(str) {
+    const clean = (str || "").trim().replace(/\s+/g, "");
+    if (!clean) throw new Error("Paste a license key first.");
+    let obj;
+    try { obj = JSON.parse(new TextDecoder().decode(b64ToBytes(clean))); }
+    catch (e) { throw new Error("That key is garbled — check for typos and try again."); }
+    for (const k of ["id", "tier", "expiry", "S", "wrapped_Kc", "sig"])
+      if (typeof obj[k] === "undefined") throw new Error("That key is missing fields.");
+    return obj;
+  }
+
+  /** Canonical signed bytes. MUST match keygen.py canonical_fields() byte-for-byte. */
+  function canonicalFields(lic) {
+    return JSON.stringify({ id: lic.id, tier: lic.tier, expiry: lic.expiry, S: lic.S, wrapped_Kc: lic.wrapped_Kc });
+  }
+
+  function webCrypto() {
+    if (typeof crypto === "undefined" || !crypto.subtle)
+      throw new Error("WebCrypto is unavailable here — premium unlock needs it.");
+    return crypto.subtle;
+  }
+
+  /**
+   * Verify a license key's Ed25519 signature + tier + expiry.
+   * Returns {tier, expiry, S, wrappedKc}. Never logs the key.
+   */
+  async function verifyLicense(licenseStr, pubkeyHex) {
+    if (!pubkeyHex || pubkeyHex.indexOf("REPLACE_WITH") === 0)
+      throw new Error("This build isn't linked to licensing yet.");
+    const lic = parseLicense(licenseStr);
+    if (lic.tier !== "premium") throw new Error("That isn't a premium license.");
+    const msg = te(canonicalFields(lic));
+    const sig = b64ToBytes(lic.sig);
+    const pk = hexToBytes(pubkeyHex);
+    let ok = false;
+    try { ok = nacl.sign.detached.verify(msg, sig, pk); }
+    catch (e) { throw new Error("Signature check failed — that key isn't genuine."); }
+    if (!ok) throw new Error("Signature check failed — that key isn't genuine.");
+    if (typeof lic.expiry !== "number" || lic.expiry * 1000 <= Date.now())
+      throw new Error("This license has expired.");
+    return { tier: lic.tier, expiry: lic.expiry, S: b64ToBytes(lic.S), wrappedKc: b64ToBytes(lic.wrapped_Kc) };
+  }
+
+  /** HKDF-SHA256(S, info) -> Kw, then AES-GCM-unwrap Kc. */
+  async function unwrapKc(S, wrappedKc) {
+    const subtle = webCrypto();
+    const kwBits = await subtle.deriveBits(
+      { name: "HKDF", hash: "SHA-256", salt: new Uint8Array(0), info: te(CONFIG.WRAP_INFO) },
+      await subtle.importKey("raw", S, "HKDF", false, ["deriveBits"]),
+      256);
+    const kw = await subtle.importKey("raw", kwBits, "AES-GCM", false, ["decrypt"]);
+    const iv = wrappedKc.slice(0, 12), ct = wrappedKc.slice(12);
+    try {
+      return new Uint8Array(await subtle.decrypt({ name: "AES-GCM", iv: iv }, kw, ct));
+    } catch (e) { throw new Error("License unwrap failed — the key is damaged or tampered."); }
+  }
+
+  /** AES-GCM-decrypt the premium pack blob with Kc. Returns the pack object. */
+  async function decryptPack(packB64, Kc) {
+    const subtle = webCrypto();
+    if (!packB64) throw new Error("This build has no premium pack yet.");
+    const blob = b64ToBytes(packB64.replace(/\s+/g, ""));
+    const iv = blob.slice(0, 12), ct = blob.slice(12);
+    const key = await subtle.importKey("raw", Kc, "AES-GCM", false, ["decrypt"]);
+    let pt;
+    try { pt = await subtle.decrypt({ name: "AES-GCM", iv: iv }, key, ct); }
+    catch (e) { throw new Error("Premium pack failed to decrypt — tampered or wrong key."); }
+    try { return JSON.parse(new TextDecoder().decode(pt)); }
+    catch (e) { throw new Error("Premium pack is corrupt."); }
+  }
+
+  return { parseLicense, canonicalFields, verifyLicense, unwrapKc, decryptPack, b64ToBytes, hexToBytes };
+})();
+/*__LICENSE_END__*/
+
+/* ---------------- 6. UI ----------------
+   Rendering + input, screen by screen. All game text lives
+   in DATA (section 3) or the premium pack — never here.    */
+const app = () => document.getElementById("app");
+const hud = () => document.getElementById("hud");
+
+function setFooter() {
+  document.getElementById("footer").innerHTML =
+    "<b>HackProof — defensive education.</b> You play the villain to learn how to beat him. " +
+    "The defense briefs are the point: every tactic in this game is a real scam pattern, " +
+    "and every debrief teaches you how to spot it.<br>" +
+    "Don't be the scammer. Beat the scammer.<br><br>" +
+    "&copy; 2026 JesusTheHacker / Sentinel Safeguard LLC. All rights reserved.";
+}
+
+/** Animated floating popup (+N victims, +N heat, streaks). */
+function popup(text, cls) {
+  const d = document.createElement("div");
+  d.className = "popup " + cls;
+  d.textContent = text;
+  document.body.appendChild(d);
+  requestAnimationFrame(() => d.classList.add("show"));
+  setTimeout(() => d.remove(), 1200);
+}
+
+/** HUD: victims pill, streak, heat meter. Shown during a run. */
+function renderHUD() {
+  const r = S.run;
+  if (!r) { hud().innerHTML = ""; return; }
+  const pct = Math.min(100, Math.round(r.heat / CONFIG.HEAT_MAX * 100));
+  hud().innerHTML =
+    '<div class="hud-row"><div class="pill">😈 <span class="n">' + r.victims + '</span> victims</div>' +
+    (r.streak >= 2 ? '<div class="pill">🔥 x' + r.streak + '</div>' : '') +
+    '<div class="pill">🌡️ ' + r.heat + '</div></div>' +
+    '<div class="heatbar' + (r.heat >= CONFIG.HEAT_WARN_2 ? " danger" : "") + '">' +
+    '<div class="heatfill" style="width:' + pct + '%"></div></div>' +
+    '<div class="heatlabel"><span>HEAT</span><span>BUSTED AT ' + CONFIG.HEAT_MAX + '</span></div>';
+}
+
+/* ---------- title ---------- */
+function renderTitle() {
+  S.run = null; renderHUD();
+  const scenRows = CONTENT_MANIFEST.filter(e => e.type === "scenario")
+    .sort((a, b) => a.order - b.order).map(m => {
+      const locked = !isUnlocked(m.id);
+      return '<div class="lockrow' + (locked ? " locked" : "") + '" onclick="uiScenRow(\'' + m.id + '\')">' +
+        "<span>" + (m.order + 1) + ". " + m.title + "</span>" +
+        '<span class="lk">' + (locked ? "🔒" : "▶") + "</span></div>";
+    }).join("");
+  const courseRows = CONTENT_MANIFEST.filter(e => e.type === "course")
+    .sort((a, b) => a.order - b.order).map(m => {
+      const locked = !isUnlocked(m.id);
+      return '<div class="lockrow' + (locked ? " locked" : "") + '" onclick="uiCourseRow(\'' + m.id + '\')">' +
+        "<span>" + m.title + "</span>" +
+        '<span class="lk">' + (locked ? "🔒" : "📖") + "</span></div>";
+    }).join("");
+  const licBox = S.licenseOk
+    ? '<div class="okbox">✅ <b>PREMIUM ACTIVE</b> — expires ' +
+      new Date(S.license.expiry * 1000).toLocaleDateString() + '. All 8 scams + 16 field-manual modules unlocked.</div>' +
+      '<button class="btn ghost" onclick="uiRemoveLicense()">Remove license from this device</button>'
+    : '<div class="card"><div class="tag">LICENSE KEY</div>' +
+      '<div class="brief">Got a premium key? Paste it below. Your key <b>decrypts</b> the premium content — without it, it\'s just noise. Guard it like a password.</div>' +
+      '<div class="mt"><textarea class="keybox" id="keyinput" placeholder="Paste license key here..."></textarea></div>' +
+      '<label class="checkrow"><input type="checkbox" id="remember"> <span>Remember on this device (stored only in this browser — uncheck to keep this session only)</span></label>' +
+      '<button class="btn primary" onclick="uiUnlock()">UNLOCK PREMIUM</button>' +
+      (S.licenseMsg ? '<div class="' + (S.licenseOk ? "okbox" : "warn") + '">' + S.licenseMsg + "</div>" : "") +
+      '<div class="center"><a href="buy.html" style="color:var(--purple-l)">Don\'t have a key? Get premium — $5 in BTC →</a></div></div>';
+
+  app().innerHTML =
+    '<div class="center"><h1>YOU ARE THE<br><span class="p">SCAMMER</span> 🥷</h1></div>' +
+    '<div class="banner"><b>DEFENSIVE TRAINING.</b> You play the villain to learn how to beat him. ' +
+    "Every scam you run ends with a debrief on exactly how your victims could have spotted you. " +
+    "That's the point. <b>Don't be the scammer. Beat the scammer.</b></div>" +
+    '<button class="btn primary" onclick="uiStart()">▶ START RUN</button>' +
+    '<div class="card"><div class="tag">THE 8 SCAMS</div>' + scenRows + "</div>" +
+    '<div class="card"><div class="tag">FIELD MANUAL — DEFENSE COURSE</div>' + courseRows + "</div>" +
+    licBox;
+}
+
+function uiScenRow(id) { if (isUnlocked(id)) uiStart(); else renderUpgrade(); }
+function uiCourseRow(id) { if (isUnlocked(id)) renderModule(id); else renderUpgrade(); }
+
+/* ---------- run flow ---------- */
+function uiStart() {
+  S.run = newRun();
+  const scs = getRunScenarios();
+  if (!scs.length) { renderUpgrade(); return; }
+  renderBriefing();
+}
+
+function curScenario() { return getRunScenarios()[S.run.scIdx]; }
+
+function renderBriefing() {
+  renderHUD();
+  const sc = curScenario();
+  app().innerHTML =
+    '<div class="card"><div class="tag">' + sc.tag + "</div>" +
+    "<h2>" + sc.title + "</h2>" +
+    sc.briefing.map(b => '<p class="brief">' + b + "</p>").join("") +
+    '<button class="btn primary" onclick="uiBegin()">RUN IT 😈</button></div>';
+}
+
+function uiBegin() { S.run.nodeIdx = 0; renderNode(); }
+
+function deltaHtml(o) {
+  const parts = [];
+  if (o.v > 0) parts.push('<span class="dv">+' + o.v + " victims</span>");
+  if (o.v < 0) parts.push('<span class="dv">' + o.v + " victims</span>");
+  if (o.h > 0) parts.push('<span class="dh">+' + o.h + " heat</span>");
+  if (o.h < 0) parts.push('<span class="dv">' + o.h + " heat</span>");
+  return '<span class="delta">' + parts.join(" · ") + "</span>";
+}
+
+function renderNode() {
+  renderHUD();
+  const sc = curScenario(), node = sc.nodes[S.run.nodeIdx];
+  app().innerHTML =
+    '<div class="card"><div class="tag">' + sc.tag + " — STEP " + (S.run.nodeIdx + 1) + "/" + sc.nodes.length + "</div>" +
+    "<h2>" + node.prompt + "</h2>" +
+    node.options.map((o, i) =>
+      '<button class="btn" onclick="uiPick(' + i + ')">' + deltaHtml(o) +
+      '<span class="opt-label">' + o.label + "</span>" +
+      '<span class="sub">' + o.sub + "</span></button>").join("") + "</div>";
+}
+
+function trackVictims(scId, gained) {
+  if (gained > 0) S.run.scenVictims[scId] = (S.run.scenVictims[scId] || 0) + gained;
+}
+
+function uiPick(i) {
+  const sc = curScenario(), node = sc.nodes[S.run.nodeIdx], opt = node.options[i];
+  const before = S.run.victims;
+  const res = applyDeltas(opt.v, opt.h);
+  trackVictims(sc.id, S.run.victims - before);
+  if (opt.v > 0) popup("+" + opt.v + " victims", "good");
+  if (opt.h > 0) { popup("+" + opt.h + " heat", "bad"); }
+  if (opt.h < 0) popup(opt.h + " heat", "good");
+  if (res.streakBonus) setTimeout(() => popup("🔥 STREAK x" + S.run.streak + "  +" + res.streakBonus, "streak"), 350);
+  renderHUD();
+  const warn = heatWarning();
+  if (res.busted) { setTimeout(() => renderBusted(), 650); return; }
+  setTimeout(() => {
+    if (opt.closeCall) renderCloseCall(opt.closeCall, sc);
+    else renderOutcome(opt.out || [], { next: "node" }, warn);
+  }, 650);
+}
+
+function renderOutcome(lines, pending, warn) {
+  S.pending = pending;
+  renderHUD();
+  app().innerHTML =
+    '<div class="card"><div class="tag">IT PLAYS OUT</div>' +
+    lines.map(l => {
+      const m = l.match(/^([A-Z][A-Z .'-]+):\s*(.*)$/);
+      return m ? '<div class="out"><span class="who">' + m[1] + "</span><br>" + m[2] + "</div>"
+               : '<div class="out">' + l + "</div>";
+    }).join("") +
+    (warn ? '<div class="warn">⚠️ ' + warn + "</div>" : "") +
+    '<button class="btn primary" onclick="uiContinue()">CONTINUE →</button></div>';
+}
+
+function renderCloseCall(cc, sc) {
+  S.pendingCC = { cc: cc, sc: sc };
+  renderHUD();
+  const branch = b =>
+    '<button class="btn" onclick="uiCC(\'' + b + '\')">' +
+    '<span class="opt-label">' + cc[b].label + "</span>" +
+    '<span class="sub">' + cc[b].sub + "</span>" + deltaHtml(cc[b]) + "</button>";
+  app().innerHTML =
+    '<div class="card"><div class="tag">⚠️ CLOSE CALL</div>' +
+    "<h2>Too close...</h2>" +
+    '<div class="warn">' + cc.text + "</div>" +
+    branch("layLow") + branch("push") + "</div>";
+  document.getElementById("app").classList.remove("shake");
+  void document.getElementById("app").offsetWidth;
+  document.getElementById("app").classList.add("shake");
+}
+
+function uiCC(which) {
+  const { cc, sc } = S.pendingCC, br = cc[which];
+  const before = S.run.victims;
+  const res = applyDeltas(br.v, br.h);
+  trackVictims(sc.id, S.run.victims - before);
+  if (br.v > 0) popup("+" + br.v + " victims", "good");
+  if (br.h > 0) popup("+" + br.h + " heat", "bad");
+  if (br.h < 0) popup(br.h + " heat", "good");
+  renderHUD();
+  const warn = heatWarning();
+  if (res.busted) { setTimeout(() => renderBusted(), 650); return; }
+  setTimeout(() => renderOutcome(br.out, { next: "node" }, warn), 650);
+}
+
+function uiContinue() {
+  const scs = getRunScenarios(), sc = curScenario();
+  if (S.run.nodeIdx < sc.nodes.length - 1) { S.run.nodeIdx++; renderNode(); }
+  else renderDefense(sc);
+}
+
+function renderDefense(sc) {
+  renderHUD();
+  S.run.flagsShown.push({ scenario: sc.title, flags: sc.defense.flags });
+  const scs = getRunScenarios();
+  const last = S.run.scIdx >= scs.length - 1;
+  app().innerHTML =
+    '<div class="card"><div class="tag">🛡️ DEFENSE BRIEF</div>' +
+    "<h2>" + sc.defense.title + "</h2>" +
+    '<p class="brief">Crew debrief. Here\'s everywhere you got sloppy — and exactly how your victims could have burned you:</p>' +
+    sc.defense.flags.map(f =>
+      '<div class="out flag"><span class="t">🚩 ' + f.t + "</span><p>" + f.p + "</p></div>").join("") +
+    '<button class="btn primary" onclick="uiDefenseNext()">' +
+    (last ? "FINISH THE RUN →" : "NEXT SCAM →") + "</button></div>";
+}
+
+function uiDefenseNext() {
+  const scs = getRunScenarios();
+  if (S.run.scIdx < scs.length - 1) { S.run.scIdx++; renderBriefing(); }
+  else if (!S.pack) renderUpgrade();
+  else renderEnd(false);
+}
+
+/* ---------- upgrade ---------- */
+function renderUpgrade() {
+  S.run = null; renderHUD();
+  const premScen = CONTENT_MANIFEST.filter(e => e.type === "scenario" && e.tier === "premium")
+    .sort((a, b) => a.order - b.order).map(m => "<div>🔒 " + m.title + "</div>").join("");
+  app().innerHTML =
+    '<div class="card center"><div class="tag">PREMIUM CONTENT</div>' +
+    "<h1>🔒</h1><h2>Want the full empire?</h2>" +
+    '<p class="brief">Your free run covers the first 3 scams. Premium unlocks the rest:</p>' +
+    '<div class="brief" style="text-align:left;display:inline-block">' + premScen +
+    "<div>🔒 16 field-manual defense modules</div></div>" +
+    '<div class="banner"><b>How it works:</b> your license key <b>decrypts</b> the premium content right on your device. ' +
+    "Without it, it's just noise. Guard it like a password.</div>" +
+    '<a href="buy.html" style="text-decoration:none"><button class="btn primary">GET PREMIUM — $5 IN BTC →</button></a>' +
+    '<button class="btn ghost" onclick="renderTitle()">Back to free stuff</button></div>';
+}
+
+/* ---------- busted ---------- */
+function renderBusted() {
+  const r = S.run, scs = getRunScenarios();
+  const cleared = r.scIdx;
+  app().innerHTML =
+    '<div class="card center"><div class="tag">🚨 BUSTED</div>' +
+    "<h1>BUSTED.</h1>" +
+    '<p class="brief">Heat hit ' + CONFIG.HEAT_MAX + '. The feds kicked the door at 6 AM. ' +
+    "Your laptop is in an evidence bag. The crew is pretending they never met you.</p>" +
+    '<p class="brief">On the bright side: every victim you scammed is a lesson you can now use to <b>spot</b> the next scammer. That\'s the whole point of this game.</p>' +
+    '<div class="stat-grid">' +
+    '<div class="stat"><div class="v">' + r.victims + '</div><div class="k">VICTIMS</div></div>' +
+    '<div class="stat"><div class="v">' + cleared + "/" + scs.length + '</div><div class="k">SCAMS CLEARED</div></div>' +
+    '<div class="stat"><div class="v">x' + r.bestStreak + '</div><div class="k">BEST STREAK</div></div>' +
+    '<div class="stat"><div class="v">' + r.maxHeat + '</div><div class="k">MAX HEAT</div></div></div>' +
+    '<button class="btn primary" onclick="uiStart()">RUN IT BACK 🔁</button>' +
+    (!S.pack ? '<button class="btn ghost" onclick="renderUpgrade()">Unlock all 8 scams — premium</button>' : "") +
+    '<button class="btn ghost" onclick="renderTitle()">Title screen</button></div>';
+  renderHUD();
+}
+
+/* ---------- end of run ---------- */
+function renderEnd() {
+  const r = S.run, rank = rankFor(r.victims);
+  const debrief = r.flagsShown.map(g =>
+    "<h2>" + g.scenario + "</h2>" +
+    g.flags.map(f => '<div class="out flag"><span class="t">🚩 ' + f.t + "</span><p>" + f.p + "</p></div>").join("")
+  ).join("");
+  const share = buildShareText(rank);
+  app().innerHTML =
+    '<div class="card center"><div class="tag">👑 RUN COMPLETE</div>' +
+    "<h2>" + rank.title + "</h2>" +
+    '<p class="brief"><i>' + rank.flavor + "</i></p>" +
+    '<div class="big-score">' + r.victims + "</div><div class='brief'>victims scammed</div>" +
+    '<div class="stat-grid">' +
+    '<div class="stat"><div class="v">' + r.maxHeat + '</div><div class="k">HEAT SURVIVED</div></div>' +
+    '<div class="stat"><div class="v">x' + r.bestStreak + '</div><div class="k">BEST STREAK</div></div>' +
+    '<div class="stat"><div class="v" style="font-size:16px">' + favoriteScam() + '</div><div class="k">FAVORITE SCAM</div></div>' +
+    '<div class="stat"><div class="v">' + r.flagsShown.length + "/8</div><div class=\"k\">SCAMS CLEARED</div></div></div>" +
+    '<div class="tag">SHARE YOUR RUN</div><div class="sharebox" id="sharebox">' + share + "</div>" +
+    '<button class="btn primary" onclick="uiCopy()">📋 COPY SUMMARY</button>' +
+    '<div class="tag mt">FULL RED-FLAG DEBRIEF</div><div style="text-align:left">' + debrief + "</div>" +
+    '<button class="btn primary" onclick="uiStart()">RUN IT AGAIN 🔁</button>' +
+    '<button class="btn ghost" onclick="renderTitle()">Title screen</button></div>';
+  renderHUD();
+}
+
+function buildShareText(rank) {
+  return "🥷 YOU ARE THE SCAMMER — my run\n" +
+    "Rank: " + rank.title + " (" + S.run.victims + " victims)\n" +
+    "Heat survived: " + S.run.maxHeat + "/" + CONFIG.HEAT_MAX +
+    " | Best streak: x" + S.run.bestStreak + "\n" +
+    "Favorite scam: " + favoriteScam() + "\n" +
+    "I played the villain to learn how to beat him. 🛡️";
+}
+
+function uiCopy() {
+  const t = document.getElementById("sharebox").textContent;
+  const done = () => popup("Copied! 📋", "good");
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(t).then(done).catch(() => fallbackCopy(t, done));
+  } else fallbackCopy(t, done);
+}
+function fallbackCopy(t, done) {
+  const ta = document.createElement("textarea");
+  ta.value = t; document.body.appendChild(ta); ta.select();
+  try { document.execCommand("copy"); done(); } catch (e) {}
+  ta.remove();
+}
+
+/* ---------- field manual ---------- */
+function renderModule(id) {
+  const entry = CONTENT_MANIFEST.find(e => e.id === id);
+  if (!entry || !isUnlocked(id)) { renderUpgrade(); return; }
+  app().innerHTML =
+    '<div class="card"><div class="tag">📖 FIELD MANUAL</div>' +
+    "<h2>" + entry.title + "</h2>" +
+    '<div class="module-body">' + getModuleBody(entry) + "</div>" +
+    '<button class="btn primary mt" onclick="renderTitle()">← BACK</button></div>';
+  window.scrollTo(0, 0);
+}
+
+/* ---------- license UI ---------- */
+async function uiUnlock() {
+  const str = document.getElementById("keyinput").value;
+  const remember = document.getElementById("remember").checked;
+  S.licenseMsg = "Checking key..."; renderTitleKeep();
+  try {
+    await unlockFromKey(str);
+    if (remember) { try { localStorage.setItem(CONFIG.LICENSE_STORAGE_KEY, str.trim()); } catch (e) {} }
+    else { try { localStorage.removeItem(CONFIG.LICENSE_STORAGE_KEY); } catch (e) {} }
+    S.licenseMsg = "Premium unlocked — welcome to the big leagues. 😈";
+  } catch (e) { S.licenseMsg = e.message; }
+  renderTitle();
+}
+/* re-render title but keep the typed key in place while checking */
+function renderTitleKeep() {
+  const v = document.getElementById("keyinput") ? document.getElementById("keyinput").value : "";
+  const c = document.getElementById("remember") ? document.getElementById("remember").checked : false;
+  renderTitle();
+  const ki = document.getElementById("keyinput");
+  if (ki) { ki.value = v; document.getElementById("remember").checked = c; }
+}
+function uiRemoveLicense() {
+  removeLicense();
+  S.licenseMsg = "License removed from this device.";
+  renderTitle();
+}
+
+/* ---------- boot ---------- */
+setFooter();
+restoreLicense().then(() => renderTitle()).catch(() => renderTitle());
+</script>
+</body>
+</html>
