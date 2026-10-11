@@ -885,6 +885,16 @@ nacl.sign.detached.verify = function(msg, sig, publicKey) {
 };
 })(typeof module !== 'undefined' && module.exports ? module.exports : (self.nacl = self.nacl || {}));
 
+/* Explicit binding for the vendored Ed25519 above. The IIFE attaches its
+   API to `self.nacl` in browsers (an implicit global) or to
+   `module.exports` under bundlers — the license code below must not rely
+   on the implicit-global fallback to find it. This resolves to the same
+   object in browsers; anywhere else it fails closed (null -> the verify
+   try/catch reports "Signature check failed", never grants access). */
+var nacl = (typeof self !== "undefined" && self.nacl && self.nacl.sign) ? self.nacl
+  : (typeof module !== "undefined" && module.exports && module.exports.sign) ? module.exports
+  : null;
+
 /*__LICENSE_BEGIN__*/
 /* ---------------- 4. LICENSE ----------------
    Offline license validation + premium-pack decryption.
@@ -984,6 +994,199 @@ const License = (() => {
   return { parseLicense, canonicalFields, verifyLicense, unwrapKc, decryptPack, b64ToBytes, hexToBytes };
 })();
 /*__LICENSE_END__*/
+
+/* ---------------- 5. GAME LOGIC ----------------
+   State machine, scoring, streaks, heat, ranks, tier gating.
+   All tunables live in CONFIG (section 1). This section owns:
+     S                - global session state (run, pack, license)
+     newRun()         - fresh run state
+     getRunScenarios()- scenarios for this run (free + unlocked premium)
+     isUnlocked(id)   - THE tier gate. One function; every premium
+                        code path goes through it. Premium content
+                        exists only as AES-GCM ciphertext (the pack)
+                        and is never readable without a valid license.
+     applyDeltas(v,h) - scoring: victims, heat, streaks, busted check
+     heatWarning()    - threshold warnings from CONFIG
+     rankFor(v)       - rank title for a victim count
+     favoriteScam()   - highest-victim scenario this run
+     getModuleBody()  - course module text (free plaintext, premium
+                        from the decrypted pack; HTML-escaped)
+     unlockFromKey / restoreLicense / removeLicense - license lifecycle
+   Streak rule: an option with heat ABOVE STREAK_HEAT_LIMIT breaks
+   the streak; anything at or below it keeps it going. Every
+   STREAK_EVERY consecutive clean picks award STREAK_BONUS_VICTIMS. */
+const S = {
+  run: null,        // active run state (see newRun())
+  pack: null,       // decrypted premium pack {scenarios, modules}
+  licenseOk: false, // a valid premium license unlocked this device
+  license: null,    // { tier, expiry }
+  licenseMsg: "",   // status line shown under the key box
+  pending: null,    // reserved by renderOutcome
+  pendingCC: null   // active close-call branch choices
+};
+
+function newRun() {
+  return {
+    victims: 0, heat: 0,
+    streak: 0, bestStreak: 0, maxHeat: 0,
+    scIdx: 0, nodeIdx: 0,
+    scenVictims: {},   // scenario id -> victims gained (for favoriteScam)
+    flagsShown: []     // defense briefs shown (for the end-of-run debrief)
+  };
+}
+
+/** Scenarios playable in this run, in manifest order: the free set,
+    plus premium scenarios ONLY when the pack is decrypted. */
+function getRunScenarios() {
+  const list = SCENARIOS_FREE.slice(0, CONFIG.FREE_SCENARIO_COUNT);
+  if (S.pack && Array.isArray(S.pack.scenarios)) {
+    const byId = {};
+    S.pack.scenarios.forEach(s => { if (s && typeof s.id === "string") byId[s.id] = s; });
+    CONTENT_MANIFEST
+      .filter(e => e.type === "scenario" && e.tier === "premium")
+      .sort((a, b) => a.order - b.order)
+      .forEach(e => { if (byId[e.id]) list.push(byId[e.id]); });
+  }
+  return list;
+}
+
+/** THE tier gate. Free entries are always unlocked; premium entries
+    require a verified license AND the decrypted pack in memory AND
+    that item's content actually present in the pack. Nothing premium
+    is readable without all three. */
+function isUnlocked(id) {
+  const e = CONTENT_MANIFEST.find(x => x.id === id);
+  if (!e) return false;
+  if (e.tier !== "premium") return true;
+  if (S.licenseOk !== true || !S.pack) return false;
+  if (e.type === "scenario")
+    return Array.isArray(S.pack.scenarios) &&
+      S.pack.scenarios.some(s => s && s.id === id);
+  const m = Array.isArray(S.pack.modules) ? S.pack.modules[e.order - 103] : null;
+  return !!(m && typeof m.body === "string");
+}
+
+/**
+ * Apply one pick's deltas. Returns { streakBonus, busted }.
+ * - victims/heat are clamped at 0 (laying low can't go negative).
+ * - heat ABOVE STREAK_HEAT_LIMIT breaks the streak; at-or-below keeps it.
+ * - every STREAK_EVERY clean picks in a row award STREAK_BONUS_VICTIMS.
+ * - busted when heat reaches HEAT_MAX.
+ */
+function applyDeltas(v, h) {
+  const r = S.run;
+  v = (typeof v === "number" && isFinite(v)) ? v : 0;
+  h = (typeof h === "number" && isFinite(h)) ? h : 0;
+  r.victims = Math.max(0, r.victims + v);
+  r.heat = Math.max(0, r.heat + h);
+  if (r.heat > r.maxHeat) r.maxHeat = r.heat;
+  let streakBonus = 0;
+  if (h > CONFIG.STREAK_HEAT_LIMIT) {
+    r.streak = 0;
+  } else {
+    r.streak += 1;
+    if (r.streak > r.bestStreak) r.bestStreak = r.streak;
+    if (r.streak % CONFIG.STREAK_EVERY === 0) {
+      streakBonus = CONFIG.STREAK_BONUS_VICTIMS;
+      r.victims += streakBonus;
+    }
+  }
+  return { streakBonus: streakBonus, busted: r.heat >= CONFIG.HEAT_MAX };
+}
+
+/** Heat warning text for the current heat level, or null. Thresholds
+    and copy come from CONFIG (HEAT_WARN_1/2/3). */
+function heatWarning() {
+  const h = S.run ? S.run.heat : 0;
+  if (h >= CONFIG.HEAT_WARN_3) return "that was TOO close";
+  if (h >= CONFIG.HEAT_WARN_2) return "someone filed a report with your number on it";
+  if (h >= CONFIG.HEAT_WARN_1) return "feds are sniffing around";
+  return null;
+}
+
+/** Rank for a victim count. RANKS is ascending by min; a score lands
+    in the highest rank whose min it reaches (edge: exactly min counts). */
+function rankFor(victims) {
+  let rank = CONFIG.RANKS[0];
+  for (const r of CONFIG.RANKS) { if (victims >= r.min) rank = r; }
+  return rank;
+}
+
+/** Title of the scenario that gained the most victims this run. */
+function favoriteScam() {
+  const r = S.run;
+  if (!r) return "—";
+  let bestId = null, bestV = 0;
+  for (const id of Object.keys(r.scenVictims)) {
+    if (r.scenVictims[id] > bestV) { bestV = r.scenVictims[id]; bestId = id; }
+  }
+  if (!bestId) return "—";
+  const sc = getRunScenarios().find(s => s.id === bestId);
+  return sc ? sc.title : bestId;
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+/**
+ * Course module body text (HTML-escaped). Free modules come from
+ * COURSES_FREE; premium modules come from the decrypted pack.
+ * Premium modules are matched by manifest order: build-pack sorts
+ * module files by filename and the manifest orders course-04..course-19
+ * at orders 103..118 — keep those aligned. Returns null when the
+ * module can't be served (fail closed; never leak pack internals).
+ */
+function getModuleBody(entry) {
+  let body = null;
+  if (entry.tier === "free") {
+    const m = COURSES_FREE.find(c => c.id === entry.id);
+    if (m) body = m.body;
+  } else if (S.pack && Array.isArray(S.pack.modules)) {
+    const m = S.pack.modules[entry.order - 103];
+    if (m && typeof m.body === "string") body = m.body;
+  }
+  return body === null ? null : escapeHtml(body);
+}
+
+/**
+ * Full unlock: verify signature + tier + expiry, unwrap the content
+ * key, decrypt the premium pack. Throws a user-facing Error on any
+ * failure — never leaves a half-unlocked state.
+ */
+async function unlockFromKey(str) {
+  const v = await License.verifyLicense(str, CONFIG.LICENSE_PUBLIC_KEY_HEX);
+  const Kc = await License.unwrapKc(v.S, v.wrappedKc);
+  const pack = await License.decryptPack(PREMIUM_PACK_B64, Kc);
+  if (!pack || !Array.isArray(pack.scenarios) || pack.scenarios.length !== 5 ||
+      !Array.isArray(pack.modules) || pack.modules.length !== 16)
+    throw new Error("Premium pack is corrupt.");
+  for (const s of pack.scenarios) {
+    if (!s || typeof s.id !== "string" || !Array.isArray(s.nodes) || !s.defense)
+      throw new Error("Premium pack is corrupt.");
+  }
+  S.license = { tier: v.tier, expiry: v.expiry };
+  S.pack = pack;
+  S.licenseOk = true;
+}
+
+/** Re-apply a remembered key at boot. Never rejects. A bad remembered
+    key is forgotten (fail closed) rather than kept. */
+async function restoreLicense() {
+  let str = null;
+  try { str = localStorage.getItem(CONFIG.LICENSE_STORAGE_KEY); } catch (e) { str = null; }
+  if (!str) return;
+  try { await unlockFromKey(str); }
+  catch (e) { try { localStorage.removeItem(CONFIG.LICENSE_STORAGE_KEY); } catch (e2) {} }
+}
+
+function removeLicense() {
+  S.licenseOk = false;
+  S.license = null;
+  S.pack = null;
+  try { localStorage.removeItem(CONFIG.LICENSE_STORAGE_KEY); } catch (e) {}
+}
 
 /* ---------------- 6. UI ----------------
    Rendering + input, screen by screen. All game text lives
@@ -1296,10 +1499,13 @@ function fallbackCopy(t, done) {
 function renderModule(id) {
   const entry = CONTENT_MANIFEST.find(e => e.id === id);
   if (!entry || !isUnlocked(id)) { renderUpgrade(); return; }
+  const body = getModuleBody(entry);
   app().innerHTML =
     '<div class="card"><div class="tag">📖 FIELD MANUAL</div>' +
     "<h2>" + entry.title + "</h2>" +
-    '<div class="module-body">' + getModuleBody(entry) + "</div>" +
+    (body === null
+      ? '<div class="warn">This module failed to load — the premium pack may be corrupt. Try re-entering your license key.</div>'
+      : '<div class="module-body">' + body + "</div>") +
     '<button class="btn primary mt" onclick="renderTitle()">← BACK</button></div>';
   window.scrollTo(0, 0);
 }
