@@ -9,7 +9,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>YOU ARE THE SCAMMER — HackProof</title>
 <style>
   :root{
@@ -113,6 +113,19 @@
     background:linear-gradient(160deg,var(--card),var(--card2)); border:1px solid #4a2a7a;
     border-radius:16px; line-height:1.6;}
   .noscript h2{color:var(--purple-l);}
+  /* PASS 4 (a11y): every focusable element shows a clear visible indicator. */
+  :focus-visible{outline:3px solid var(--purple-l); outline-offset:2px;}
+  /* PASS 4 (a11y): scenario/course rows are real <button>s now (keyboard
+     operable); normalize button defaults so they look exactly as before. */
+  .lockrow{width:100%; font-family:inherit; color:var(--text); text-align:left;}
+  /* PASS 4 (a11y): honor prefers-reduced-motion — popups/warnings go
+     static, transitions off. Popups still appear and dismiss on schedule. */
+  @media (prefers-reduced-motion: reduce){
+    .popup.show{animation:none; opacity:1; transform:translate(-50%,-50%) scale(1);}
+    .shake{animation:none;}
+    .heatbar.danger .heatfill{animation:none;}
+    .btn, .heatfill{transition:none;}
+  }
 </style>
 </head>
 <body>
@@ -1218,10 +1231,13 @@ function setFooter() {
 }
 
 /** Animated floating popup (+N victims, +N heat, streaks).
-    PASS 2: concurrent popups stagger vertically so they never overlap. */
+    PASS 2: concurrent popups stagger vertically so they never overlap.
+    PASS 4: decorative only — hidden from assistive tech (the HUD carries
+    the same info with proper roles). */
 function popup(text, cls) {
   const d = document.createElement("div");
   d.className = "popup " + cls;
+  d.setAttribute("aria-hidden", "true");
   d.textContent = text;
   d.style.top = "calc(38% - " + (document.querySelectorAll(".popup").length * 64) + "px)";
   document.body.appendChild(d);
@@ -1229,18 +1245,32 @@ function popup(text, cls) {
   setTimeout(() => d.remove(), 1200);
 }
 
-/** HUD: victims pill, streak, heat meter. Shown during a run. */
+/** HUD: victims pill, streak, heat meter. Shown during a run.
+    PASS 4 (a11y): score pill is a live status region; the heat meter is
+    a real progressbar with min/max/now so it isn't color-only. */
 function renderHUD() {
   const r = S.run;
   if (!r) { hud().innerHTML = ""; return; }
   const pct = Math.min(100, Math.round(r.heat / CONFIG.HEAT_MAX * 100));
   hud().innerHTML =
-    '<div class="hud-row"><div class="pill">😈 <span class="n">' + r.victims + '</span> victims</div>' +
+    '<div class="hud-row"><div class="pill" role="status">😈 <span class="n">' + r.victims + '</span> victims</div>' +
     (r.streak >= 2 ? '<div class="pill">🔥 x' + r.streak + '</div>' : '') +
     '<div class="pill">🌡️ ' + r.heat + '</div></div>' +
-    '<div class="heatbar' + (r.heat >= CONFIG.HEAT_WARN_2 ? " danger" : "") + '">' +
+    '<div class="heatbar' + (r.heat >= CONFIG.HEAT_WARN_2 ? " danger" : "") + '"' +
+    ' role="progressbar" aria-label="Heat level" aria-valuemin="0" aria-valuemax="' + CONFIG.HEAT_MAX +
+    '" aria-valuenow="' + r.heat + '">' +
     '<div class="heatfill" style="width:' + pct + '%"></div></div>' +
     '<div class="heatlabel"><span>HEAT</span><span>BUSTED AT ' + CONFIG.HEAT_MAX + '</span></div>';
+}
+
+/** PASS 4 (a11y): after each screen renders, move focus to its heading so
+    keyboard users start at the new content instead of tabbing from the
+    top of the page. Headings aren't in the tab order (tabindex -1). */
+function focusScreen() {
+  try {
+    const h = app().querySelector("h1, h2");
+    if (h) { h.setAttribute("tabindex", "-1"); h.focus(); }
+  } catch (e) {}
 }
 
 /* ---------- title ---------- */
@@ -1251,16 +1281,20 @@ function renderTitle() {
   const scenRows = CONTENT_MANIFEST.filter(e => e.type === "scenario")
     .sort((a, b) => a.order - b.order).map(m => {
       const locked = !isUnlocked(m.id);
-      return '<div class="lockrow' + (locked ? " locked" : "") + '" onclick="uiScenRow(\'' + m.id + '\')">' +
+      /* PASS 4 (a11y): real <button> so rows are keyboard-focusable and
+         operable with Enter/Space; aria-label states the lock explicitly. */
+      return '<button type="button" class="lockrow' + (locked ? " locked" : "") + '" onclick="uiScenRow(\'' + m.id + '\')"' +
+        ' aria-label="' + (m.order + 1) + ". " + m.title + (locked ? " — locked, premium only" : "") + '">' +
         "<span>" + (m.order + 1) + ". " + m.title + "</span>" +
-        '<span class="lk">' + (locked ? "🔒" : "▶") + "</span></div>";
+        '<span class="lk" aria-hidden="true">' + (locked ? "🔒" : "▶") + "</span></button>";
     }).join("");
   const courseRows = CONTENT_MANIFEST.filter(e => e.type === "course")
     .sort((a, b) => a.order - b.order).map(m => {
       const locked = !isUnlocked(m.id);
-      return '<div class="lockrow' + (locked ? " locked" : "") + '" onclick="uiCourseRow(\'' + m.id + '\')">' +
+      return '<button type="button" class="lockrow' + (locked ? " locked" : "") + '" onclick="uiCourseRow(\'' + m.id + '\')"' +
+        ' aria-label="' + m.title + (locked ? " — locked, premium only" : "") + '">' +
         "<span>" + m.title + "</span>" +
-        '<span class="lk">' + (locked ? "🔒" : "📖") + "</span></div>";
+        '<span class="lk" aria-hidden="true">' + (locked ? "🔒" : "📖") + "</span></button>";
     }).join("");
   const licBox = S.licenseOk
     ? '<div class="okbox">✅ <b>PREMIUM ACTIVE</b> — expires ' +
@@ -1268,7 +1302,7 @@ function renderTitle() {
       '<button class="btn ghost" onclick="uiRemoveLicense()">Remove license from this device</button>'
     : '<div class="card"><div class="tag">LICENSE KEY</div>' +
       '<div class="brief">Got a premium key? Paste it below. Your key <b>decrypts</b> the premium content — without it, it\'s just noise. Guard it like a password.</div>' +
-      '<div class="mt"><textarea class="keybox" id="keyinput" placeholder="Paste license key here..."></textarea></div>' +
+      '<div class="mt"><textarea class="keybox" id="keyinput" aria-label="License key" placeholder="Paste license key here..."></textarea></div>' +
       '<label class="checkrow"><input type="checkbox" id="remember"> <span>Remember on this device (stored only in this browser — uncheck to keep this session only)</span></label>' +
       '<button class="btn primary" onclick="uiUnlock()">UNLOCK PREMIUM</button>' +
       (S.licenseMsg ? '<div class="' + (S.licenseOk ? "okbox" : "warn") + '">' + S.licenseMsg + "</div>" : "") +
@@ -1283,6 +1317,7 @@ function renderTitle() {
     '<div class="card"><div class="tag">THE 8 SCAMS</div>' + scenRows + "</div>" +
     '<div class="card"><div class="tag">FIELD MANUAL — DEFENSE COURSE</div>' + courseRows + "</div>" +
     licBox;
+  focusScreen(); /* PASS 4 (a11y): start keyboard users at the new screen */
 }
 
 function uiScenRow(id) { if (isUnlocked(id)) uiStart(); else renderUpgrade(); }
@@ -1306,6 +1341,7 @@ function renderBriefing() {
     "<h2>" + sc.title + "</h2>" +
     sc.briefing.map(b => '<p class="brief">' + b + "</p>").join("") +
     '<button class="btn primary" onclick="uiBegin()">RUN IT 😈</button></div>';
+  focusScreen(); /* PASS 4 (a11y) */
 }
 
 function uiBegin() { S.run.nodeIdx = 0; renderNode(); }
@@ -1331,6 +1367,7 @@ function renderNode() {
       '<button class="btn" onclick="uiPick(' + i + ')">' + deltaHtml(o) +
       '<span class="opt-label">' + o.label + "</span>" +
       '<span class="sub">' + o.sub + "</span></button>").join("") + "</div>";
+  focusScreen(); /* PASS 4 (a11y) */
 }
 
 function trackVictims(scId, gained) {
@@ -1374,8 +1411,9 @@ function renderOutcome(lines, pending, warn) {
       return m ? '<div class="out"><span class="who">' + m[1] + "</span><br>" + m[2] + "</div>"
                : '<div class="out">' + l + "</div>";
     }).join("") +
-    (warn ? '<div class="warn">⚠️ ' + warn + "</div>" : "") +
+    (warn ? '<div class="warn" role="alert">⚠️ ' + warn + "</div>" : "") +
     '<button class="btn primary" onclick="uiContinue()">CONTINUE →</button></div>';
+  focusScreen(); /* PASS 4 (a11y) */
 }
 
 function renderCloseCall(cc, sc) {
@@ -1390,12 +1428,13 @@ function renderCloseCall(cc, sc) {
   app().innerHTML =
     '<div class="card"><div class="tag">⚠️ CLOSE CALL</div>' +
     "<h2>Too close...</h2>" +
-    '<div class="warn">' + cc.text + "</div>" +
+    '<div class="warn" role="alert">' + cc.text + "</div>" +
     branch("layLow") + branch("push") + "</div>";
   document.getElementById("app").classList.remove("answering");
   document.getElementById("app").classList.remove("shake");
   void document.getElementById("app").offsetWidth;
   document.getElementById("app").classList.add("shake");
+  focusScreen(); /* PASS 4 (a11y) */
 }
 
 function uiCC(which) {
@@ -1442,6 +1481,7 @@ function renderDefense(sc) {
       '<div class="out flag"><span class="t">🚩 ' + f.t + "</span><p>" + f.p + "</p></div>").join("") +
     '<button class="btn primary" onclick="uiDefenseNext()">' +
     (last ? "FINISH THE RUN →" : "NEXT SCAM →") + "</button></div>";
+  focusScreen(); /* PASS 4 (a11y) */
 }
 
 function uiDefenseNext() {
@@ -1466,8 +1506,11 @@ function renderUpgrade() {
     "<div>🔒 16 field-manual defense modules</div></div>" +
     '<div class="banner"><b>How it works:</b> your license key <b>decrypts</b> the premium content right on your device. ' +
     "Without it, it's just noise. Guard it like a password.</div>" +
-    '<a href="buy.html" style="text-decoration:none"><button class="btn primary">GET PREMIUM — $5 IN BTC →</button></a>' +
+    /* PASS 4 (a11y): anchor styled as the button — nesting a <button>
+       inside an <a> is invalid HTML and confuses assistive tech. */
+    '<a href="buy.html" class="btn primary" style="text-decoration:none">GET PREMIUM — $5 IN BTC →</a>' +
     '<button class="btn ghost" onclick="renderTitle()">Back to free stuff</button></div>';
+  focusScreen(); /* PASS 4 (a11y) */
 }
 
 /* ---------- busted ---------- */
@@ -1491,6 +1534,7 @@ function renderBusted() {
     (!S.pack ? '<button class="btn ghost" onclick="renderUpgrade()">Unlock all 8 scams — premium</button>' : "") +
     '<button class="btn ghost" onclick="renderTitle()">Title screen</button></div>';
   renderHUD();
+  focusScreen(); /* PASS 4 (a11y) */
 }
 
 /* ---------- end of run ---------- */
@@ -1519,6 +1563,7 @@ function renderEnd() {
     '<button class="btn primary" onclick="uiStart()">RUN IT AGAIN 🔁</button>' +
     '<button class="btn ghost" onclick="renderTitle()">Title screen</button></div>';
   renderHUD();
+  focusScreen(); /* PASS 4 (a11y) */
 }
 
 function buildShareText(rank) {
@@ -1559,6 +1604,7 @@ function renderModule(id) {
       : '<div class="module-body">' + body + "</div>") +
     '<button class="btn primary mt" onclick="renderTitle()">← BACK</button></div>';
   window.scrollTo(0, 0);
+  focusScreen(); /* PASS 4 (a11y) */
 }
 
 /* ---------- license UI ---------- */
