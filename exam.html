@@ -146,8 +146,9 @@ const CONFIG = {
   /* LICENSE_PUBLIC_KEY_HEX: Skyler pastes the public key here after running
      `python3 tools/keygen.py setup` (it prints the key). Until replaced,
      the exam stays locked. Same value as in game/index.html. */
-  /* TEST KEY — replace with your real key before selling. See tools/keygen.py setup. */
-  LICENSE_PUBLIC_KEY_HEX: "b29d0c1546318422325ca9da3def627e8b87cd99379fcd4b9e5f1249f008b2b4",
+  /* PRODUCTION KEY — rotated 2026-10-12. Matches the private signing key
+     kept OFFLINE (never in this repo). See tools/keygen.py setup. */
+  LICENSE_PUBLIC_KEY_HEX: "f8ff4f59627031e9e522aabed81c8eb208616db8b43843b96d6e55540897eda7",
   VERIFY_URL: "https://therealjesusthehacker.github.io/HackProof/verify.html"
 };
 </script>
@@ -1207,11 +1208,37 @@ function certId(){
   return "HP-" + s.slice(0,3) + "-" + s.slice(3);
 }
 
-function renderCert(correct, pct){
+/* HMAC-SHA256 proof binding this certificate claim to the student's premium
+   license secret S (from their verified license). Only the holder of a
+   genuine Skyler-minted license can produce it — a hand-crafted payload
+   with pct:100 cannot. tools/keygen.py sign-cert recomputes it before
+   countersigning. The HMAC covers the canonical payload WITHOUT the proof
+   field (same bytes sign-cert re-canonicalizes server-side). */
+async function certProof(payload){
+  if(!window.crypto || !crypto.subtle || !state.lic || !state.lic.S)
+    throw new Error("crypto.subtle unavailable");
+  const key = await crypto.subtle.importKey("raw", state.lic.S,
+    {name:"HMAC", hash:"SHA-256"}, false, ["sign"]);
+  const mac = await crypto.subtle.sign("HMAC", key,
+    new TextEncoder().encode(JSON.stringify(payload)));
+  return b64e(new Uint8Array(mac));
+}
+
+async function renderCert(correct, pct){
   const cid = certId();
   const date = new Date().toISOString().slice(0,10);
   const payload = { v:1, cert_id:cid, name:state.name, score:correct, pct:pct, date:date, lic_id:state.lic.id };
-  const code = b64e(new TextEncoder().encode(JSON.stringify(payload)));
+  /* Proof FIRST (over the payload without it), then embed — sign-cert
+     strips `proof` and re-canonicalizes the rest to re-verify. */
+  let code = null, proofErr = "";
+  try{
+    payload.proof = await certProof(payload);
+    code = b64e(new TextEncoder().encode(JSON.stringify(payload)));
+  }catch(e){
+    proofErr = "Your browser blocked the cryptographic proof this certificate needs " +
+      "(WebCrypto unavailable). Open this page over HTTPS in a current browser and retake the exam — " +
+      "without the proof, the certificate cannot be countersigned.";
+  }
   const card = document.createElement("div");
   card.className = "card"; card.id = "screen-cert";
   card.innerHTML =
@@ -1234,19 +1261,36 @@ function renderCert(correct, pct){
     '<div class="no-print">'+
       '<button class="btn primary" id="cert-print">🖨 Print / Save PDF</button>'+
       '<h2 style="margin-top:18px">Get your <span class="accent">verified seal</span></h2>'+
-      '<p class="lead">Email the code below to <b>Sentinelsafeguard@outlook.com</b> — you will get back a '+
-      'countersigned code. Paste it here and your certificate earns its verified seal, checkable by anyone at the verify page.</p>'+
-      '<div class="codebox"><textarea id="cert-unsigned" readonly>'+esc(code)+'</textarea></div>'+
-      '<button class="btn ghost small" id="copy-unsigned">Copy code</button>'+
-      '<label class="field" for="cert-signed">Countersigned code</label>'+
-      '<textarea id="cert-signed" placeholder="Paste the countersigned code here"></textarea>'+
-      '<div class="err" id="cert-err"></div>'+
-      '<button class="btn primary" id="cert-verify-btn">Apply verified seal</button>'+
+      (code ?
+        '<p class="lead">Email the code below <b>plus your premium license key</b> to <b>Sentinelsafeguard@outlook.com</b> — '+
+        'you will get back a countersigned code. Paste it here and your certificate earns its verified seal, checkable by anyone at the verify page.</p>'+
+        '<div class="codebox"><textarea id="cert-unsigned" readonly>'+esc(code)+'</textarea></div>'+
+        '<button class="btn ghost small" id="copy-unsigned">Copy code</button> '+
+        '<button class="btn ghost small" id="copy-lickey">Copy my license key</button>'+
+        '<label class="field" for="cert-signed">Countersigned code</label>'+
+        '<textarea id="cert-signed" placeholder="Paste the countersigned code here"></textarea>'+
+        '<div class="err" id="cert-err"></div>'+
+        '<button class="btn primary" id="cert-verify-btn">Apply verified seal</button>'
+        :
+        '<div class="err show">'+esc(proofErr)+'</div>'
+      )+
       '<p class="hint"><a href="verify.html">Open the certificate verifier →</a></p>'+
     '</div>';
   app.appendChild(card);
   $("#cert-print").onclick=function(){ window.print(); };
+  if(!code) return;
   $("#copy-unsigned").onclick=function(){ const t=$("#cert-unsigned"); t.select(); try{document.execCommand("copy");}catch(e){} };
+  $("#copy-lickey").onclick=function(){
+    try{
+      const k = localStorage.getItem(CONFIG.LICENSE_STORAGE_KEY) || "";
+      if(!k) return;
+      if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(k); }
+      else{
+        const ta=document.createElement("textarea"); ta.value=k; document.body.appendChild(ta);
+        ta.select(); try{document.execCommand("copy");}catch(e){} ta.remove();
+      }
+    }catch(e){}
+  };
   $("#cert-verify-btn").onclick=function(){
     const err=$("#cert-err"); err.classList.remove("show");
     verifySignedCert($("#cert-signed").value.trim()).then(function(ok){
