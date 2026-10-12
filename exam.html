@@ -741,6 +741,25 @@ const License = (() => {
   function canonicalFields(lic) {
     return JSON.stringify({ id: lic.id, tier: lic.tier, expiry: lic.expiry, S: lic.S, wrapped_Kc: lic.wrapped_Kc });
   }
+  /**
+   * Clock-rollback guard (anti-license-resurrection).
+   * Expiry checks use the device clock, which can be rewound to resurrect an
+   * expired license. Record the highest device clock ever seen at a
+   * *successful* verify in localStorage; refuse validation when the current
+   * clock has moved backward more than 24h from that high-water mark. 24h of
+   * slack tolerates DST / timezone changes while stopping casual rollback.
+   * If storage is unavailable (e.g. private mode) the expiry check alone
+   * applies — the guard simply can't persist its high-water mark.
+   */
+  const CLOCK_GUARD_KEY = "hackproof_max_clock";
+  const CLOCK_GUARD_TOLERANCE_MS = 24 * 60 * 60 * 1000;
+  function clockGuard(now) {
+    let highWater = 0;
+    try { highWater = parseInt(localStorage.getItem(CLOCK_GUARD_KEY) || "0", 10) || 0; } catch (e) { /* storage unavailable */ }
+    if (highWater && now < highWater - CLOCK_GUARD_TOLERANCE_MS)
+      throw new Error("Your device clock moved backward past the last verified time — restore the correct date and time to use your license.");
+    try { if (now > highWater) localStorage.setItem(CLOCK_GUARD_KEY, String(now)); } catch (e) { /* storage unavailable */ }
+  }
   async function verifyLicense(licenseStr, pubkeyHex) {
     if (!pubkeyHex || pubkeyHex.indexOf("REPLACE_WITH") === 0)
       throw new Error("This build isn't linked to licensing yet — check back soon.");
@@ -753,8 +772,10 @@ const License = (() => {
     try { ok = nacl.sign.detached.verify(msg, sig, pk); }
     catch (e) { throw new Error("Signature check failed — that key isn't genuine."); }
     if (!ok) throw new Error("Signature check failed — that key isn't genuine.");
-    if (typeof lic.expiry !== "number" || lic.expiry * 1000 <= Date.now())
+    const now = Date.now();
+    if (typeof lic.expiry !== "number" || lic.expiry * 1000 <= now)
       throw new Error("This license has expired.");
+    clockGuard(now); // successful verify: record device-clock high-water mark
     return { id: lic.id, tier: lic.tier, expiry: lic.expiry, S: b64ToBytes(lic.S) };
   }
   return { parseLicense, canonicalFields, verifyLicense, b64ToBytes, hexToBytes };
