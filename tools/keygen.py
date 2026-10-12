@@ -48,12 +48,16 @@ GOING LIVE (4 commands, all on your own machine):
           They paste it into the game's "Enter license key" box.
 
   5. When a student passes the final exam and emails you their
-     certificate code:
-       python3 tools/keygen.py sign-cert <code>
-       (or: python3 tools/keygen.py sign-cert - < code.txt)
-     -> prints the COUNTERSIGNED code. Email it back; they paste
-        it into exam.html to earn the verified seal. Anyone can
-        check it at verify.html.
+     certificate code AND their premium license key:
+       python3 tools/keygen.py sign-cert --license <key> <code>
+       (or: python3 tools/keygen.py sign-cert --license - < code.txt,
+        with the license key read from stdin)
+     -> verifies the code's HMAC proof (bound to the license secret)
+        and range-checks the score fields, then prints the
+        COUNTERSIGNED code. Email it back; they paste it into
+        exam.html to earn the verified seal. Anyone can check it
+        at verify.html. Hand-crafted codes (missing/bad proof,
+        out-of-range scores) are REFUSED — no signature is issued.
 
 Requires: pip install cryptography
 
@@ -73,6 +77,8 @@ SCHEME (so you can audit it):
 
 import argparse
 import base64
+import hashlib
+import hmac
 import json
 import os
 import re
@@ -259,13 +265,59 @@ def cmd_build_pack(keydir, content_dir, game_dir):
     print("Commit + deploy both.")
 
 
-def cmd_sign_cert(keydir, code):
+def license_secret_from_key(pubkey, license_key):
+    """Extract the per-license secret S from a student's license key.
+
+    The key's own Ed25519 signature MUST verify against our public key —
+    otherwise the S inside it is attacker-chosen and any HMAC "proof"
+    built on it is meaningless. Returns the 32-byte S.
+    """
+    clean = re.sub(r"\s+", "", license_key or "")
+    try:
+        lic = json.loads(base64.b64decode(clean).decode("utf-8"))
+    except Exception:
+        sys.exit("REFUSING: the --license key is not valid base64/JSON.")
+    for k in ("id", "tier", "expiry", "S", "wrapped_Kc", "sig"):
+        if k not in lic:
+            sys.exit("REFUSING: the --license key is missing fields.")
+    if lic.get("tier") != "premium":
+        sys.exit("REFUSING: the --license key is not a premium license.")
+    canonical = json.dumps(
+        {"id": lic["id"], "tier": lic["tier"], "expiry": lic["expiry"],
+         "S": lic["S"], "wrapped_Kc": lic["wrapped_Kc"]},
+        separators=(",", ":"))
+    try:
+        sig = base64.b64decode(lic["sig"].encode("ascii"))
+        pubkey.verify(sig, canonical.encode("utf-8"))
+    except Exception:
+        sys.exit("REFUSING: the --license key's signature does not verify — "
+                 "not a genuine HackProof license.")
+    try:
+        S = base64.b64decode(lic["S"].encode("ascii"))
+    except Exception:
+        sys.exit("REFUSING: the --license key has a garbled S field.")
+    if len(S) != 32:
+        sys.exit("REFUSING: the --license key's S field is not 32 bytes.")
+    return S
+
+
+def cmd_sign_cert(keydir, code, license_key):
     """Countersign a student's certificate code.
 
-    The student emails you the UNSIGNED code from exam.html
-    (base64 of the cert payload). You sign the canonical JSON
-    and email back the SIGNED code. exam.html / verify.html
-    verify the Ed25519 signature against your public key.
+    The student emails you the UNSIGNED code from exam.html PLUS their
+    premium license key. Before countersigning we now:
+
+      1. Range-check the score fields (integers 0-100) — a hand-crafted
+         payload with out-of-range or non-integer scores is refused.
+      2. Verify the HMAC-SHA256 proof embedded by exam.html. The proof is
+         HMAC_SHA256(per-license secret S, canonical payload), computed
+         in the browser at the moment the exam was genuinely passed. S
+         comes from the student's own license key, whose Ed25519
+         signature we verify first so an attacker can't substitute
+         their own S. Missing or bad proof -> REFUSED, no signature.
+
+    Only then do we countersign with Ed25519 as before; exam.html /
+    verify.html verify that signature against your public key.
 
     Byte-compatibility note: the browser verifies
     JSON.stringify(parsed_payload) — separators (",", ":"),
@@ -274,6 +326,7 @@ def cmd_sign_cert(keydir, code):
     ensure_ascii=False.
     """
     priv, _ = load_keys(keydir)
+    pubkey = priv.public_key()
     clean = re.sub(r"\s+", "", code or "")
     try:
         payload = json.loads(base64.b64decode(clean).decode("utf-8"))
@@ -283,9 +336,41 @@ def cmd_sign_cert(keydir, code):
             or "cert_id" not in payload or "name" not in payload
             or "sig" in payload):
         sys.exit("Not an unsigned HackProof certificate payload.")
-    canonical = json.dumps(payload, separators=(",", ":"),
+    # 1) score fields must be integers 0-100 (bool is not an int here)
+    for field in ("score", "pct"):
+        val = payload.get(field)
+        if isinstance(val, bool) or not isinstance(val, int) \
+                or not 0 <= val <= 100:
+            sys.exit("REFUSING: score field %r must be an integer 0-100 "
+                     "(got %r)." % (field, val))
+    # 2) HMAC-SHA256 proof — present, well-formed, and valid
+    proof_b64 = payload.get("proof")
+    if not isinstance(proof_b64, str) or not proof_b64:
+        sys.exit("REFUSING: certificate code has no HMAC proof — it was not "
+                 "generated by the current exam page. Ask the student to "
+                 "re-generate the code from the updated exam.html.")
+    if not license_key:
+        sys.exit("REFUSING: sign-cert needs the student's license key "
+                 "(--license) to verify the certificate's HMAC proof.")
+    S = license_secret_from_key(pubkey, license_key)
+    # Re-canonicalize exactly what the browser HMAC'd: the payload
+    # WITHOUT the proof field (proof was appended last, so dropping it
+    # restores the original key order).
+    body = {k: v for k, v in payload.items() if k != "proof"}
+    canonical = json.dumps(body, separators=(",", ":"),
                            ensure_ascii=False).encode("utf-8")
-    sig = priv.sign(canonical)
+    try:
+        proof = base64.b64decode(proof_b64.encode("ascii"))
+    except Exception:
+        sys.exit("REFUSING: proof is not valid base64.")
+    expected = hmac.new(S, canonical, hashlib.sha256).digest()
+    if not hmac.compare_digest(expected, proof):
+        sys.exit("REFUSING: HMAC proof does not verify — this payload was "
+                 "hand-crafted, not produced by the exam with a genuine "
+                 "license. No signature issued.")
+    canonical_full = json.dumps(payload, separators=(",", ":"),
+                                ensure_ascii=False).encode("utf-8")
+    sig = priv.sign(canonical_full)
     signed = {"payload": payload, "sig": b64e(sig)}
     out = b64e(json.dumps(signed, separators=(",", ":"),
                           ensure_ascii=False).encode("utf-8"))
@@ -313,6 +398,9 @@ def main():
     c = sub.add_parser("sign-cert", help="countersign a student's certificate code")
     c.add_argument("--keydir", default=DEFAULT_KEYDIR)
     c.add_argument("code", help="unsigned certificate code from the student (or - for stdin)")
+    c.add_argument("--license", default=None,
+                   help="the student's premium license key (or - for stdin); "
+                        "required to verify the certificate's HMAC proof")
     args = ap.parse_args()
     if args.cmd == "setup":
         cmd_setup(args.keydir)
@@ -324,7 +412,10 @@ def main():
         code = args.code
         if code == "-":
             code = sys.stdin.read()
-        cmd_sign_cert(args.keydir, code)
+        lic = args.license
+        if lic == "-":
+            lic = sys.stdin.read()
+        cmd_sign_cert(args.keydir, code, lic)
 
 
 if __name__ == "__main__":
