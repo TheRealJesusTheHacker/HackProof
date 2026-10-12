@@ -165,8 +165,9 @@ const CONFIG = {
   /* LICENSE_PUBLIC_KEY_HEX: Skyler pastes the public key here after running
      `python3 tools/keygen.py setup` (it prints the key). Until replaced,
      license validation is disabled and premium stays locked. */
-  /* TEST KEY — replace with your real key before selling. See tools/keygen.py setup. */
-  LICENSE_PUBLIC_KEY_HEX: "b29d0c1546318422325ca9da3def627e8b87cd99379fcd4b9e5f1249f008b2b4",
+  /* PRODUCTION KEY — rotated 2026-10-12. Matches the private signing key
+     kept OFFLINE (never in this repo). See tools/keygen.py setup. */
+  LICENSE_PUBLIC_KEY_HEX: "f8ff4f59627031e9e522aabed81c8eb208616db8b43843b96d6e55540897eda7",
   RANKS: [
     { min: 0,   title: "SCRIPT KIDDIE", flavor: "You installed the tools. The tools installed YOU. The feds aren't worried yet — your mom is." },
     { min: 25,  title: "PHISH FRY",     flavor: "Small-time, but the lures are landing. A few grandmas are telling their grandkids about you at bingo." },
@@ -1316,18 +1317,34 @@ function renderTitle() {
     '<button class="btn primary" onclick="uiStart()">▶ START RUN</button>' +
     '<div class="card"><div class="tag">THE 8 SCAMS</div>' + scenRows + "</div>" +
     '<div class="card"><div class="tag">FIELD MANUAL — DEFENSE COURSE</div>' + courseRows + "</div>" +
+    '<div class="card"><div class="tag">🎓 FINAL EXAM</div>' +
+    '<p class="brief">Done playing villain? The 90-question final exam covers the full field manual. ' +
+    'Pass it and earn a verified Sentinel Safeguard certificate. Requires a premium license.</p>' +
+    '<a href="../exam.html" class="btn primary" style="text-decoration:none">TAKE THE FINAL EXAM →</a></div>' +
     licBox;
   focusScreen(); /* PASS 4 (a11y): start keyboard users at the new screen */
 }
 
-function uiScenRow(id) { if (isUnlocked(id)) uiStart(); else renderUpgrade(); }
+/* Scenario list rows play the CLICKED scenario: resolve the row's manifest
+   id to its index in this run's scenario list and start the run there. */
+function uiScenRow(id) {
+  if (!isUnlocked(id)) { renderUpgrade(); return; }
+  const scs = getRunScenarios();
+  let idx = 0;
+  for (let i = 0; i < scs.length; i++) { if (scs[i].id === id) { idx = i; break; } }
+  uiStart(idx);
+}
 function uiCourseRow(id) { if (isUnlocked(id)) renderModule(id); else renderUpgrade(); }
 
 /* ---------- run flow ---------- */
-function uiStart() {
+function uiStart(startIdx) {
   S.run = newRun();
   const scs = getRunScenarios();
   if (!scs.length) { renderUpgrade(); return; }
+  /* Optional start index (from uiScenRow). Plain uiStart() calls — title
+     START RUN, RUN IT BACK, RUN IT AGAIN — still begin at scenario 1. */
+  S.run.scIdx = (typeof startIdx === "number" && startIdx >= 0 && startIdx < scs.length)
+    ? Math.floor(startIdx) : 0;
   renderBriefing();
 }
 
@@ -1531,6 +1548,7 @@ function renderBusted() {
     '<div class="stat"><div class="v">x' + r.bestStreak + '</div><div class="k">BEST STREAK</div></div>' +
     '<div class="stat"><div class="v">' + r.maxHeat + '</div><div class="k">MAX HEAT</div></div></div>' +
     '<button class="btn primary" onclick="uiStart()">RUN IT BACK 🔁</button>' +
+    '<a href="../exam.html" class="btn ghost" style="text-decoration:none">🎓 Take the final exam</a>' +
     (!S.pack ? '<button class="btn ghost" onclick="renderUpgrade()">Unlock all 8 scams — premium</button>' : "") +
     '<button class="btn ghost" onclick="renderTitle()">Title screen</button></div>';
   renderHUD();
@@ -1561,6 +1579,7 @@ function renderEnd() {
     '<button class="btn primary" onclick="uiCopy()">📋 COPY SUMMARY</button>' +
     '<div class="tag mt">FULL RED-FLAG DEBRIEF</div><div style="text-align:left">' + debrief + "</div>" +
     '<button class="btn primary" onclick="uiStart()">RUN IT AGAIN 🔁</button>' +
+    '<a href="../exam.html" class="btn ghost" style="text-decoration:none">🎓 Take the final exam</a>' +
     '<button class="btn ghost" onclick="renderTitle()">Title screen</button></div>';
   renderHUD();
   focusScreen(); /* PASS 4 (a11y) */
