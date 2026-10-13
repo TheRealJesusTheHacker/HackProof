@@ -461,6 +461,13 @@ function hpQRDataURL(text, cellSize, margin) {
 const PRICE_USD = 5.00;
 const BTC_ADDRESS = "bc1qvydns2fmyjzj55wzxq7ta28nxdhcmu9l9m6yg0"; // exact — do not edit by hand
 const COINGECKO_URL = "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd";
+/* Rate cache: CoinGecko's free endpoint rate-limits aggressively, and a
+   429 silently degrades this page to the address-only QR. A rate fetched
+   moments ago in this same tab is just as honest — the page labels it
+   with its true fetch time — so reuse it for 2 minutes (sessionStorage:
+   gone when the tab closes, never persisted across sessions). */
+const RATE_CACHE_KEY = "hackproof_btc_rate_v1";
+const RATE_TTL_MS = 120 * 1000;
 
 /* AUTOMATION HOOK (future): a BTCPay Server webhook would plug in here —
    on confirmed payment it would call the mint flow (tools/keygen.py mint)
@@ -483,11 +490,33 @@ function fmtTime(d) {
   return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
+function readRateCache() {
+  try {
+    const c = JSON.parse(sessionStorage.getItem(RATE_CACHE_KEY) || "null");
+    if (!c || !(c.usd > 0) || !(c.ts > 0)) return null;
+    if (Date.now() - c.ts >= RATE_TTL_MS) return null;
+    return c;
+  } catch (e) { return null; }
+}
+
+function saveRateCache(usd) {
+  try { sessionStorage.setItem(RATE_CACHE_KEY, JSON.stringify({ usd: usd, ts: Date.now() })); } catch (e) {}
+}
+
+function showRate(line, rate, usd, when) {
+  const amount = (PRICE_USD / usd).toFixed(8);
+  line.innerHTML = "<b>$" + PRICE_USD.toFixed(2) + " ≈ " + amount + " BTC</b>";
+  rate.textContent = "Rate as of " + fmtTime(when) + " (CoinGecko)";
+  drawQR(bip21(amount));
+}
+
 async function loadRate() {
   const line = document.getElementById("btc-line");
   const rate = document.getElementById("rate-line");
   const retry = document.getElementById("retry");
   retry.style.display = "none";
+  const cached = readRateCache();
+  if (cached) { showRate(line, rate, cached.usd, new Date(cached.ts)); return; }
   line.textContent = "Fetching live BTC price…";
   try {
     const ctrl = new AbortController();
@@ -498,10 +527,8 @@ async function loadRate() {
     const j = await r.json();
     const usd = j && j.bitcoin && j.bitcoin.usd;
     if (!usd || usd <= 0) throw new Error("bad rate");
-    const amount = (PRICE_USD / usd).toFixed(8);
-    line.innerHTML = "<b>$" + PRICE_USD.toFixed(2) + " ≈ " + amount + " BTC</b>";
-    rate.textContent = "Rate as of " + fmtTime(new Date()) + " (CoinGecko)";
-    drawQR(bip21(amount));
+    saveRateCache(usd);
+    showRate(line, rate, usd, new Date());
   } catch (e) {
     // OFFLINE FALLBACK: no rate, QR encodes the plain address, buyer checks the price.
     line.innerHTML = "<b>$" + PRICE_USD.toFixed(2) + " in BTC</b> — check the current BTC price in your wallet app and send the equivalent.";
