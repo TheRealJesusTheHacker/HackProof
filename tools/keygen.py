@@ -141,12 +141,17 @@ def cmd_setup(keydir):
             serialization.Encoding.Raw,
             serialization.PublicFormat.Raw)
     kc = os.urandom(32)
-    with open(paths["priv"], "wb") as f:
-        f.write(seed)
-    with open(paths["pub"], "wb") as f:
-        f.write(pub)
-    with open(paths["kc"], "wb") as f:
-        f.write(kc)
+    # Write with final permissions from the first byte — a plain open()
+    # would leave the secrets at umask defaults until the chmod below.
+    def _write_new(path, data, mode):
+        fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, mode)
+        try:
+            os.write(fd, data)
+        finally:
+            os.close(fd)
+    _write_new(paths["priv"], seed, 0o600)
+    _write_new(paths["pub"], pub, 0o644)
+    _write_new(paths["kc"], kc, 0o600)
     for p in (paths["priv"], paths["kc"]):
         os.chmod(p, 0o600)
     os.chmod(paths["pub"], 0o644)
@@ -155,7 +160,8 @@ def cmd_setup(keydir):
     print("  content-master.key   <- NEVER commit, NEVER share")
     print("  ed25519-public.key    <- this one is public")
     print()
-    print("STEP 2 — paste this PUBLIC key into game/index.html:")
+    print("STEP 2 — paste this PUBLIC key into ALL THREE pages")
+    print("  (game/index.html, exam.html, verify.html):")
     print("  CONFIG.LICENSE_PUBLIC_KEY_HEX = \"%s\"" % pub.hex())
 
 
