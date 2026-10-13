@@ -49,14 +49,17 @@ GOING LIVE (4 commands, all on your own machine):
   5. When a student passes the final exam and emails you their
      certificate code AND their premium license key:
        python3 tools/keygen.py sign-cert --license <key> <code>
-       (or: python3 tools/keygen.py sign-cert --license - < code.txt,
-        with the license key read from stdin)
-     -> verifies the code's HMAC proof (bound to the license secret)
-        and range-checks the score fields, then prints the
+       (either value can be piped through stdin instead, with - :
+        python3 tools/keygen.py sign-cert --license <key> - < code.txt)
+     -> verifies the code's HMAC proof (bound to the license secret),
+        checks the payload names that same license, and checks the
+        score is a pass the exam page could actually have issued
+        (72-90 of 90, pct exactly matching the score), then prints the
         COUNTERSIGNED code. Email it back; they paste it into
         exam.html to earn the verified seal. Anyone can check it
         at verify.html. Hand-crafted codes (missing/bad proof,
-        out-of-range scores) are REFUSED — no signature is issued.
+        failing/impossible/inconsistent scores) are REFUSED —
+        no signature is issued.
 
 Requires: pip install cryptography
 
@@ -275,7 +278,8 @@ def license_secret_from_key(pubkey, license_key):
 
     The key's own Ed25519 signature MUST verify against our public key —
     otherwise the S inside it is attacker-chosen and any HMAC "proof"
-    built on it is meaningless. Returns the 32-byte S.
+    built on it is meaningless. Returns (S, license id): the 32-byte S,
+    plus the id sign-cert binds the certificate payload to.
     """
     clean = re.sub(r"\s+", "", license_key or "")
     try:
@@ -303,7 +307,7 @@ def license_secret_from_key(pubkey, license_key):
         sys.exit("REFUSING: the --license key has a garbled S field.")
     if len(S) != 32:
         sys.exit("REFUSING: the --license key's S field is not 32 bytes.")
-    return S
+    return S, lic["id"]
 
 
 def cmd_sign_cert(keydir, code, license_key):
@@ -312,9 +316,16 @@ def cmd_sign_cert(keydir, code, license_key):
     The student emails you the UNSIGNED code from exam.html PLUS their
     premium license key. Before countersigning we now:
 
-      1. Range-check the score fields (integers 0-100) — a hand-crafted
-         payload with out-of-range or non-integer scores is refused.
-      2. Verify the HMAC-SHA256 proof embedded by exam.html. The proof is
+      1. Check the score fields describe a pass the exam page could
+         actually have issued: integer score of 72-90 (of 90 questions;
+         72 is the 80% pass mark) and pct exactly the percentage the
+         exam computes from that score. A failing, impossible, or
+         internally inconsistent payload is refused, even with a valid
+         proof — the proof is computed with the student's OWN license
+         secret, so a holder can make one for any payload they invent.
+      2. Check the payload's lic_id names the very license key provided
+         — the certificate must belong to the key that earned it.
+      3. Verify the HMAC-SHA256 proof embedded by exam.html. The proof is
          HMAC_SHA256(per-license secret S, canonical payload), computed
          in the browser at the moment the exam was genuinely passed. S
          comes from the student's own license key, whose Ed25519
@@ -341,14 +352,24 @@ def cmd_sign_cert(keydir, code, license_key):
             or "cert_id" not in payload or "name" not in payload
             or "sig" in payload):
         sys.exit("Not an unsigned HackProof certificate payload.")
-    # 1) score fields must be integers 0-100 (bool is not an int here)
+    # 1) score fields: integers (bool is not an int here), a passing
+    # score the exam could have issued, and pct exactly consistent.
     for field in ("score", "pct"):
         val = payload.get(field)
-        if isinstance(val, bool) or not isinstance(val, int) \
-                or not 0 <= val <= 100:
-            sys.exit("REFUSING: score field %r must be an integer 0-100 "
+        if isinstance(val, bool) or not isinstance(val, int):
+            sys.exit("REFUSING: score field %r must be an integer "
                      "(got %r)." % (field, val))
-    # 2) HMAC-SHA256 proof — present, well-formed, and valid
+    score, pct = payload["score"], payload["pct"]
+    if not 72 <= score <= 90:
+        sys.exit("REFUSING: score %r is not a passing exam score "
+                 "(72-90 of 90)." % (score,))
+    # Math.round(score / 90 * 100) with JS half-up rounding, in integers.
+    expected_pct = (score * 200 + 90) // 180
+    if pct != expected_pct:
+        sys.exit("REFUSING: pct %r does not match score %r "
+                 "(the exam would have issued %d)."
+                 % (pct, score, expected_pct))
+    # 3) HMAC-SHA256 proof — present, well-formed, and valid
     proof_b64 = payload.get("proof")
     if not isinstance(proof_b64, str) or not proof_b64:
         sys.exit("REFUSING: certificate code has no HMAC proof — it was not "
@@ -357,7 +378,13 @@ def cmd_sign_cert(keydir, code, license_key):
     if not license_key:
         sys.exit("REFUSING: sign-cert needs the student's license key "
                  "(--license) to verify the certificate's HMAC proof.")
-    S = license_secret_from_key(pubkey, license_key)
+    S, lic_id = license_secret_from_key(pubkey, license_key)
+    # 2) the payload must name the very license that earned it
+    if payload.get("lic_id") != lic_id:
+        sys.exit("REFUSING: the certificate's lic_id %r does not match "
+                 "the license key provided (%r) — code and key must "
+                 "come from the same student."
+                 % (payload.get("lic_id"), lic_id))
     # Re-canonicalize exactly what the browser HMAC'd: the payload
     # WITHOUT the proof field (proof was appended last, so dropping it
     # restores the original key order).
@@ -382,9 +409,9 @@ def cmd_sign_cert(keydir, code, license_key):
     print("COUNTERSIGNED CERTIFICATE — email this to the student:")
     print(out)
     print()
-    print("cert: %s  name: %s  score: %s%%  date: %s" %
+    print("cert: %s  name: %s  score: %s/90 (%s%%)  date: %s" %
           (payload.get("cert_id"), payload.get("name"),
-           payload.get("pct"), payload.get("date")))
+           payload.get("score"), payload.get("pct"), payload.get("date")))
 
 
 def main():
