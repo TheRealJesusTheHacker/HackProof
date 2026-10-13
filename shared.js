@@ -639,10 +639,12 @@ const License = (() => {
     const lic = parseLicense(licenseStr);
     if (lic.tier !== "premium") throw new Error("The exam requires a PREMIUM license.");
     const msg = te(canonicalFields(lic));
-    const sig = b64ToBytes(lic.sig);
     const pk = hexToBytes(pubkeyHex);
     let ok = false;
-    try { ok = nacl.sign.detached.verify(msg, sig, pk); }
+    /* Decode the signature inside the try: a hand-crafted key whose sig
+       field isn't valid base64 must get the same friendly verdict as any
+       other forgery, not a raw atob DOMException. */
+    try { ok = nacl.sign.detached.verify(msg, b64ToBytes(lic.sig), pk); }
     catch (e) { throw new Error("Signature check failed — that key isn't genuine."); }
     if (!ok) throw new Error("Signature check failed — that key isn't genuine.");
     const now = Date.now();
