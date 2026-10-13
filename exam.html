@@ -1314,7 +1314,7 @@ async function renderCert(correct, pct){
   };
   $("#cert-verify-btn").onclick=function(){
     const err=$("#cert-err"); err.classList.remove("show");
-    verifySignedCert($("#cert-signed").value.trim()).then(function(ok){
+    verifySignedCert($("#cert-signed").value.trim(), cid).then(function(ok){
       if(!ok) throw new Error("bad");
       const b=$("#cert-badge"); b.textContent="✓ VERIFIED"; b.style.background="#059669";
     }).catch(function(){
@@ -1324,7 +1324,7 @@ async function renderCert(correct, pct){
   };
 }
 
-function verifySignedCert(str){
+function verifySignedCert(str, expectedCid){
   return new Promise(function(resolve,reject){
     try{
       const clean=(str||"").trim().replace(/\s+/g,"");
@@ -1334,7 +1334,14 @@ function verifySignedCert(str){
       const msg=new TextEncoder().encode(JSON.stringify(raw.payload));
       const sig=License.b64ToBytes(raw.sig);
       const pk=License.hexToBytes(CONFIG.LICENSE_PUBLIC_KEY_HEX);
-      resolve(nacl.sign.detached.verify(msg,sig,pk));
+      const ok=nacl.sign.detached.verify(msg,sig,pk);
+      /* The seal belongs on THIS certificate only: the countersigned
+         payload must name the cert rendered above and the license that
+         earned it — otherwise any valid countersigned code (e.g. a
+         friend's) would light up the badge on an unearned cert. */
+      const bound = raw.payload.cert_id===expectedCid &&
+        (!state.lic || raw.payload.lic_id===state.lic.id);
+      resolve(ok && bound);
     }catch(e){ reject(e); }
   });
 }
