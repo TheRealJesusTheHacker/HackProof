@@ -998,10 +998,12 @@ const License = (() => {
     const lic = parseLicense(licenseStr);
     if (lic.tier !== "premium") throw new Error("That isn't a premium license.");
     const msg = te(canonicalFields(lic));
-    const sig = b64ToBytes(lic.sig);
     const pk = hexToBytes(pubkeyHex);
     let ok = false;
-    try { ok = nacl.sign.detached.verify(msg, sig, pk); }
+    /* Decode the signature inside the try: a hand-crafted key whose sig
+       field isn't valid base64 must get the same friendly verdict as any
+       other forgery, not a raw atob DOMException. */
+    try { ok = nacl.sign.detached.verify(msg, b64ToBytes(lic.sig), pk); }
     catch (e) { throw new Error("Signature check failed — that key isn't genuine."); }
     if (!ok) throw new Error("Signature check failed — that key isn't genuine.");
     const now = Date.now();
@@ -1322,6 +1324,10 @@ function renderTitle() {
   const licBox = S.licenseOk
     ? '<div class="okbox">✅ <b>PREMIUM ACTIVE</b> — expires ' +
       new Date(S.license.expiry * 1000).toLocaleDateString() + '. All 8 scams + 16 field-manual modules unlocked.</div>' +
+      /* The unlock flow's status line (incl. the "browser refused to
+         store the key" note) must stay visible once premium is active —
+         this branch used to drop S.licenseMsg entirely. */
+      (S.licenseMsg ? '<div class="okbox">' + escapeHtml(S.licenseMsg) + '</div>' : '') +
       '<button class="btn ghost" onclick="uiRemoveLicense()">Remove license from this device</button>'
     : '<div class="card"><div class="tag">LICENSE KEY</div>' +
       '<div class="brief">Got a premium key? Paste it below. Your key <b>decrypts</b> the premium content — without it, it\'s just noise. Guard it like a password.</div>' +
@@ -1557,7 +1563,10 @@ function renderBusted() {
   /* PASS 3: lift the pending-pick button freeze (see renderOutcome). */
   document.getElementById("app").classList.remove("answering");
   const r = S.run, scs = getRunScenarios();
-  const cleared = r.scIdx;
+  /* Scenarios actually CLEARED = defense briefs shown. (scIdx is just
+     where the run currently sits — a run started mid-list via a title
+     row would otherwise claim scenarios it never played.) */
+  const cleared = r.flagsShown.length;
   app().innerHTML =
     '<div class="card center"><div class="tag">🚨 BUSTED</div>' +
     "<h1>BUSTED.</h1>" +
@@ -1596,7 +1605,7 @@ function renderEnd() {
     '<div class="stat"><div class="v">' + r.maxHeat + '</div><div class="k">HEAT SURVIVED</div></div>' +
     '<div class="stat"><div class="v">x' + r.bestStreak + '</div><div class="k">BEST STREAK</div></div>' +
     '<div class="stat"><div class="v" style="font-size:16px">' + favoriteScam() + '</div><div class="k">FAVORITE SCAM</div></div>' +
-    '<div class="stat"><div class="v">' + r.flagsShown.length + "/8</div><div class=\"k\">SCAMS CLEARED</div></div></div>" +
+    '<div class="stat"><div class="v">' + r.flagsShown.length + "/" + getRunScenarios().length + '</div><div class="k">SCAMS CLEARED</div></div></div>' +
     '<div class="tag">SHARE YOUR RUN</div><div class="sharebox" id="sharebox">' + share + "</div>" +
     '<button class="btn primary" onclick="uiCopy()">📋 COPY SUMMARY</button>' +
     '<div class="tag mt">FULL RED-FLAG DEBRIEF</div><div style="text-align:left">' + debrief + "</div>" +
