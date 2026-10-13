@@ -494,6 +494,10 @@ function readRateCache() {
   try {
     const c = JSON.parse(sessionStorage.getItem(RATE_CACHE_KEY) || "null");
     if (!c || !(c.usd > 0) || !(c.ts > 0)) return null;
+    /* A future timestamp means the device clock moved backward after the
+       rate was cached — Date.now() - ts goes negative and the entry would
+       pose as fresh for the whole skew. Never trust it; refetch. */
+    if (c.ts > Date.now()) return null;
     if (Date.now() - c.ts >= RATE_TTL_MS) return null;
     return c;
   } catch (e) { return null; }
