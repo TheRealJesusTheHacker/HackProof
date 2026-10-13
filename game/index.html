@@ -1328,7 +1328,7 @@ function renderTitle() {
       '<div class="mt"><textarea class="keybox" id="keyinput" aria-label="License key" placeholder="Paste license key here..."></textarea></div>' +
       '<label class="checkrow"><input type="checkbox" id="remember"> <span>Remember on this device (stored only in this browser — uncheck to keep this session only)</span></label>' +
       '<button class="btn primary" onclick="uiUnlock()">UNLOCK PREMIUM</button>' +
-      (S.licenseMsg ? '<div class="' + (S.licenseOk ? "okbox" : "warn") + '">' + S.licenseMsg + "</div>" : "") +
+      (S.licenseMsg ? '<div class="' + (S.licenseOk ? "okbox" : "warn") + '">' + escapeHtml(S.licenseMsg) + "</div>" : "") +
       '<div class="center"><a href="buy.html" style="color:var(--purple-l)">Don\'t have a key? Get premium — $5 in BTC →</a></div></div>';
 
   app().innerHTML =
