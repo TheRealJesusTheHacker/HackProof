@@ -21,8 +21,8 @@ HackProof license-key + premium-pack tooling.
 !!  - This script contains NO key material — it reads your local      !!
 !!    files, uses them, and forgets them.                             !!
 !!  If either secret leaks: run `setup` again (fresh keys), paste the !!
-!!  NEW public key into game/index.html CONFIG, re-run `build-pack`,  !!
-!!  and re-mint every customer license.                               !!
+!!  NEW public key into game/index.html CONFIG and shared.js,         !!
+!!  re-run `build-pack`, and re-mint every customer license.          !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 GOING LIVE (4 commands, all on your own machine):
@@ -30,12 +30,11 @@ GOING LIVE (4 commands, all on your own machine):
   1. python3 tools/keygen.py setup
        -> generates keys in ~/.hackproof/, prints your PUBLIC key.
 
-  2. Paste the printed PUBLIC key hex into ALL THREE files
+  2. Paste the printed PUBLIC key hex into BOTH files
      (replacing the REPLACE_WITH_YOUR_PUBLIC_KEY_HEX placeholder),
      then commit + deploy:
        game/index.html
-       exam.html
-       verify.html
+       shared.js          (loaded by exam.html and verify.html)
        CONFIG.LICENSE_PUBLIC_KEY_HEX = "<paste here>"
 
   3. python3 tools/keygen.py build-pack
@@ -160,8 +159,8 @@ def cmd_setup(keydir):
     print("  content-master.key   <- NEVER commit, NEVER share")
     print("  ed25519-public.key    <- this one is public")
     print()
-    print("STEP 2 — paste this PUBLIC key into ALL THREE pages")
-    print("  (game/index.html, exam.html, verify.html):")
+    print("STEP 2 — paste this PUBLIC key into BOTH files")
+    print("  (game/index.html, shared.js — shared.js covers exam.html + verify.html):")
     print("  CONFIG.LICENSE_PUBLIC_KEY_HEX = \"%s\"" % pub.hex())
 
 
