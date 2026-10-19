@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>HackProof — Final Exam</title>
-<meta name="description" content="The HackProof final exam: 90 questions across all 19 course modules. Pass at 80% to earn your verifiable certificate.">
+<meta name="description" content="The HackProof final exam: 90 questions spanning the full course. Pass at 80% to earn your verifiable certificate.">
 <style>
 :root{
   --bg:#0a0612; --bg2:#120a1e; --card:#170d28; --line:#2c1847;
@@ -32,10 +32,10 @@ header.brand{display:flex;align-items:center;gap:12px;margin:6px 0 18px}
 .card h2 .accent{color:var(--neon)}
 p.lead{color:var(--dim);margin:6px 0 14px}
 label.field{display:block;margin:14px 0 4px;font-size:13px;letter-spacing:.08em;color:var(--neon);text-transform:uppercase}
-input[type=text],textarea{
+input[type=text],input[type=email],textarea{
   width:100%;background:#0d0718;border:1px solid var(--line);border-radius:10px;color:var(--ink);
   padding:14px;font-size:17px;font-family:inherit;outline:none}
-input[type=text]:focus,textarea:focus{border-color:var(--purple);box-shadow:0 0 0 3px #a855f733}
+input[type=text]:focus,input[type=email]:focus,textarea:focus{border-color:var(--purple);box-shadow:0 0 0 3px #a855f733}
 textarea{min-height:110px;resize:vertical;font-size:14px;line-height:1.5}
 .hint{font-size:13px;color:var(--dim);margin:6px 0 0}
 .err{display:none;background:#3b0d1a;border:1px solid #7f1d2e;color:#fecaca;border-radius:10px;
@@ -104,6 +104,16 @@ footer.site{color:var(--dim);font-size:13px;text-align:center;margin:34px 0 10px
 footer.site a{color:var(--neon)}
 a{color:var(--neon)}
 .hidden{display:none!important}
+/* Content protection (deterrent layer): exam questions render inside
+   .protected-content — text selection off, copy/cut/context-menu/drag
+   intercepted by the shared snippet at the end of this page. Form
+   fields and the certificate screen are deliberately NOT protected:
+   students must be able to paste their license key and copy/print
+   their certificate code. Screen readers are unaffected. */
+.protected-content{-webkit-user-select:none;-moz-user-select:none;user-select:none;-webkit-touch-callout:none}
+.copy-notice{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:9999;
+  background:#221338;color:#f3efff;border:1px solid var(--purple2);border-radius:999px;
+  padding:10px 18px;font-size:13px;box-shadow:0 8px 24px rgba(0,0,0,.5)}
 /* print: one perfect page, certificate only */
 @media print{
   @page{size:letter;margin:0.45in}
@@ -133,7 +143,7 @@ a{color:var(--neon)}
   <div id="app"></div>
   <footer class="site no-print">
     HackProof by <b>JesusTheHacker</b> · Sentinel Safeguard LLC<br>
-    <a href="verify.html">Verify a certificate</a> · <a href="game/index.html">Back to the game</a> · <a href="game/buy.html">Get premium</a>
+    <a href="verify.html">Verify a certificate</a> · <a href="game/index.html">Back to the course</a> · <a href="game/buy.html">Get premium</a>
   </footer>
 </div>
 <script src="shared.js"></script>
@@ -448,6 +458,65 @@ function shuffled(arr){
 }
 const state = { name:"", lic:null, order:[], optMap:[], answers:new Array(90).fill(-1), cur:0, inProgress:false };
 
+/* ============ CERTIFICATE DELIVERY SERVICE ============
+   On a pass, the student's certificate code can be submitted to the
+   payments/certificate service (contract: payments/README.md), which
+   validates it exactly like tools/keygen.py sign-cert, countersigns
+   it, and emails the OFFICIAL certificate. WIRING: set the service
+   base URL here — single place, same pattern and same service as
+   buy.html's PAYMENTS_API_BASE. Empty = automatic delivery not wired;
+   the manual route on the certificate screen applies. */
+const PAYMENTS_API_BASE = ""; // e.g. "https://<service-host>" -> POST {base}/api/certificates
+
+/* ================= EXAM INTEGRITY MONITORING =================
+   Local-only behavioral signals, computed in this browser while an
+   attempt is in progress: tab switches, window blurs, copy/cut/paste
+   attempts, first-answer latency per question, total duration. At
+   grading time they are summarized into a verdict — "clean" or
+   "flagged" — which is embedded in the certificate payload the
+   student chooses to submit for countersigning, so Sentinel
+   Safeguard sees it in tools/keygen.py sign-cert and decides.
+   Nothing is uploaded automatically; nothing leaves this device
+   except inside that certificate code. These are integrity SIGNALS,
+   not proof: honest students can trip them (a notification, an
+   accidental Ctrl+C) — which is why a human reviews flagged codes
+   instead of the exam auto-rejecting anyone. */
+const integrity = { tab:0, blur:0, copy:0, cut:0, paste:0, startedAt:0, shownAt:0, times:{} };
+function integrityReset(){
+  integrity.tab = 0; integrity.blur = 0; integrity.copy = 0;
+  integrity.cut = 0; integrity.paste = 0;
+  integrity.startedAt = performance.now(); integrity.shownAt = 0; integrity.times = {};
+}
+document.addEventListener("visibilitychange", function(){
+  if(state.inProgress && document.hidden) integrity.tab++;
+});
+window.addEventListener("blur", function(){ if(state.inProgress) integrity.blur++; });
+["copy","cut","paste"].forEach(function(type){
+  document.addEventListener(type, function(){ if(state.inProgress) integrity[type]++; }, true);
+});
+function integritySummary(){
+  const vals = Object.keys(integrity.times).map(function(k){ return integrity.times[k]; });
+  const answered = vals.length;
+  const sorted = vals.slice().sort(function(a,b){ return a-b; });
+  const median = answered ? sorted[Math.floor(answered/2)] : 0;
+  const fast = vals.filter(function(t){ return t < 2000; }).length;
+  const secs = integrity.startedAt ? Math.round((performance.now()-integrity.startedAt)/1000) : 0;
+  const flags = [];
+  if(integrity.tab >= 3) flags.push("tab-switches");
+  if(integrity.copy >= 2) flags.push("copy-attempts");
+  if(integrity.cut >= 1) flags.push("cut-attempts");
+  if(answered >= 45 && fast >= 20 && median < 2000) flags.push("uniform-fast-answering");
+  if(answered >= 80 && secs > 0 && secs < 300) flags.push("total-duration");
+  return {
+    verdict: flags.length ? "flagged" : "clean",
+    tab_switches: integrity.tab, window_blurs: integrity.blur,
+    copy_attempts: integrity.copy, cut_attempts: integrity.cut,
+    paste_attempts: integrity.paste,
+    fast_answers: fast, median_answer_ms: median, duration_s: secs,
+    flags: flags.join(",")
+  };
+}
+
 /* Warn before a mid-exam reload/navigation wipes the attempt (answers
    live only in memory). Armed only between Begin and Submit. */
 window.addEventListener("beforeunload", function(e){
@@ -462,8 +531,11 @@ function gateScreen(msg){
   app.innerHTML =
   '<div class="card no-print" id="screen-gate">'+
     '<h2>The Final <span class="accent">Exam</span></h2>'+
-    '<p class="lead">90 questions across all 19 course modules. Score <b>80% or higher</b> and your '+
+    '<p class="lead">90 questions spanning the full HackProof course. Score <b>80% or higher</b> and your '+
     '<b>Sentinel Safeguard Certificate of Cyber Security Awareness Course Completion</b> generates instantly.</p>'+
+    '<p class="hint">Integrity monitoring: while you take the exam, this page records signals locally in your browser — '+
+    'tab switches, copy/paste attempts, and answer timing. Nothing is uploaded. A summary verdict (clean or flagged) '+
+    'is included in your certificate code and shown to Sentinel Safeguard when you submit it for countersigning.</p>'+
     '<div class="err'+(msg?" show":"")+'" id="gate-err">'+esc(msg||"")+'</div>'+
     '<label class="field" for="gate-name">Your full name — exactly as it should appear on your certificate</label>'+
     '<input type="text" id="gate-name" placeholder="e.g. Alex Rivera" value="'+esc(savedName)+'" autocomplete="name">'+
@@ -502,6 +574,7 @@ function startExam(){
   state.answers = new Array(90).fill(-1);
   state.cur = 0;
   state.inProgress = true;
+  integrityReset();
   renderQ();
 }
 
@@ -520,8 +593,9 @@ function renderQ(){
     opts += '<button class="opt'+(state.answers[state.cur]===pos?" picked":"")+'" data-pos="'+pos+'">'+
       '<span class="k">'+letters[pos]+'</span>'+esc(q.o[oi])+'</button>';
   });
+  integrity.shownAt = performance.now();
   app.innerHTML =
-  '<div class="card no-print" id="screen-exam">'+
+  '<div class="card no-print protected-content" id="screen-exam">'+
     '<div class="qmeta"><span>QUESTION '+(state.cur+1)+' / 90</span><span>'+answered+' answered</span></div>'+
     '<div class="progress"><div style="width:'+Math.round(answered/90*100)+'%"></div></div>'+
     '<div class="qtext">'+esc(q.q)+'</div>'+ opts +
@@ -533,7 +607,12 @@ function renderQ(){
     '<div class="grid90 no-print" id="qnav">'+nav+'</div>'+
   '</div>';
   const optBtns = app.querySelectorAll(".opt");
-  optBtns.forEach(function(b){ b.onclick=function(){ state.answers[state.cur]=+b.dataset.pos; renderQ(); }; });
+  optBtns.forEach(function(b){ b.onclick=function(){
+    /* First-answer latency for this position (integrity signal). */
+    if(integrity.times[state.cur] === undefined && integrity.shownAt)
+      integrity.times[state.cur] = Math.round(performance.now()-integrity.shownAt);
+    state.answers[state.cur]=+b.dataset.pos; renderQ();
+  }; });
   $("#q-prev").onclick=function(){ if(state.cur>0){state.cur--; renderQ();} window.scrollTo(0,0); };
   $("#q-next").onclick=function(){ if(state.cur<89){state.cur++; renderQ();} window.scrollTo(0,0); };
   const navBtns = $("#qnav").querySelectorAll("button");
@@ -563,7 +642,7 @@ function grade(){
 function renderResult(correct, pct, pass, wrong){
   const letters=["A","B","C","D"];
   let html =
-  '<div class="card no-print" id="screen-result">'+
+  '<div class="card no-print protected-content" id="screen-result">'+
     '<h2>Your <span class="accent">Score</span></h2>'+
     '<div class="score-big '+(pass?"pass":"fail")+'">'+pct+'%</div>'+
     '<div class="verdict '+(pass?"pass":"fail")+'">'+(pass?"PASSED":"NOT PASSED")+'</div>'+
@@ -611,10 +690,65 @@ async function certProof(payload){
   return b64e(new Uint8Array(mac));
 }
 
+/* Submit the certificate code to the service (contract:
+   payments/README.md). The body carries the base64 code exactly as
+   produced above, the student's license_key (REQUIRED — the payload's
+   HMAC proof is keyed by the license secret, so it cannot be verified
+   without the key that earned it, exactly like sign-cert --license),
+   the delivery email, and the integrity block. States:
+   201/200 issued -> confirmation + the returned countersigned code is
+   applied to the seal box automatically; 202 held_for_review -> calm
+   review message (NEVER accusatory — the verdict is surfaced to
+   Sentinel host-side, the student just hears "quick review");
+   400 / unreachable -> the manual route below stays the path. */
+async function submitCertDelivery(payload, code){
+  const status = $("#cert-send-status");
+  const email = ($("#cert-email").value || "").trim();
+  const manual = "Use the manual route below instead: email the certificate code to " +
+    "Sentinelsafeguard@outlook.com and your countersigned certificate will be emailed back to you.";
+  if(!email || email.indexOf("@") < 1 || email.indexOf(".") < 0){
+    status.textContent = "Enter the email address your official certificate should be sent to."; return;
+  }
+  if(!PAYMENTS_API_BASE){
+    status.textContent = "Automatic email delivery isn't reachable from this page right now. " + manual; return;
+  }
+  let licenseKey = "";
+  try{ licenseKey = localStorage.getItem(CONFIG.LICENSE_STORAGE_KEY) || ""; }catch(e){}
+  status.textContent = "Sending…";
+  try{
+    const ctrl = new AbortController();
+    const t = setTimeout(function(){ ctrl.abort(); }, 15000);
+    const r = await fetch(PAYMENTS_API_BASE.replace(/\/+$/, "") + "/api/certificates", {
+      method: "POST", headers: { "Content-Type": "application/json" }, signal: ctrl.signal,
+      body: JSON.stringify({ certificate_code: code, license_key: licenseKey,
+                             email: email, integrity: payload.integrity })
+    });
+    clearTimeout(t);
+    let j = null; try{ j = await r.json(); }catch(e){}
+    if(r.status === 202 || (j && j.status === "held_for_review")){
+      status.textContent = "Thank you — your result is with a member of the Sentinel Safeguard team for a " +
+        "quick review, a standard step for some certificates. Your official certificate will follow by " +
+        "email once the review is complete. Questions? Email Sentinelsafeguard@outlook.com.";
+    }else if((r.status === 201 || r.status === 200) && j && j.status === "issued"){
+      status.textContent = "✓ Your certificate has been generated and emailed to " + email + ". " +
+        "The certificate on this page is your instant copy — the emailed, countersigned certificate is the official one.";
+      if(j.countersigned_code){
+        const box = $("#cert-signed");
+        if(box){ box.value = j.countersigned_code; const b = $("#cert-verify-btn"); if(b) b.click(); }
+      }
+    }else{
+      status.textContent = "The certificate service couldn't complete this submission. " + manual;
+    }
+  }catch(e){
+    status.textContent = "We couldn't reach the certificate service just now. " + manual;
+  }
+}
+
 async function renderCert(correct, pct){
   const cid = certId();
   const date = new Date().toISOString().slice(0,10);
-  const payload = { v:1, cert_id:cid, name:state.name, score:correct, pct:pct, date:date, lic_id:state.lic.id };
+  const isum = integritySummary();
+  const payload = { v:1, cert_id:cid, name:state.name, score:correct, pct:pct, date:date, lic_id:state.lic.id, integrity:isum };
   /* Proof FIRST (over the payload without it), then embed — sign-cert
      strips `proof` and re-canonicalizes the rest to re-verify. */
   let code = null, proofErr = "";
@@ -649,7 +783,17 @@ async function renderCert(correct, pct){
       '<button class="btn primary" id="cert-print">🖨 Print / Save PDF</button>'+
       '<h2 style="margin-top:18px">Get your <span class="accent">verified seal</span></h2>'+
       (code ?
-        '<p class="lead">Email the code below <b>plus your premium license key</b> to <b>Sentinelsafeguard@outlook.com</b> — '+
+        '<h2 style="margin-top:18px">Your <span class="accent">official certificate</span>, by email</h2>'+
+        '<p class="lead">The certificate above is your <b>instant copy</b> — print it, frame it, share it. The <b>official</b> '+
+        'record is the countersigned certificate we email you. Confirm the name and email, and we\'ll send it:</p>'+
+        '<label class="field" for="cert-name-confirm">Name on the certificate</label>'+
+        '<input type="text" id="cert-name-confirm" value="'+esc(state.name)+'" autocomplete="name">'+
+        '<label class="field" for="cert-email">Email for your official certificate</label>'+
+        '<input type="email" id="cert-email" placeholder="you@example.com" autocomplete="email">'+
+        '<button class="btn primary" id="cert-send-btn">Email my official certificate</button>'+
+        '<p class="hint" id="cert-send-status" role="status"></p>'+
+        '<h2 style="margin-top:18px">Verified seal — <span class="accent">manual route</span></h2>'+
+        '<p class="lead">If automatic delivery above isn\'t available, email the code below <b>plus your premium license key</b> to <b>Sentinelsafeguard@outlook.com</b> — '+
         'you will get back a countersigned code. Paste it here and your certificate earns its verified seal, checkable by anyone at the verify page.</p>'+
         '<div class="codebox"><textarea id="cert-unsigned" readonly>'+esc(code)+'</textarea></div>'+
         '<button class="btn ghost small" id="copy-unsigned">Copy code</button> '+
@@ -661,11 +805,16 @@ async function renderCert(correct, pct){
         :
         '<div class="err show">'+esc(proofErr)+'</div>'
       )+
+      '<p class="hint">Exam integrity monitoring (recorded locally in your browser): verdict <b>'+esc(isum.verdict)+'</b> — '+
+      'tab switches: '+isum.tab_switches+', copy attempts: '+isum.copy_attempts+', median answer time: '+
+      Math.round(isum.median_answer_ms/100)/10+'s. This summary travels inside your certificate code and is shown '+
+      'to Sentinel Safeguard when you submit it for countersigning.</p>'+
       '<p class="hint"><a href="verify.html">Open the certificate verifier →</a></p>'+
     '</div>';
   app.appendChild(card);
   $("#cert-print").onclick=function(){ window.print(); };
   if(!code) return;
+  $("#cert-send-btn").onclick=function(){ submitCertDelivery(payload, code); };
   $("#copy-unsigned").onclick=function(){ const t=$("#cert-unsigned"); t.select(); try{document.execCommand("copy");}catch(e){} };
   $("#copy-lickey").onclick=function(){
     try{
@@ -723,6 +872,43 @@ if(QUESTIONS.length !== 90){
 } else {
   gateScreen("");
 }
+})();
+</script>
+<script>
+"use strict";
+/* ================================================================
+   HackProof content protection — shared snippet (deterrent layer).
+   Scoped to .protected-content containers only: text selection is
+   off via CSS; copy/cut/context-menu/dragstart are intercepted with
+   a brief polite notice. Paste is NEVER intercepted (students paste
+   license keys and certificate codes into form fields), form fields
+   are never blocked, and screen readers are unaffected. This is a
+   deterrent, not a vault: it cannot stop view-source or screenshots,
+   and the product never claims otherwise.
+   ================================================================ */
+(function(){
+  function inProtected(t){ return !!(t && t.closest && t.closest(".protected-content")); }
+  function inField(t){ return !!(t && t.closest && t.closest("input, textarea, select, [contenteditable='true']")); }
+  var lastNotice = 0;
+  function notice(){
+    var now = Date.now(); if(now - lastNotice < 2500) return; lastNotice = now;
+    var d = document.createElement("div");
+    d.className = "copy-notice"; d.setAttribute("role","status");
+    d.textContent = "Copying is disabled for course content.";
+    document.body.appendChild(d);
+    setTimeout(function(){ d.remove(); }, 2600);
+  }
+  ["copy","cut"].forEach(function(type){
+    document.addEventListener(type, function(e){
+      if(inProtected(e.target) && !inField(e.target)){ e.preventDefault(); notice(); }
+    }, true);
+  });
+  document.addEventListener("contextmenu", function(e){
+    if(inProtected(e.target) && !inField(e.target)) e.preventDefault();
+  }, true);
+  document.addEventListener("dragstart", function(e){
+    if(inProtected(e.target) && !inField(e.target)) e.preventDefault();
+  }, true);
 })();
 </script>
 </body>
