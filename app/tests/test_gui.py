@@ -186,7 +186,22 @@ def test_qr_holder_reserves_its_space(qapp, store, tmp_path, monkeypatch):
     page.submit_email()
     assert pump_until(lambda: page._payment_panel.isVisible())
     assert page._qr_holder_widget.isVisible()
-    qapp.processEvents()
+
+    def _qr_above_status() -> bool:
+        holder_bottom = page._qr_holder_widget.mapTo(
+            page, page._qr_holder_widget.rect().bottomLeft()).y()
+        status_top = page._pay_status.mapTo(
+            page, page._pay_status.rect().topLeft()).y()
+        return status_top >= holder_bottom
+
+    # Measure the SETTLED layout. Holder and status line are
+    # siblings in one QVBoxLayout, which never overlaps them once
+    # it settles — but revealing the holder triggers a relayout
+    # whose final pass can land a beat after the widget becomes
+    # visible (the Windows runners caught a 5px mid-relayout
+    # snapshot after a single processEvents). If the product ever
+    # truly overlapped, this pump times out and the test fails.
+    assert pump_until(_qr_above_status)
     holder_bottom = page._qr_holder_widget.mapTo(
         page, page._qr_holder_widget.rect().bottomLeft()).y()
     status_top = page._pay_status.mapTo(
