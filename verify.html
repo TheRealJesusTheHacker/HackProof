@@ -150,7 +150,7 @@ a{color:var(--neon)}
   </div>
   <footer class="site">
     HackProof by <b>JesusTheHacker</b> · Sentinel Safeguard LLC<br>
-    <a href="exam.html">Take the exam</a> · <a href="game/index.html">Play the game</a>
+    <a href="exam.html">Take the exam</a> · <a href="game/index.html">Open the course</a>
   </footer>
 </div>
 <script src="shared.js"></script>
@@ -181,6 +181,8 @@ $("#v-go").onclick=function(){
           '<div class="kv">Score: '+esc(String(p.pct))+'% ('+esc(String(p.score))+'/90)</div>'+
           '<div class="kv">Completed: '+esc(p.date)+'</div>'+
           '<div class="kv">Certificate ID: '+esc(p.cert_id)+'</div>'+
+          (p.integrity && p.integrity.verdict ?
+            '<div class="kv">Exam integrity check: '+(p.integrity.verdict==="clean" ? "clean" : "flagged — reviewed by Sentinel Safeguard at countersigning")+'</div>' : '')+
           '<div class="kv">Issued by: Sentinel Safeguard LLC · signature verified</div>';
       }else{
         res.classList.add("show","invalid");
