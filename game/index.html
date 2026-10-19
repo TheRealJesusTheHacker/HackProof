@@ -1071,7 +1071,6 @@ const S = {
   licenseOk: false, // a valid premium license unlocked this device
   license: null,    // { tier, expiry }
   licenseMsg: "",   // status line shown under the key box
-  pending: null,    // reserved by renderOutcome
   pendingCC: null,  // active close-call branch choices
   answered: false   // PASS 2: a pick was already taken on this node/close-call screen
                     // (ignores double-taps while the outcome is pending)
@@ -1461,12 +1460,11 @@ function uiPick(i) {
   if (res.busted) { setTimeout(() => renderBusted(), 650); return; }
   setTimeout(() => {
     if (opt.closeCall) renderCloseCall(opt.closeCall, sc);
-    else renderOutcome(opt.out || [], { next: "node" }, warn);
+    else renderOutcome(opt.out || [], warn);
   }, 650);
 }
 
-function renderOutcome(lines, pending, warn) {
-  S.pending = pending;
+function renderOutcome(lines, warn) {
   /* PASS 3: the pick is resolved — unfreeze buttons or CONTINUE is dead
      (pointer-events:none from the pending-pick freeze would persist). */
   document.getElementById("app").classList.remove("answering");
@@ -1524,7 +1522,7 @@ function uiCC(which) {
   renderHUD();
   const warn = heatWarning();
   if (res.busted) { setTimeout(() => renderBusted(), 650); return; }
-  setTimeout(() => renderOutcome(br.out, { next: "node" }, warn), 650);
+  setTimeout(() => renderOutcome(br.out, warn), 650);
 }
 
 function uiContinue() {
