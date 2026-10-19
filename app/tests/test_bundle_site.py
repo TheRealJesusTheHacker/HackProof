@@ -10,11 +10,13 @@ import pytest
 
 from hackproof_app import site_bundle
 from tools.bundle_site import (
+    apply_brand_theme,
     build_manifest,
     copy_site,
     default_out,
     main,
     rewire_constants,
+    rewrite_buy_links,
 )
 
 
@@ -29,12 +31,18 @@ PUBKEY = "ab" * 32
 def make_site(root: Path, *, pack: str = "empty") -> Path:
     (root / "course").mkdir(parents=True)
     (root / "course" / "01-welcome.md").write_text("# Welcome")
-    (root / "index.html").write_text("<h1>HackProof</h1>")
+    (root / "index.html").write_text(
+        "<h1>HackProof</h1><style>body{background:#0a0612;"
+        "color:#efe8fa}.a{color:#a855f7;"
+        "box-shadow:0 0 0 3px #a855f733}</style>"
+    )
     (root / "verify.html").write_text("<h1>Verify</h1>")
     (root / "exam.html").write_text(
         '<script>const CERT_SERVICE_BASE_URL = ""; '
+        'const PAYMENTS_API_BASE = ""; '
         'const CERT_SUBMIT_URL = CERT_SERVICE_BASE_URL + "/api/certificates";'
         "</script>"
+        '<a href="game/buy.html">Get premium</a>'
     )
     marker = "BUILT-CIPHERTEXT" if pack == "built" else ""
     shared = (
@@ -56,7 +64,12 @@ def make_site(root: Path, *, pack: str = "empty") -> Path:
     (root / "app").mkdir()
     (root / "app" / "inner.txt").write_text("APP ITSELF")
     (root / "game").mkdir()
-    (root / "game" / "buy.html").write_text("GAME PAGE")
+    (root / "game" / "buy.html").write_text("GAME BUY PAGE")
+    # game/index.html IS the course catalog + reader: it ships.
+    (root / "game" / "index.html").write_text(
+        '<h1>Course</h1><a href="buy.html">Get premium</a>'
+        '<p style="color:rgba(168,85,247,.5)">glow</p>'
+    )
     return root
 
 
@@ -79,7 +92,10 @@ def test_exclusions(bundled):
     assert not any(n.startswith("payments/") for n in names)
     assert not any(n.startswith("content/") for n in names)
     assert not any(n.startswith("app/") for n in names)
-    assert not any(n.startswith("game/") for n in names)
+    # The course page ships; the website's buy page never does —
+    # buying inside the app is the native My Premium screen.
+    assert "game/index.html" in names
+    assert "game/buy.html" not in names
 
 
 def test_rewiring_points_exam_at_app_origin(bundled):
@@ -87,6 +103,72 @@ def test_rewiring_points_exam_at_app_origin(bundled):
     exam = (out / "exam.html").read_text()
     assert 'CERT_SERVICE_BASE_URL = "hackproof://app"' in exam
     assert "exam.html:CERT_SERVICE_BASE_URL" in manifest["rewired_constants"]
+    # The exam page's real constant is an *_API_BASE one; missing
+    # it leaves in-app certificate delivery on the manual route.
+    assert 'PAYMENTS_API_BASE = "hackproof://app"' in exam
+    assert "exam.html:PAYMENTS_API_BASE" in manifest["rewired_constants"]
+
+
+def _purple_family(hex6: str) -> bool:
+    """Hue/saturation test: violet hues with real saturation.
+    Near-neutral lavenders (sat <= .08) read as grey/white and
+    are handled by the map's text-tone entries instead."""
+    r, g, b = (int(hex6[i:i + 2], 16) for i in (1, 3, 5))
+    mx, mn = max(r, g, b), min(r, g, b)
+    if mx == mn or mx == 0:
+        return False
+    sat = (mx - mn) / mx
+    if mx == r:
+        hue = (60 * ((g - b) / (mx - mn)) + 360) % 360
+    elif mx == g:
+        hue = 120 + 60 * ((b - r) / (mx - mn))
+    else:
+        hue = 240 + 60 * ((r - g) / (mx - mn))
+    return 225 <= hue <= 335 and sat > 0.08
+
+
+def test_no_purple_family_survives_the_brand_pass(bundled):
+    import re
+
+    _, out, _ = bundled
+    apply_brand_theme(out)
+    hex6 = re.compile(r"#[0-9a-fA-F]{6}(?![0-9a-fA-F])")
+    offenders = []
+    for path in out.rglob("*"):
+        if path.suffix not in (".html", ".js", ".css"):
+            continue
+        for token in hex6.findall(path.read_text(errors="replace")):
+            if _purple_family(token.lower()):
+                offenders.append((str(path.relative_to(out)), token))
+    assert not offenders, offenders
+
+
+def test_buy_links_point_at_the_app(bundled):
+    repo, out, _ = bundled
+    touched = rewrite_buy_links(out)
+    assert set(touched) == {"exam.html", "game/index.html"}
+    assert 'href="/_app/buy-in-app.html"' in (out / "exam.html").read_text()
+    assert 'href="/_app/buy-in-app.html"' in (
+        out / "game" / "index.html"
+    ).read_text()
+    # The repository files are never touched.
+    assert 'href="game/buy.html"' in (repo / "exam.html").read_text()
+    assert 'href="buy.html"' in (repo / "game" / "index.html").read_text()
+
+
+def test_brand_theme_applied_to_bundled_copies_only(bundled):
+    repo, out, _ = bundled
+    counts = apply_brand_theme(out)
+    assert counts  # something changed
+    index = (out / "index.html").read_text().lower()
+    assert "#a855f7" not in index and "#0a0612" not in index
+    assert "#1e7a3c" in index and "#060a07" in index
+    assert "#1e7a3c33" in index  # the alpha form keeps its alpha
+    course = (out / "game" / "index.html").read_text()
+    assert "168,85,247" not in course
+    assert "30,122,60" in course
+    # Repository originals keep the website's own palette.
+    assert "#a855f7" in (repo / "index.html").read_text()
 
 
 def test_manifest_facts(bundled):
@@ -113,14 +195,15 @@ def test_pack_states(tmp_path):
         assert manifest["pack"]["state"] == expected, pack
 
 
-def test_game_pack_artifact_ships_without_game_pages(tmp_path):
+def test_game_pack_artifact_ships_without_the_buy_page(tmp_path):
     repo = make_site(tmp_path / "repo", pack="absent")
     (repo / "game" / "premium-pack.b64").write_text("Q0lQSEVSVEVYVA==")
     out = tmp_path / "webroot"
     out.mkdir()
     copy_site(repo, out)
     assert (out / "premium-pack.b64").is_file()
-    assert not (out / "game").exists()
+    assert (out / "game" / "index.html").is_file()
+    assert not (out / "game" / "buy.html").exists()
     manifest = build_manifest(repo, out, [], [])
     assert manifest["pack"]["state"] == site_bundle.PACK_BUILT
 
