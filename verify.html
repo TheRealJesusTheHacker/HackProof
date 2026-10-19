@@ -187,10 +187,16 @@ $("#v-go").onclick=function(){
         res.innerHTML='<b>✗ INVALID</b><div class="kv">The signature did not verify. This code is forged or corrupted.</div>';
       }
     }else if(raw.v===1 && raw.cert_id){
-      // unsigned: pending countersignature
+      /* Unsigned: pending countersignature. Show ONLY the cert id —
+         every other field in an unsigned payload is attacker-controlled
+         (anyone can base64 a name/score/date), so rendering holder
+         details here would let a hand-crafted code borrow legitimacy
+         from the verifier page. Details render only after the Ed25519
+         countersignature verifies (branch above). */
       res.classList.add("show","pending");
-      res.innerHTML='<b>⧗ UNVERIFIED</b><div class="kv">This certificate ('+esc(raw.cert_id)+', '+esc(raw.name||"")+
-        ') has not been countersigned yet — it is pending verification by Sentinel Safeguard.</div>';
+      res.innerHTML='<b>⧗ UNVERIFIED</b><div class="kv">Certificate '+esc(raw.cert_id)+
+        ' has not been countersigned yet — it is pending verification by Sentinel Safeguard. '+
+        'No holder or score details are shown for unsigned codes, because those fields are not authenticated.</div>';
     }else{
       throw new Error("unrecognized");
     }
