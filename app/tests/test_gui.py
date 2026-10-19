@@ -127,6 +127,196 @@ def test_web_view_degrades_designed_when_engine_missing(qapp, store, tmp_path):
     retire(win)
 
 
+def test_status_text_honest_about_unbuilt_pack(qapp, store, tmp_path,
+                                               monkeypatch):
+    """With a license but no built pack, the status must NOT
+    claim the lessons are unlocked — the exam is, the lessons
+    aren't in this edition yet, and the note says so."""
+    from hackproof_app.gui.premium_page import PremiumPage
+
+    page = premium_page(qapp, store, tmp_path, monkeypatch=monkeypatch)
+    store.settings.license_key = "SOME-KEY"
+    page.refresh()
+    text = page._status_label.text()
+    assert "Premium is active" in text
+    assert "premium lessons and the final exam are unlocked" not in text
+    assert "The final exam is unlocked." in text
+    assert "still being prepared" in text
+    # With the pack present, the full claim is the honest one.
+    root = make_webroot(tmp_path / "webroot2")
+    data = json.loads((root / "app-manifest.json").read_text())
+    data["pack"] = {"state": "built", "bytes": 123}
+    (root / "app-manifest.json").write_text(json.dumps(data))
+    page2 = PremiumPage(store, make_manifest(root), verify_fn=verify_ok)
+    _KEEP.append(page2)
+    page2.refresh()
+    assert "premium lessons and the final exam are unlocked" in (
+        page2._status_label.text())
+
+
+def test_qr_holder_reserves_its_space(qapp, store, tmp_path, monkeypatch):
+    """The QR holder must be fixed-height and revealed with the
+    order, so the payment status line can never slide under the
+    native QR widget."""
+    from PySide6.QtCore import Signal
+    from PySide6.QtWidgets import QWidget
+
+    from hackproof_app.gui.premium_page import PremiumPage
+
+    class FakeQrView(QWidget):
+        loadFinished = Signal(bool)
+
+        def setUrl(self, _url):
+            pass
+
+    store.settings.service_base_url = "https://svc.example"
+    root = make_webroot(tmp_path / "webroot")
+    page = PremiumPage(
+        store, make_manifest(root),
+        client_factory=lambda base: StubClient(),
+        verify_fn=verify_ok,
+        qr_view_factory=FakeQrView,
+    )
+    _KEEP.append(page)
+    assert page._qr_holder_widget.height() == 240
+    assert not page._qr_holder_widget.isVisible()
+    page.resize(1000, 1100)
+    page.show()
+    page._email.setText("buyer@example.com")
+    page.submit_email()
+    assert pump_until(lambda: page._payment_panel.isVisible())
+    assert page._qr_holder_widget.isVisible()
+    qapp.processEvents()
+    holder_bottom = page._qr_holder_widget.mapTo(
+        page, page._qr_holder_widget.rect().bottomLeft()).y()
+    status_top = page._pay_status.mapTo(
+        page, page._pay_status.rect().topLeft()).y()
+    assert status_top >= holder_bottom
+
+
+def test_web_view_real_profile_path(qapp, store, tmp_path):
+    """The REAL profile path — no factory seam. Guards the class
+    of bug where the window's own profile construction calls an
+    API the installed Qt doesn't have (profile.scripts(), not
+    userScripts()): every other GUI test injects a factory, and
+    the failure mode is silent — the designed fallback page — so
+    without this test the whole course could be dead on arrival
+    while the suite stays green. Runs in a subprocess: it mirrors
+    the frozen exe's --self-check-qt, and this VM's Qt build is
+    known-fragile about web-engine objects living beside the
+    rest of the suite in one process."""
+    import os
+    import subprocess
+    import sys
+
+    root = make_webroot(tmp_path / "webroot")
+    program = (
+        "import os, sys\n"
+        "os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')\n"
+        "from PySide6.QtWidgets import QApplication\n"
+        "app = QApplication(['probe'])\n"
+        "try:\n"
+        "    from PySide6.QtWebEngineCore import QWebEngineProfile\n"
+        "    from PySide6.QtWebEngineWidgets import QWebEngineView\n"
+        "    QWebEngineView()\n"
+        "except Exception as exc:\n"
+        "    print('ENV-SKIP', exc); sys.exit(3)\n"
+        "from hackproof_app import setup_engine, site_bundle\n"
+        "from hackproof_app.config import SettingsStore\n"
+        "from hackproof_app.gui.main_window import MainWindow\n"
+        f"store = SettingsStore({str(store.dir)!r})\n"
+        f"root = {str(root)!r}\n"
+        "from pathlib import Path\n"
+        "win = MainWindow(store=store,"
+        " manifest=site_bundle.load_manifest(Path(root)),"
+        " webroot_path=Path(root),"
+        " setup_state=setup_engine.SetupState.PORTABLE)\n"
+        "view = win.ensure_web_view('course')\n"
+        "print('REAL-VIEW-OK' if view is not None else 'REAL-VIEW-NONE')\n"
+    )
+    env = dict(os.environ)
+    env["QT_QPA_PLATFORM"] = "offscreen"
+    env.setdefault(
+        "QTWEBENGINE_CHROMIUM_FLAGS",
+        "--disable-gpu --no-sandbox --disable-dev-shm-usage",
+    )
+    env["HACKPROOF_DATA_DIR"] = str(store.dir)
+    app_dir = str(Path(__file__).resolve().parent.parent)
+    env["PYTHONPATH"] = app_dir + os.pathsep + env.get("PYTHONPATH", "")
+    proc = subprocess.run(
+        [sys.executable, "-c", program],
+        capture_output=True, text=True, env=env, timeout=120,
+    )
+    if proc.returncode == 3:
+        pytest.skip("web engine cannot start in this environment")
+    assert proc.returncode == 0, proc.stderr[-2000:]
+    assert "REAL-VIEW-OK" in proc.stdout, proc.stdout + proc.stderr[-2000:]
+
+
+def test_scheme_allows_fetch_api(qapp):
+    """The app scheme must carry FetchApiAllowed: without it the
+    browser rejects every fetch() to the scheme while page loads
+    still succeed — silently killing in-app certificate
+    delivery, the one fetch the pages make."""
+    from hackproof_app.gui import webview
+
+    webview.register_scheme()
+    scheme = webview.QWebEngineUrlScheme.schemeByName(
+        webview.APP_SCHEME.encode())
+    flag = getattr(webview.QWebEngineUrlScheme.Flag,
+                   "FetchApiAllowed", None)
+    if flag is not None:
+        assert scheme.flags() & flag
+
+
+def test_native_pages_are_scroll_wrapped(qapp, store, tmp_path):
+    """Native pages live in scroll areas — on a short window
+    their content scrolls instead of being squeezed or cut off.
+    Web sections are not wrapped (their view scrolls itself)."""
+    from PySide6.QtWidgets import QScrollArea
+
+    from hackproof_app.gui import main_window as main_window_mod
+
+    win = window(qapp, store, tmp_path)
+    for row, (key, _label) in enumerate(main_window_mod._SECTIONS):
+        child = win._stack.widget(row)
+        if key in main_window_mod._PAGE_FILES:
+            assert not isinstance(child, QScrollArea)
+        else:
+            assert isinstance(child, QScrollArea)
+            assert child.widget() is win._pages[key]
+    retire(win)
+
+
+def test_window_reseeds_views_on_license_change(qapp, store, tmp_path):
+    """Buying or removing a key on My Premium must reach the web
+    views that already exist — otherwise the course stays locked
+    (or unlocked) until the app is restarted."""
+    win = window(qapp, store, tmp_path)
+
+    class FakeView:
+        def __init__(self):
+            self.seeded = []
+            self.cleared = []
+
+        def seed_license(self, key):
+            self.seeded.append(key)
+
+        def clear_seeded_license(self, key):
+            self.cleared.append(key)
+
+    fake = FakeView()
+    win._views["course"] = fake
+    premium = win._pages["premium"]
+    store.settings.license_key = "KEY-1"
+    premium.license_changed.emit()
+    assert fake.seeded == ["KEY-1"]
+    store.settings.license_key = ""
+    premium.license_changed.emit()
+    assert fake.cleared == ["KEY-1"]
+    retire(win)
+
+
 def test_install_banner_offer_states(qapp, store, tmp_path):
     win = window(qapp, store, tmp_path,
                  state=setup_engine.SetupState.NOT_INSTALLED)
@@ -204,6 +394,8 @@ def test_premium_unconfigured_buy_state(qapp, store, tmp_path, monkeypatch):
     page = premium_page(qapp, store, tmp_path, monkeypatch=monkeypatch)
     assert "isn't switched on" in page._buy_note.text()
     assert page._email.isHidden()
+    # The field's label hides with it — no orphan label on the card.
+    assert page._email_label.isHidden()
     retire(page)
 
 
