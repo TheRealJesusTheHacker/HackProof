@@ -196,6 +196,13 @@ def cmd_mint(keydir, tier, days):
     _, AESGCM, HKDF, hashes = need_crypto()
     if tier not in ("premium",):
         sys.exit("tier must be 'premium' (free needs no license)")
+    # A non-positive --days mints a license that is already expired the
+    # moment it is emailed to the customer; an absurd one overflows the
+    # expiry the pages check. Refuse both (argparse only guarantees int).
+    if not 1 <= days <= 3650:
+        sys.exit("REFUSING: --days must be between 1 and 3650 (got %d) — "
+                 "a license minted with that lifetime is dead on arrival "
+                 "or nonsensical." % days)
     priv, kc = load_keys(keydir)
     S = os.urandom(32)
     kw = HKDF(algorithm=hashes.SHA256(), length=32, salt=b"",
