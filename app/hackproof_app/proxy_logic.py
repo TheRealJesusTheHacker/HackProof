@@ -20,15 +20,19 @@ differ in three ways, found while building this app —
 2. the page does not send ``license_key``; the service requires it
    to verify the certificate's HMAC proof (the app holds the
    student's key in its vault, so the proxy can supply it);
-3. the service answers ``{"status": "held_for_review"}``; the page
-   checks for ``"held"`` to show its calm review message.
+3. an early page checked for ``"held"`` while the service answers
+   ``{"status": "held_for_review"}``. RESOLVED on the page side:
+   the current exam page checks the service's own value (and the
+   202 status, which this transport cannot carry — scheme-job
+   replies are always status 200, so the page's body-based
+   checks are the ones that fire in-app). The response therefore
+   passes through UNCHANGED; renaming it to ``"held"`` would
+   break the held state the page now renders correctly.
 
-The proxy normalizes (1) and (2) on the way in and (3) on the way
-out, so the in-app exam flow works end to end today. The durable
-fix belongs to the two crews (the page sends the service's shape,
-or the service accepts the page's) — when they converge, these
-functions become no-ops and can be deleted. They are written to
-NEVER override a field the sender already provided.
+The proxy still normalizes (1) and (2) on the way in — both are
+written to NEVER override a field the sender already provided,
+so they are no-ops on the current page's native shape and only
+protect against older bundled pages.
 """
 
 from __future__ import annotations
@@ -81,16 +85,12 @@ def normalize_cert_request(body, license_key: str | None):
 
 
 def normalize_cert_response(body):
-    """Translate a service response for the page (shim item 3):
-    ``held_for_review`` becomes the ``held`` the page checks for,
-    with the service's own value preserved alongside."""
-    if not isinstance(body, dict):
-        return body
-    if body.get("status") == "held_for_review":
-        out = dict(body)
-        out["service_status"] = "held_for_review"
-        out["status"] = "held"
-        return out
+    """Pass a service response through unchanged (shim item 3,
+    resolved): the current page checks the service's own
+    ``held_for_review`` value, and this transport always answers
+    status 200, so the page's body-based branches — ``issued``
+    and ``held_for_review`` — are the ones that fire in-app.
+    Renaming anything here would break the held state."""
     return body
 
 
