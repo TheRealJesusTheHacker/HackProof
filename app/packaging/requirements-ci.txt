@@ -1,0 +1,12 @@
+# Build/test dependencies for the HackProof app (CI + local dev).
+# Runtime: PySide6 is the ONLY third-party dependency — the engine
+# (license verification, service client, installer) is standard
+# library only, the kit's convention.
+# cryptography is TEST-ONLY: the suite mints real license keys with
+# the repo's own tools/keygen.py to prove the app's pure-Python
+# verifier agrees with the production tooling. It is never imported
+# by the app itself.
+PySide6>=6.6
+pyinstaller>=6.0
+pytest>=8.0
+cryptography>=42.0
