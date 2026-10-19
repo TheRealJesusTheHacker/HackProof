@@ -86,6 +86,15 @@ QLabel#Mono { font-family: "Cascadia Mono", "Consolas", monospace;
               font-size: 13px; color: #8fd6a4; }
 QFrame#Card { background: #0c130d; border: 1px solid #1e3323;
               border-radius: 10px; }
+QScrollArea { background: #060a07; border: none; }
+QScrollBar:vertical { background: #0c130d; width: 10px; margin: 0; }
+QScrollBar::handle:vertical { background: #1e3323; border-radius: 5px;
+                              min-height: 32px; }
+QScrollBar::handle:vertical:hover { background: #14532d; }
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+    height: 0; background: none; }
+QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
+    background: none; }
 QFrame#Banner { background: #111a12; border: 1px solid #14532d;
                 border-radius: 10px; }
 QPushButton { background: #111a12; border: 1px solid #1e3323;
