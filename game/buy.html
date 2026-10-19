@@ -41,6 +41,11 @@
   .qrwrap img{width:220px; height:220px; border:8px solid #fff; border-radius:12px; background:#fff;}
   .price{font-size:40px; font-weight:900; color:var(--green); text-shadow:0 0 24px rgba(34,197,94,.4);}
   .rate{font-size:13px; color:var(--dim); margin-top:6px;}
+  input[type=email],input[type=text]{width:100%; background:#0d0718; border:1px solid #4a2a7a; border-radius:12px;
+    padding:14px; margin:8px 0 4px; font-size:15px; font-family:inherit; color:var(--text);}
+  input[type=email]::placeholder,input[type=text]::placeholder{color:var(--dim);}
+  .keyshow{background:#0d0718; border:1px dashed #4a2a7a; border-radius:12px; padding:12px;
+    font-family:monospace; font-size:12px; word-break:break-all; color:var(--purple-l); margin-top:8px;}
   .step{display:flex; gap:12px; margin:14px 0; align-items:flex-start;}
   .step .n{background:var(--purple); color:#fff; font-weight:900; border-radius:50%; width:30px; height:30px;
     flex:0 0 30px; display:flex; align-items:center; justify-content:center;}
@@ -70,23 +75,42 @@
     <!-- PASS 4 (a11y): real <button> so keyboard users can copy too; feedback is text, not color-only. -->
     <button type="button" class="addrbox" id="addr" onclick="copyAddr()" aria-label="Bitcoin payment address. Activate to copy.">bc1qvydns2fmyjzj55wzxq7ta28nxdhcmu9l9m6yg0</button>
     <div class="center" id="addr-hint" style="font-size:12px;color:var(--dim)">Tap the address (or press Enter) to copy it</div>
+    <label class="brief" for="buyer-email" style="display:block;margin-top:16px"><b>Where should we send your license key?</b></label>
+    <input type="email" id="buyer-email" placeholder="you@example.com" autocomplete="email">
+    <div style="font-size:12px;color:var(--dim)">Your key is delivered to this email automatically once your payment is detected on-chain. Double-check it — a typo means a missing key.</div>
+    <button class="btn primary" id="order-btn" style="display:none" onclick="createOrder()">GET MY EXACT PAYMENT AMOUNT →</button>
+    <div class="brief" id="order-status" role="status" style="margin-top:10px"></div>
   </div>
   <div class="card">
     <div class="tag">HOW IT WORKS</div>
-    <div class="step"><div class="n">1</div><div class="brief"><b>Send the exact BTC amount</b> shown above to the address. The QR code has the address + amount prefilled (BIP21) — just scan with your wallet.</div></div>
-    <div class="step"><div class="n">2</div><div class="brief"><b>Email your transaction ID</b> to <b>Sentinelsafeguard@outlook.com</b> so we can match your payment.</div></div>
-    <div class="step"><div class="n">3</div><div class="brief"><b>You'll receive your license key.</b> Paste it into the license key box on the game's title screen to unlock all 8 scams + 16 field-manual modules.</div></div>
-    <div class="banner"><b>Your license key decrypts the premium content</b> — without it, it's just noise. Guard it like a password.</div>
+    <div class="step"><div class="n">1</div><div class="brief"><b>Enter your email above and create your order.</b> You're assigned an <b>exact BTC amount that is yours alone</b> — that's how your payment is matched to you. Send exactly that amount to the address shown, <b>from a wallet you control</b> (not an exchange — exchange payouts are batched and can't match). The QR code has the address + your exact amount prefilled — just scan with your wallet.</div></div>
+    <div class="step"><div class="n">2</div><div class="brief"><b>We detect your payment automatically.</b> Our system watches the blockchain — the moment your transaction confirms on-chain, it's matched to your purchase. No forms, no waiting on a human.</div></div>
+    <div class="step"><div class="n">3</div><div class="brief"><b>Your license key is generated and emailed to you automatically.</b> Paste it into the license key box in the course app to unlock the full course — all 46 modules — and the final exam. No account to create, no password to remember: the key itself is your account.</div></div>
+    <div class="banner"><b>The key is your account.</b> There is no sign-up and no password to create — once your payment is detected on-chain, your license key is generated and emailed to you automatically, and that key <b>is</b> your premium access. Whoever holds the key holds the access, so keep it safe like a password — because that's exactly what it is.</div>
+  </div>
+  <div class="card">
+    <div class="tag">ALREADY PAID?</div>
+    <div class="brief">Your key is emailed automatically once your payment confirms on-chain — first check the email you entered (and its spam/promotions folders). Lost the email? <b>Your order ID is your claim credential</b> — enter it here: once your order shows paid, your license key is displayed.</div>
+    <input type="text" id="order-id" placeholder="Your order ID" aria-label="Order ID">
+    <button class="btn ghost" onclick="checkOrder()">CHECK ORDER STATUS</button>
+    <div class="brief" id="order-check-status" role="status" style="margin-top:8px"></div>
+    <div class="brief" style="margin-top:12px">Paid the <b>wrong amount</b>, or sent from an <b>exchange</b>? Those payments can't be matched automatically — send us your transaction ID and we'll resolve it by hand:</div>
+    <input type="text" id="paid-txid" placeholder="Your Bitcoin transaction ID" aria-label="Bitcoin transaction ID">
+    <button class="btn ghost" id="paid-btn" onclick="requestKey()">✉ EMAIL US YOUR TRANSACTION ID</button>
   </div>
   <div class="card">
     <div class="tag">HONEST FAQ</div>
     <div class="faq">
       <div class="q">How do I know my payment went through?</div>
-      <div>You watch your own wallet — when the transaction confirms on-chain, it's sent. <b>In v1 there's no automatic on-chain verification on our end;</b> the license key <b>is</b> your access. That's why step 2 (emailing your txid) matters.</div>
+      <div>You watch your own wallet — and so does our system. When your transaction confirms on-chain, it's detected automatically, your license key is generated, and it's sent to the email you entered at checkout. The license key <b>is</b> your access — that's why the email matters: check it carefully before you pay.</div>
+      <div class="q">Do I need an account?</div>
+      <div>No — there is no account system and nothing to sign up for. <b>Your license key is your account:</b> it unlocks premium on any device you paste it into, and whoever holds it holds the access. Keep it somewhere safe; if you lose it, email us your transaction ID and we'll reissue it to the original buyer.</div>
+      <div class="q">How fast is delivery?</div>
+      <div>As fast as the blockchain: your key is generated and emailed once your payment has confirmed on-chain. With a normal network fee that's typically one confirmation — minutes, not days. Low-fee transactions can take longer to confirm.</div>
       <div class="q">How long does the license last?</div>
       <div>365 days from minting. Expiry is checked against your device's clock — keep it accurate.</div>
       <div class="q">What if I lose my key?</div>
-      <div>Email us with your transaction ID and we'll reissue it.</div>
+      <div>Use your order ID in the "Already paid?" checker above — once your order is paid, it shows your key. Or email us your transaction ID and we'll reissue it to the original buyer.</div>
       <div class="q">Can I share my key?</div>
       <div>Your key, your call — but it's tied to your purchase, and sharing it means sharing your access.</div>
       <div class="q">Refunds?</div>
@@ -95,7 +119,7 @@
   </div>
   <!-- PASS 4 (a11y): anchor styled as the button — nesting a <button>
        inside an <a> is invalid HTML and confuses assistive tech. -->
-  <a href="index.html" class="btn ghost" style="text-decoration:none">← Back to the game</a>
+  <a href="index.html" class="btn ghost" style="text-decoration:none">← Back to the course</a>
 </div>
 <div class="footer">© 2026 JesusTheHacker / Sentinel Safeguard LLC. All rights reserved.<br>HackProof is proprietary commercial software.</div>
 <!-- HackProof QR encoder: original clean-room implementation, zero third-party code. -->
@@ -469,10 +493,17 @@ const COINGECKO_URL = "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin
 const RATE_CACHE_KEY = "hackproof_btc_rate_v1";
 const RATE_TTL_MS = 120 * 1000;
 
-/* AUTOMATION HOOK (future): a BTCPay Server webhook would plug in here —
-   on confirmed payment it would call the mint flow (tools/keygen.py mint)
-   and email the license automatically. v1 is manual fulfillment:
-   customer emails txid -> human verifies -> human mints -> human emails key. */
+/* PAYMENTS SERVICE (automated on-chain flow — contract: payments/README.md):
+   buyer enters email -> POST /api/orders assigns a UNIQUE exact BTC amount
+   -> buyer pays -> the service detects the payment on-chain -> at 1
+   confirmation a license key is minted and emailed automatically.
+   There is NO account system: the key itself is the buyer's account, and
+   the order_id is the claim credential (GET /api/orders/<id> shows the
+   key once paid — the lost-email backup path).
+   WIRING: set the service base URL here — the single place this page
+   references it. While it is "", the page runs its interim mode: the
+   generic $5 amount via CoinGecko and the email fallback paths below. */
+const PAYMENTS_API_BASE = ""; // e.g. "https://<service-host>"
 
 function bip21(amount) {
   return "bitcoin:" + BTC_ADDRESS + "?amount=" + amount + "&label=HackProof";
@@ -565,7 +596,138 @@ function copyAddr() {
   }
 }
 
-loadRate();
+/* Buyer email: kept for this tab session only, so the status/request path
+   below can prefill it. The key delivery itself uses the email the buyer
+   confirms with their payment flow — this field is the on-page copy. */
+const buyerEmailEl = document.getElementById("buyer-email");
+try {
+  const saved = sessionStorage.getItem("hackproof_buyer_email");
+  if (saved && buyerEmailEl) buyerEmailEl.value = saved;
+} catch (e) {}
+if (buyerEmailEl) buyerEmailEl.addEventListener("change", () => {
+  try { sessionStorage.setItem("hackproof_buyer_email", buyerEmailEl.value.trim()); } catch (e) {}
+});
+
+/* Manual fallback for problem payments (wrong amount, exchange sends,
+   expired orders): composes a prefilled email to Sentinel Safeguard
+   with the buyer's email + transaction ID. This is the standing manual
+   resolution path — automatic matching never mints for these. */
+window.requestKey = function () {
+  const txid = (document.getElementById("paid-txid").value || "").trim();
+  const email = buyerEmailEl ? buyerEmailEl.value.trim() : "";
+  const body = "Hi — I paid for HackProof premium and my payment needs manual resolution.\n\n" +
+    "Delivery email I used at checkout: " + (email || "(not entered)") + "\n" +
+    "Bitcoin transaction ID: " + (txid || "(paste it here)") + "\n\n" +
+    "Please check the status and send my key. Thanks!";
+  window.location.href = "mailto:Sentinelsafeguard@outlook.com" +
+    "?subject=" + encodeURIComponent("HackProof license key — payment sent") +
+    "&body=" + encodeURIComponent(body);
+};
+
+/* ===== ORDERS (payments service) ===== */
+function stripTags(s) { return String(s).replace(/[&<>"]/g, ""); }
+let orderPollTimer = null;
+function setOrderStatus(html) {
+  const el = document.getElementById("order-status");
+  if (el) el.innerHTML = html;
+}
+function showLicenseKey(key, afterEl) {
+  let el = document.getElementById("order-key");
+  if (!el) {
+    el = document.createElement("div");
+    el.id = "order-key"; el.className = "keyshow";
+    if (afterEl && afterEl.after) afterEl.after(el);
+  }
+  el.textContent = key;
+}
+function showOrder(o) {
+  if (o.btc_amount_btc) {
+    document.getElementById("btc-line").innerHTML =
+      "<b>Send exactly " + stripTags(o.btc_amount_btc) + " BTC</b> — this order's amount, yours alone";
+    document.getElementById("rate-line").textContent =
+      "$5.00 locked for this order · pay within 2 hours · order ID: " + o.order_id;
+    drawQR(bip21(o.btc_amount_btc));
+  }
+  if (o.status === "awaiting_payment")
+    setOrderStatus("⏳ <b>Waiting for your payment.</b> Send exactly the amount above from a wallet you control — we detect it on-chain automatically, and this page updates itself.");
+  else if (o.status === "confirming")
+    setOrderStatus("🔎 <b>Payment seen on-chain</b> — confirming now (" + (o.confirmations || 0) + " confirmation(s)). Your key is minted and emailed at 1 confirmation.");
+  else if (o.status === "paid") {
+    setOrderStatus("✅ <b>Paid!</b> Your license key has been emailed to you — and here it is too (your order ID is your claim credential, so this page can show it). Paste it into the course app to unlock all 46 modules:");
+    if (o.license_key) showLicenseKey(o.license_key, document.getElementById("order-status"));
+  }
+  else if (o.status === "expired")
+    setOrderStatus("⌛ <b>This order expired</b> (2-hour window). Create a new order for a fresh exact amount. If you already paid this order, use the transaction-ID path below and we'll resolve it by hand.");
+}
+function stopPolling() { if (orderPollTimer) { clearInterval(orderPollTimer); orderPollTimer = null; } }
+async function pollOrder(id) {
+  try {
+    const r = await fetch(PAYMENTS_API_BASE.replace(/\/+$/, "") + "/api/orders/" + encodeURIComponent(id));
+    if (!r.ok) return;
+    const o = await r.json();
+    showOrder(o);
+    if (o.status === "paid" || o.status === "expired") stopPolling();
+  } catch (e) {}
+}
+function startPolling(id) { stopPolling(); pollOrder(id); orderPollTimer = setInterval(() => pollOrder(id), 30000); }
+window.createOrder = async function () {
+  const email = buyerEmailEl ? buyerEmailEl.value.trim() : "";
+  if (!email || email.indexOf("@") < 1) { setOrderStatus("Enter your email above first — your license key is delivered there."); return; }
+  setOrderStatus("Creating your order…");
+  try {
+    const r = await fetch(PAYMENTS_API_BASE.replace(/\/+$/, "") + "/api/orders", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: email })
+    });
+    const o = await r.json().catch(() => null);
+    if (!r.ok || !o || !o.order_id) {
+      setOrderStatus("We couldn't create your order just now (" + stripTags((o && o.error) || "service unavailable") + "). Try again in a moment.");
+      return;
+    }
+    try { sessionStorage.setItem("hackproof_order_id", o.order_id); } catch (e) {}
+    showOrder(o);
+    startPolling(o.order_id);
+  } catch (e) { setOrderStatus("We couldn't reach the payment service. Check your connection and try again."); }
+};
+window.checkOrder = async function () {
+  const out = document.getElementById("order-check-status");
+  const id = (document.getElementById("order-id").value || "").trim();
+  if (!PAYMENTS_API_BASE) {
+    out.textContent = "Order lookup activates when the payment service is connected to this page. If you paid and have no key, use the transaction-ID path below and we'll resolve it by hand.";
+    return;
+  }
+  if (!id) { out.textContent = "Enter your order ID — it was shown when you created the order."; return; }
+  out.textContent = "Checking…";
+  try {
+    const r = await fetch(PAYMENTS_API_BASE.replace(/\/+$/, "") + "/api/orders/" + encodeURIComponent(id));
+    if (r.status === 404) { out.textContent = "That order ID wasn't found — check it character for character."; return; }
+    const o = await r.json();
+    if (o.status === "paid" && o.license_key) {
+      out.innerHTML = "✅ <b>Paid.</b> Your license key:";
+      const k = document.createElement("div");
+      k.className = "keyshow"; k.textContent = o.license_key;
+      out.after(k);
+    }
+    else if (o.status === "confirming") out.textContent = "Payment seen — confirming on-chain (" + (o.confirmations || 0) + " confirmation(s)). Your key is emailed at 1 confirmation.";
+    else if (o.status === "expired") out.textContent = "That order expired before payment. Create a new order above; if you did pay it, use the transaction-ID path below.";
+    else out.textContent = "Order open — waiting for payment of exactly " + o.btc_amount_btc + " BTC to the address on this page.";
+  } catch (e) { out.textContent = "Couldn't reach the payment service just now — try again in a moment."; }
+};
+
+/* Boot: wired mode (orders) when PAYMENTS_API_BASE is set; otherwise the
+   interim mode (live CoinGecko amount + manual fallback paths). */
+if (PAYMENTS_API_BASE) {
+  document.getElementById("order-btn").style.display = "";
+  document.getElementById("btc-line").textContent = "$5.00 — create your order to get your exact BTC amount.";
+  document.getElementById("rate-line").textContent = "Your exact amount is assigned when your order is created — it's how your payment is matched to you.";
+  drawQR(BTC_ADDRESS);
+  try {
+    const oid = sessionStorage.getItem("hackproof_order_id");
+    if (oid) startPolling(oid);
+  } catch (e) {}
+} else {
+  loadRate();
+}
 </script>
 </body>
 </html>
