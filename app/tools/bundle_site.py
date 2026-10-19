@@ -15,15 +15,29 @@ What it does, and why:
   (``payments/`` — a server component, not app content), the app
   itself (``app/``), repository plumbing (``.git``, ``.github``),
   and the premium pack SOURCES (``content/`` — premium ships only
-  as the encrypted pack, never as readable lessons). The game's
-  pages are excluded (the game was removed from the product);
-  its built pack artifact, when present, is still picked up.
+  as the encrypted pack, never as readable lessons). Of the
+  ``game/`` folder only ``index.html`` ships: it IS the course
+  catalog and reader (the scam game itself was removed from the
+  product; the folder kept the name). The website's buy page
+  (``game/buy.html``) does NOT ship — buying inside the app is the
+  native My Premium screen, and links to the buy page in bundled
+  copies are rewritten to an app page that says exactly that.
 - **Rewires the service constants** in the bundled copies only:
   the pages' ``CERT_SERVICE_BASE_URL`` (and any sibling
-  ``*_BASE_URL`` / ``*_STATUS_ENDPOINT`` constant) is pointed at
-  the app origin ``hackproof://app`` so in-app page requests land
-  in the app's proxy, which forwards them to the service base URL
-  from the app's Settings. Repository files are never touched.
+  ``*_BASE_URL`` / ``*_STATUS_ENDPOINT`` / ``*_API_BASE``
+  constant — the exam page's is ``PAYMENTS_API_BASE``) is pointed
+  at the app origin ``hackproof://app`` so in-app page requests
+  land in the app's proxy, which forwards them to the service
+  base URL from the app's Settings. Repository files are never
+  touched.
+- **Applies the Sentinel brand palette** to the bundled copies:
+  the website's pages are designed in a purple palette; the app
+  is a Sentinel Safeguard product and ships green-on-black only
+  (the owner's standing brand rule — no purple anywhere). A fixed
+  token map (:data:`BRAND_MAP`) rewrites the purple design tokens
+  to their Sentinel green equivalents in the bundled copies only.
+  Page content, layout, and wording are untouched; the website
+  itself keeps its own design.
 - **Detects the premium pack**: a built pack (ciphertext inlined
   behind the ``/*__PREMIUM_PACK__*/`` marker, or a
   ``premium-pack.b64`` artifact) means premium can unlock in this
@@ -58,13 +72,86 @@ from hackproof_app.site_bundle import (  # noqa: E402
 
 EXCLUDED_DIRS = {
     ".git", ".github", "app", "payments", "tools", "content",
-    "game", "__pycache__", "node_modules",
+    "__pycache__", "node_modules",
 }
+#: Under game/ only the course page ships (see the module
+#: docstring): index.html is the catalog + reader; buy.html is
+#: replaced by the app's native My Premium screen.
+GAME_SHIPPED = {"index.html"}
 EXCLUDED_SUFFIXES = {".py", ".pyc", ".pyo"}
 PACK_MARKER = "/*__PREMIUM_PACK__*/"
 CONST_PATTERN = re.compile(
-    r"((?:const\s+)?[A-Z][A-Z0-9_]*(?:BASE_URL|STATUS_ENDPOINT)"
+    r"((?:const\s+)?[A-Z][A-Z0-9_]*(?:BASE_URL|STATUS_ENDPOINT|API_BASE)"
     r"\s*=\s*\")[^\"]*(\")"
+)
+
+#: Links to the website's buy page, in every form the pages use
+#: (plain and JS-escaped, from the root pages and from game/).
+BUY_LINK_PATTERN = re.compile(
+    r"(href=(?:\\?[\"']))(?:game/)?buy\.html"
+)
+BUY_LINK_TARGET = "/_app/buy-in-app.html"
+
+#: The Sentinel brand pass: the site palette's purple design
+#: tokens -> the Sentinel green equivalents the app chrome uses
+#: (hackproof_app.gui.theme). Role-preserving: page backgrounds
+#: stay near-black, cards stay cards, the bright accent stays the
+#: accent, text stays text — only the hue family changes. The
+#: certificate's purple on its cream stock becomes the deep
+#: green a certificate seal traditionally wears. Functional
+#: colors (danger reds, warning gold, success greens, the cream
+#: certificate stock itself) are NOT in this map and never move.
+BRAND_MAP = {
+    # page backgrounds (purple-black -> green-black)
+    "#0a0612": "#060a07",
+    "#100a1c": "#060a07",
+    "#0d0718": "#060a07",
+    "#140c24": "#060a07",
+    "#150b26": "#060a07",
+    "#120a1e": "#0a120b",
+    "#120a1f": "#0a120b",
+    "#1d0f38": "#0a120b",
+    # cards and raised surfaces
+    "#170d28": "#0c130d",
+    "#1a0f2e": "#0c130d",
+    "#1c1530": "#0c130d",
+    "#1c0f33": "#0c130d",
+    "#1d1030": "#0c130d",
+    "#241538": "#0c130d",
+    "#221338": "#111a12",
+    "#221239": "#111a12",
+    "#241641": "#16251a",
+    "#2a1650": "#14532d",
+    # hairlines and deep-purple fills
+    "#241536": "#1e3323",
+    "#2c1847": "#1e3323",
+    "#3b2163": "#1e3323",
+    "#4a2a7a": "#14532d",
+    "#4c1d95": "#14532d",
+    "#6d28d9": "#14532d",
+    # the purple accents themselves
+    "#7c3aed": "#14532d",
+    "#a855f7": "#1e7a3c",
+    "#c084fc": "#2ee06f",
+    "#d8b4fe": "#8fd6a4",
+    # purple-grey text tones -> the theme's text tones
+    "#9d8bb5": "#9db3a4",
+    "#9d8fb8": "#9db3a4",
+    "#8a7fa8": "#9db3a4",
+    "#5b5470": "#7d927f",
+    "#3d3654": "#2f4536",  # muted text on the cream certificate
+    "#efe8fa": "#e8f2ea",
+    "#f3efff": "#e8f2ea",
+    "#e6dcf7": "#e8f2ea",
+    "#e8e2f5": "#e8f2ea",
+}
+#: rgba() form of the primary purple (glow shadows in the pages).
+BRAND_RGBA_FROM = "168,85,247"
+BRAND_RGBA_TO = "30,122,60"  # #1e7a3c, the mapped --purple
+_BRAND_HEX_PATTERN = re.compile(
+    "(" + "|".join(re.escape(k) for k in BRAND_MAP) + ")"
+    r"([0-9a-fA-F]{2})?(?![0-9a-fA-F])",
+    re.IGNORECASE,
 )
 
 
@@ -72,6 +159,10 @@ def _iter_site_files(repo: Path):
     for path in sorted(repo.rglob("*")):
         rel = path.relative_to(repo)
         if any(part in EXCLUDED_DIRS for part in rel.parts):
+            continue
+        if rel.parts and rel.parts[0] == "game" and (
+            len(rel.parts) != 2 or rel.parts[1] not in GAME_SHIPPED
+        ):
             continue
         if path.is_dir():
             continue
@@ -97,11 +188,19 @@ def copy_site(repo: Path, out: Path) -> list[str]:
     return copied
 
 
+def _text_files(out: Path) -> list[Path]:
+    return (
+        sorted(out.rglob("*.html"))
+        + sorted(out.rglob("*.js"))
+        + sorted(out.rglob("*.css"))
+    )
+
+
 def rewire_constants(out: Path) -> list[str]:
     """Point the bundled pages' service constants at the app
     origin. Returns the list of "file:CONST" rewired."""
     rewired: list[str] = []
-    for path in sorted(out.rglob("*.html")) + sorted(out.rglob("*.js")):
+    for path in _text_files(out):
         text = path.read_text(encoding="utf-8", errors="replace")
 
         def _sub(match: re.Match) -> str:
@@ -116,6 +215,49 @@ def rewire_constants(out: Path) -> list[str]:
         if new != text:
             path.write_text(new, encoding="utf-8")
     return rewired
+
+
+def rewrite_buy_links(out: Path) -> list[str]:
+    """Point links to the website's buy page at the app's own
+    guidance page (buying in-app is the native My Premium
+    screen). Returns the list of files rewritten."""
+    touched: list[str] = []
+    for path in _text_files(out):
+        text = path.read_text(encoding="utf-8", errors="replace")
+        new, n = BUY_LINK_PATTERN.subn(
+            lambda m: m.group(1) + BUY_LINK_TARGET, text
+        )
+        if n:
+            path.write_text(new, encoding="utf-8")
+            touched.append(str(path.relative_to(out)))
+    return touched
+
+
+def _brand_sub(match: re.Match) -> str:
+    return BRAND_MAP[match.group(1).lower()] + (match.group(2) or "")
+
+
+def apply_brand_theme(out: Path) -> dict[str, int]:
+    """Apply :data:`BRAND_MAP` to the bundled copies (the app
+    ships Sentinel green-on-black; the website keeps its own
+    palette). Returns {file: replacement_count} for the files
+    that changed."""
+    counts: dict[str, int] = {}
+    for path in _text_files(out):
+        text = path.read_text(encoding="utf-8", errors="replace")
+        new, n_hex = _BRAND_HEX_PATTERN.subn(_brand_sub, text)
+        n_rgba = new.count(BRAND_RGBA_FROM) + new.count(
+            BRAND_RGBA_FROM.replace(",", ", ")
+        )
+        new = new.replace(BRAND_RGBA_FROM, BRAND_RGBA_TO)
+        new = new.replace(
+            BRAND_RGBA_FROM.replace(",", ", "),
+            BRAND_RGBA_TO.replace(",", ", "),
+        )
+        if new != text:
+            path.write_text(new, encoding="utf-8")
+            counts[str(path.relative_to(out))] = n_hex + n_rgba
+    return counts
 
 
 def detect_pack(out: Path) -> tuple[str, int]:
@@ -163,7 +305,8 @@ def collect_modules(out: Path) -> list[dict]:
 
 
 def build_manifest(repo: Path, out: Path, copied: list[str],
-                   rewired: list[str]) -> dict:
+                   rewired: list[str], brand: dict | None = None,
+                   buy_links: list[str] | None = None) -> dict:
     warnings: list[str] = []
     pages = {
         "course": (out / "index.html").is_file(),
@@ -209,6 +352,8 @@ def build_manifest(repo: Path, out: Path, copied: list[str],
         "modules": collect_modules(out),
         "public_key_hex": public_key,
         "rewired_constants": rewired,
+        "brand_theme": brand or {},
+        "buy_links_rewritten": buy_links or [],
         "files": copied,
         "warnings": warnings,
     }
@@ -240,7 +385,9 @@ def main(argv: list[str] | None = None) -> int:
     out.mkdir(parents=True)
     copied = copy_site(repo, out)
     rewired = rewire_constants(out)
-    manifest = build_manifest(repo, out, copied, rewired)
+    buy_links = rewrite_buy_links(out)
+    brand = apply_brand_theme(out)
+    manifest = build_manifest(repo, out, copied, rewired, brand, buy_links)
     (out / "app-manifest.json").write_text(
         json.dumps(manifest, indent=2), encoding="utf-8"
     )
@@ -248,6 +395,8 @@ def main(argv: list[str] | None = None) -> int:
     print(f"Pages: {manifest['pages']}")
     print(f"Pack: {manifest['pack']}")
     print(f"Rewired constants: {rewired}")
+    print(f"Buy links pointed at the app: {buy_links}")
+    print(f"Brand palette applied: {brand}")
     for warning in manifest["warnings"]:
         print(f"WARNING: {warning}")
     return 0
