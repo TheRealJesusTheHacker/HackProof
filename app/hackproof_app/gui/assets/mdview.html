@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<!--
+  HackProof app asset — the lesson reader. The app serves this
+  template for bundled .md lessons; the template fetches the raw
+  lesson from the same app URL with ?raw=1 and renders it with
+  md.js. Lesson files themselves ship in the bundle untouched —
+  this is a reader, not a fork of the content.
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HackProof Lesson</title>
+<style>
+  :root { --bg:#060a07; --panel:#0c130d; --text:#e8f2ea; --dim:#9db3a4;
+          --faint:#7d927f; --green:#2ee06f; --deep:#14532d; --border:#1e3323; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font-family: "Segoe UI", system-ui, sans-serif; }
+  main { max-width: 780px; margin: 0 auto; padding: 28px 24px 64px;
+         line-height: 1.65; font-size: 16px; }
+  h1 { font-size: 28px; line-height: 1.25; margin: 0 0 14px; }
+  h2 { font-size: 22px; margin: 28px 0 10px; color: var(--green); }
+  h3 { font-size: 18px; margin: 22px 0 8px; }
+  h4, h5, h6 { font-size: 16px; margin: 18px 0 6px; }
+  p { margin: 10px 0; }
+  a { color: var(--green); }
+  code { font-family: "Cascadia Mono", Consolas, monospace; font-size: 14px;
+         background: var(--panel); border: 1px solid var(--border);
+         border-radius: 5px; padding: 1px 5px; }
+  pre { background: var(--panel); border: 1px solid var(--border);
+        border-radius: 10px; padding: 14px 16px; overflow-x: auto; }
+  pre code { background: none; border: none; padding: 0; }
+  blockquote { margin: 12px 0; padding: 10px 16px; border-left: 3px solid var(--green);
+               background: var(--panel); border-radius: 0 10px 10px 0; color: var(--dim); }
+  ul, ol { padding-left: 24px; }
+  li { margin: 5px 0; }
+  hr { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
+  table { border-collapse: collapse; margin: 14px 0; width: 100%; }
+  th, td { border: 1px solid var(--border); padding: 8px 10px; text-align: left; }
+  th { background: var(--panel); color: var(--green); }
+  .status { color: var(--faint); text-align: center; padding: 40px 0; }
+</style>
+</head>
+<body>
+<main id="lesson"><div class="status">Loading your lesson…</div></main>
+<script src="md.js"></script>
+<script>
+"use strict";
+(function () {
+  var target = location.pathname + "?raw=1";
+  fetch(target).then(function (r) {
+    if (!r.ok) throw new Error("fetch failed");
+    return r.text();
+  }).then(function (md) {
+    document.getElementById("lesson").innerHTML = hpRenderMarkdown(md);
+    var h1 = document.querySelector("h1");
+    if (h1) document.title = h1.textContent + " — HackProof";
+  }).catch(function () {
+    document.getElementById("lesson").innerHTML =
+      '<div class="status">This lesson could not be loaded from this ' +
+      "copy of HackProof. Reopen the app; if it keeps happening, " +
+      "download HackProof again.</div>";
+  });
+})();
+</script>
+</body>
+</html>
