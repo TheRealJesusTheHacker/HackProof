@@ -1,89 +1,137 @@
-# 🔐 HACKPROOF — *You Are The Scammer*
+# 🔐 HACKPROOF — Scam Defense Course
 
 ```
 ┌──────────────────────────────────────────────────┐
-│  > think like the attacker. defend like a pro.   │
-│  > 8 scam scenarios. 19 field-manual modules.    │
-│  > play the villain to learn defense.            │
+│  > 46 modules. 7 tracks. plain language.         │
+│  > from spotting a phish to certification        │
+│  > knowledge domains — real depth, no fluff.     │
 └──────────────────────────────────────────────────┘
 ```
 
-**HackProof** is a commercial cybersecurity-education product built by **JesusTheHacker** (Sentinel Safeguard LLC). It has two halves:
+**HackProof** is a commercial cybersecurity-education product built by **JesusTheHacker** (Sentinel Safeguard LLC). Every module is written to an enterprise curriculum standard: stated learning objectives, worked real-world case breakdowns, step-by-step procedures and checklists, a hands-on exercise, a knowledge check with answer feedback, key takeaways, a glossary, and further reading from official sources.
 
-1. **The Course** — a 19-module defensive field manual covering passwords, phishing, social engineering, device security, scams, and recovery.
-2. **The Game** — *"YOU ARE THE SCAMMER"*, a single-player browser game where you play the villain to learn how to beat him.
+The first **3 modules are free**. The **premium tier** unlocks the full course — all 46 modules across 7 tracks — plus the 90-question final exam and a verifiable certificate of completion.
 
-## 🎮 The Game: *YOU ARE THE SCAMMER*
+## 🖥️ The HackProof App
 
-Traditional security training lectures you. HackProof flips the table: **you run the scams.** Pick your lure, dodge the heat, and watch how every trick actually works from the attacker's chair — then every scenario ends with a **Defense Brief** that teaches you exactly how to spot and shut down that exact attack in real life.
+HackProof is becoming an **installable Windows app** — the same course on your PC, working offline. The app is **in development**; until it ships, this GitHub Pages site is the course's home: the free preview and full course run here in your browser, and this page is the download front door once the app releases. The buy flow below is the purchase path today.
 
-**How it plays:**
-- **8 hand-crafted scenarios** — The Locked Account, Missed Package, The Cold Call, Too Good To Be True, The Long Con, Sticker Shock, Double Your Money, The Boss Needs You. Each one mirrors a real scam pattern running in the wild right now.
-- **Lure-vs-heat mechanics** — every move scores *lure* (how well the scam hooks the mark) against *heat* (how much attention you're drawing). Push too hard and you burn; play it cool and the score climbs.
-- **Defense briefs** — the point of the whole game. Every scenario closes with a plain-language breakdown of the tactic you just ran and how to defend against it.
-- **Ranks** — climb from **SCRIPT KIDDIE** → **PHISH FRY** → **CON ARTIST** → **HUSTLER** → **KINGPIN** as you master the playbook.
+## 📚 The Course — 46 Modules, 7 Tracks
 
-▶️ **Play it now:** https://therealjesusthehacker.github.io/HackProof/
-
-## 📚 The Course — 19-Module Field Manual
+### Track 1 · Scam Defense Core
+The original HackProof course: recognize and defeat the scams hitting your phone, inbox, family, and business.
 
 | # | Module | Tier |
 |---|--------|------|
-| 01 | Passwords & MFA | 🟢 FREE |
-| 02 | Phishing | 🟢 FREE |
-| 03 | Social Engineering | 🟢 FREE |
-| 04 | Wi-Fi & Safe Browsing | 🔒 PREMIUM |
-| 05 | Updates & Backups | 🔒 PREMIUM |
-| 06 | Mobile Security | 🔒 PREMIUM |
-| 07 | Scams | 🔒 PREMIUM |
-| 08 | Hacked? Now What | 🔒 PREMIUM |
-| 09 | Identity Theft | 🔒 PREMIUM |
-| 10 | Privacy | 🔒 PREMIUM |
-| 11 | Family Safety | 🔒 PREMIUM |
-| 12 | Seniors | 🔒 PREMIUM |
-| 13 | AI Scams | 🔒 PREMIUM |
-| 14 | Small Business | 🔒 PREMIUM |
-| 15 | Glossary & Resources | 🔒 PREMIUM |
-| 16 | Smart Home | 🔒 PREMIUM |
-| 17 | Social Media | 🔒 PREMIUM |
-| 18 | Seasonal Scams | 🔒 PREMIUM |
-| 19 | Health Scams | 🔒 PREMIUM |
+| 01 | Spot the Phish | 🟢 FREE |
+| 02 | Smishing Basics | 🟢 FREE |
+| 03 | Tech Support Calls | 🟢 FREE |
+| 04 | Gift Card Scams | 🔒 PREMIUM |
+| 05 | QR Code Scams | 🔒 PREMIUM |
+| 06 | Crypto Scams | 🔒 PREMIUM |
+| 07 | Romance Scams | 🔒 PREMIUM |
+| 08 | Marketplace Scams | 🔒 PREMIUM |
+| 09 | Smishing Deep Dive | 🔒 PREMIUM |
+| 10 | Vishing Defense | 🔒 PREMIUM |
+| 11 | Passwords & 2FA | 🔒 PREMIUM |
+| 12 | AI & Deepfake Scams | 🔒 PREMIUM |
+| 13 | Account Takeover Defense | 🔒 PREMIUM |
+| 14 | Public Wi-Fi & Travel | 🔒 PREMIUM |
+| 15 | Already Got Scammed? | 🔒 PREMIUM |
+| 16 | Protecting Family | 🔒 PREMIUM |
+| 17 | Small Business Scams | 🔒 PREMIUM |
+| 18 | SIM Swap Defense | 🔒 PREMIUM |
+| 19 | Your Scam Radar | 🔒 PREMIUM |
+| 20 | AI Voice Clones: The Family Emergency Call | 🔒 PREMIUM |
+| 21 | Pig Butchering: The Long Investment Con | 🔒 PREMIUM |
+| 22 | Rental & Housing Scams | 🔒 PREMIUM |
+| 23 | Refund & Overpayment Scams | 🔒 PREMIUM |
+| 24 | Business Email Compromise | 🔒 PREMIUM |
+| 25 | Account Takeover Recovery: The First 24 Hours | 🔒 PREMIUM |
 
-Plus free micro-lessons: *Spot the Phish*, *Smishing Basics*, *Tech Support Calls*.
+### Track 2 · IT Foundations — *A+ · Network+ knowledge domains*
+| # | Module |
+|---|--------|
+| 26 | Computer Hardware Essentials |
+| 27 | Operating Systems & Troubleshooting |
+| 28 | Networking Fundamentals |
+| 29 | Network Operations & Troubleshooting |
 
-The **free tier** (modules 01–03, micro-lessons, and the first 3 game scenarios) gives you the full flavor. The **premium tier** unlocks everything — all 19 modules, all 8 scenarios, and the encrypted premium content pack.
+### Track 3 · Security Core — *Security+ · CySA+ knowledge domains*
+| # | Module |
+|---|--------|
+| 30 | Threats, Vulnerabilities & Cryptography |
+| 31 | Identity, Access & Security Architecture |
+| 32 | Security Operations & Incident Response |
+| 33 | Threat Intelligence & Vulnerability Management |
+
+### Track 4 · Offensive Security — *PenTest+ · CEH · eJPT domains; PNPT/OSCP readiness*
+| # | Module |
+|---|--------|
+| 34 | Ethical Hacking Methodology |
+| 35 | Exploitation & Post-Exploitation Basics |
+| 36 | Pen Test Engagements: Reporting & Lab Strategy |
+
+### Track 5 · Systems & Cloud — *Linux+ · CCNA · Azure · AWS knowledge domains*
+| # | Module |
+|---|--------|
+| 37 | Linux System Administration Essentials |
+| 38 | Routing & Switching Essentials |
+| 39 | Cloud Foundations |
+| 40 | Cloud Administration & Security |
+
+### Track 6 · Physical Installs & Safety — *BICSI · ESA · manufacturer pathways; OSHA awareness*
+| # | Module |
+|---|--------|
+| 41 | Structured Cabling & Physical Installs |
+| 42 | Surveillance & Access Control Systems |
+| 43 | Jobsite Safety, First Aid & Licensing Pathways |
+
+### Track 7 · Professional Pathways — *the Sentinel credential standard*
+| # | Module |
+|---|--------|
+| 44 | The Sentinel Credential Standard |
+| 45 | Missouri Guard & PI Licensing Pathways |
+| 46 | Leadership, Projects & Service Management |
+
+▶️ **Start the course:** https://therealjesusthehacker.github.io/HackProof/
+
+## 🎓 Certification alignment — honestly
+
+The tracks are built on the **Sentinel Safeguard Credential Standard** — the certification ladder Sentinel hires to (baseline A+/Network+/Security+; cyber CySA+, PenTest+, SecurityX, CEH, PNPT, eJPT, OSCP, GPEN/GWAPT, CISSP, CISM; systems Linux+/RHCSA, CCNA/CCNP, Azure, AWS; installs BICSI, ESA, manufacturer certs, OSHA 10; ASIS and Missouri licensing pathways for the future guard and PI divisions; PMP/ITIL 4 for leadership).
+
+Every module carries a **Certification alignment** note naming the specific certifications and objective domains it supports. What alignment means — and doesn't:
+
+- ✅ The course **teaches the knowledge domains these certifications test**, and builds toward them.
+- ❌ The course **does not confer any certification or license**, and **never guarantees** passing an external exam. Vendor exams are taken separately through the certification body.
+- ❌ Hands-on and state-issued credentials — BICSI installer levels, First Aid/CPR/AED, the OSHA 10 card, Missouri guard/PI licenses, firearms qualification — **cannot be granted by any online course**. Those modules teach the *pathway*: what each credential requires, who issues it, and how a Sentinel hire earns it.
 
 ## 🎯 Who It's For
 
 - **Everyday people** who want to stop getting scammed — seniors, parents, students, anyone with a phone and an inbox.
-- **Small businesses** training staff against phishing, vishing, and social engineering.
-- **Security educators** who need training material that isn't boring.
-- **Curious minds** who learn best by doing — especially by doing the forbidden thing in a safe sandbox.
+- **Aspiring IT and security professionals** building toward the Sentinel credential standard.
+- **Small businesses** training staff against phishing, vishing, business email compromise, and social engineering.
 
 ## 🎓 The Final Exam + Verifiable Certificate
 
-Finish the course, then prove it. The **90-question final exam** covers all 19 modules — shuffled questions and
-shuffled answers every attempt, so no two sittings are alike.
+Finish the course, then prove it. The **90-question final exam** spans the full course — question order and answer order are shuffled every attempt, so no two sittings are alike.
 
-- **Pass at 80% (72/90)** and your **Sentinel Safeguard Certificate of Cyber Security Awareness Course Completion**
-  generates instantly — with your name on it, ready to print or save as PDF.
-- Every certificate carries a **cryptographically signed verification code**. Anyone can check it at the
-  [verify page](https://therealjesusthehacker.github.io/HackProof/verify.html) — no fakes.
+- **Pass at 80% (72/90)** and your **Sentinel Safeguard Certificate of Completion** generates instantly on the page — print it or save it as PDF.
+- The official, **countersigned certificate is emailed to you**: submit your result from the exam page and the signed certificate arrives by email. Anyone can check a countersigned certificate at the [verify page](https://therealjesusthehacker.github.io/HackProof/verify.html) — no fakes.
+- The exam runs with **integrity monitoring**: behavioral signals (tab switches, copy attempts, answer timing) are computed locally in your browser and an integrity verdict travels inside your certificate code, visible to Sentinel Safeguard when your certificate is countersigned. See [PRIVACY.md](PRIVACY.md) for exactly what is recorded and what is sent.
 - The exam requires a premium license (it tests the full premium course).
 
 ▶️ **Take the exam:** https://therealjesusthehacker.github.io/HackProof/exam.html
 
 ## 💳 Get Premium — $5 in Bitcoin
 
-Premium is a one-time **$5 USD in BTC**. Pay from the buy page and get your license key:
+Premium is a one-time **$5 USD in BTC**:
 
 ➡️ https://therealjesusthehacker.github.io/HackProof/game/buy.html
 
-Your license key is validated **offline on your device** using public-key cryptography (Ed25519). No accounts, no tracking, no phone-home — see [PRIVACY.md](PRIVACY.md).
+**How it works:** send the BTC, and the payment is **detected on-chain automatically** — your license key is generated and **emailed to you automatically**. There are **no accounts**: the key itself is your account. Whoever holds the key holds the premium access, so keep it safe.
 
-### 🤖 Automated fulfilment — the `payments/` service
-
-Premium purchases are fulfilled automatically by the payment service in [`payments/`](payments/README.md): it watches the purchase address, detects the payment on-chain, mints the license key the moment it confirms, and emails it to the buyer — **the key is the account; there is no login**. It also auto-issues exam certificates for clean passes (flagged exams are held for manual owner review, by design). Contract, setup, and security model: [payments/README.md](payments/README.md).
+Your license key is validated **offline on your device** using public-key cryptography (Ed25519). No tracking, no phone-home — see [PRIVACY.md](PRIVACY.md).
 
 ## 💜 Support the Project
 
@@ -103,7 +151,7 @@ Questions, license issues, bulk/business licensing: **Sentinelsafeguard@outlook.
 
 - [LICENSE](LICENSE) — proprietary commercial license
 - [TERMS.md](TERMS.md) — terms of use
-- [PRIVACY.md](PRIVACY.md) — privacy policy (tl;dr: we collect nothing)
+- [PRIVACY.md](PRIVACY.md) — privacy policy (tl;dr: the course collects nothing)
 - [SECURITY.md](SECURITY.md) — report vulnerabilities
 
 Copyright (c) 2026 JesusTheHacker. All rights reserved.
