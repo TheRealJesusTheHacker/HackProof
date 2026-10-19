@@ -128,7 +128,8 @@ class PremiumPage(QWidget):
         buy_layout.addWidget(self._buy_note)
         self._email = QLineEdit()
         self._email.setPlaceholderText("you@example.com")
-        buy_layout.addWidget(_label("Email for your license key"))
+        self._email_label = _label("Email for your license key")
+        buy_layout.addWidget(self._email_label)
         buy_layout.addWidget(self._email)
         self._buy_btn = QPushButton("Get payment details")
         self._buy_btn.setObjectName("Primary")
@@ -214,9 +215,16 @@ class PremiumPage(QWidget):
             when = datetime.fromtimestamp(
                 info.expiry, tz=timezone.utc
             ).strftime("%B %d, %Y")
+            if self._manifest.pack_state == site_bundle.PACK_BUILT:
+                closing = (" Your premium lessons and the final exam "
+                           "are unlocked.")
+            else:
+                # The exam works without the pack; the lessons
+                # genuinely are not in this edition yet — say so.
+                closing = " The final exam is unlocked."
             self._status_label.setText(
-                f"Premium is active. License {info.id}, good through {when}. "
-                "Your premium lessons and the final exam are unlocked."
+                f"Premium is active. License {info.id}, good through "
+                f"{when}." + closing
             )
             self._status_label.setObjectName("Good")
             self._copy_key_btn.setVisible(True)
@@ -246,18 +254,19 @@ class PremiumPage(QWidget):
                     "course and the final exam."
                 )
                 self._status_label.setObjectName("Subhead")
-            if self._manifest.pack_state == site_bundle.PACK_NOT_BUILT:
-                self._status_label.setText(
-                    self._status_label.text()
-                    + " Note: this edition's premium lesson pack is still "
-                      "being prepared by Sentinel Safeguard — your key and "
-                      "purchase stay valid, and the lessons unlock here as "
-                      "soon as an edition carrying the pack reaches you."
-                )
+        if self._manifest.pack_state == site_bundle.PACK_NOT_BUILT:
+            self._status_label.setText(
+                self._status_label.text()
+                + " Note: this edition's premium lesson pack is still "
+                  "being prepared by Sentinel Safeguard — your key and "
+                  "purchase stay valid, and the lessons unlock here as "
+                  "soon as an edition carrying the pack reaches you."
+            )
         self._update_buy_availability()
 
     def _update_buy_availability(self) -> None:
         configured = bool(self._store.settings.effective_service_base_url())
+        self._email_label.setVisible(configured)
         self._email.setVisible(configured)
         self._buy_btn.setVisible(configured)
         if configured:
@@ -340,8 +349,16 @@ class PremiumPage(QWidget):
         row.addWidget(self._check_btn)
         row.addStretch(1)
         layout.addLayout(row)
-        self._qr_holder = QVBoxLayout()
-        layout.addLayout(self._qr_holder)
+        # The QR view is a native browser widget; loose in the
+        # layout it can report no height and paint over the
+        # status line below it. A fixed-height holder (revealed
+        # only once a QR exists) always reserves its space.
+        self._qr_holder_widget = QWidget()
+        self._qr_holder_widget.setFixedHeight(240)
+        self._qr_holder_widget.setVisible(False)
+        self._qr_holder = QVBoxLayout(self._qr_holder_widget)
+        self._qr_holder.setContentsMargins(0, 4, 0, 4)
+        layout.addWidget(self._qr_holder_widget)
         self._pay_status = _label("", "Dim")
         layout.addWidget(self._pay_status)
         self._arrived_key = QPlainTextEdit()
@@ -495,6 +512,7 @@ class PremiumPage(QWidget):
             self._qr_view = view
             view.setFixedSize(232, 232)
             self._qr_holder.addWidget(view)
+            self._qr_holder_widget.setVisible(True)
             view.loadFinished.connect(self._on_qr_loaded)
             from PySide6.QtCore import QUrl
 
