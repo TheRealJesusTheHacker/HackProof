@@ -88,12 +88,12 @@ def test_cert_request_passthrough_when_not_a_dict():
 
 
 def test_cert_response_normalization_held():
-    out = proxy_logic.normalize_cert_response(
-        {"status": "held_for_review", "cert_id": "c2"}
-    )
-    assert out["status"] == "held"
-    # The raw service status stays available for richer consumers.
-    assert out["service_status"] == "held_for_review"
+    # The current page checks the service's own value — the
+    # response passes through untouched (renaming it to "held"
+    # broke the held state; scheme-job replies are always 200,
+    # so the page's body-based branch is the one that fires).
+    body = {"status": "held_for_review", "cert_id": "c2"}
+    assert proxy_logic.normalize_cert_response(body) == body
 
 
 def test_cert_response_issued_untouched():
