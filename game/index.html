@@ -1177,6 +1177,11 @@ function favoriteScam() {
   return sc ? sc.title : bestId;
 }
 
+/* Escape text before it goes into innerHTML. ALL scenario / pack /
+   manifest text is rendered through this (briefings, prompts, options,
+   outcomes, defense briefs, titles): the content carries no intended
+   HTML, so escaping loses nothing and keeps a future content source
+   (or a hand-edited pack) from injecting markup. */
 function escapeHtml(s) {
   return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;")
     .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -1326,16 +1331,16 @@ function renderTitle() {
       /* PASS 4 (a11y): real <button> so rows are keyboard-focusable and
          operable with Enter/Space; aria-label states the lock explicitly. */
       return '<button type="button" class="lockrow' + (locked ? " locked" : "") + '" onclick="uiScenRow(\'' + m.id + '\')"' +
-        ' aria-label="' + (m.order + 1) + ". " + m.title + (locked ? " — locked, premium only" : "") + '">' +
-        "<span>" + (m.order + 1) + ". " + m.title + "</span>" +
+        ' aria-label="' + (m.order + 1) + ". " + escapeHtml(m.title) + (locked ? " — locked, premium only" : "") + '">' +
+        "<span>" + (m.order + 1) + ". " + escapeHtml(m.title) + "</span>" +
         '<span class="lk" aria-hidden="true">' + (locked ? "🔒" : "▶") + "</span></button>";
     }).join("");
   const courseRows = CONTENT_MANIFEST.filter(e => e.type === "course")
     .sort((a, b) => a.order - b.order).map(m => {
       const locked = !isUnlocked(m.id);
       return '<button type="button" class="lockrow' + (locked ? " locked" : "") + '" onclick="uiCourseRow(\'' + m.id + '\')"' +
-        ' aria-label="' + m.title + (locked ? " — locked, premium only" : "") + '">' +
-        "<span>" + m.title + "</span>" +
+        ' aria-label="' + escapeHtml(m.title) + (locked ? " — locked, premium only" : "") + '">' +
+        "<span>" + escapeHtml(m.title) + "</span>" +
         '<span class="lk" aria-hidden="true">' + (locked ? "🔒" : "📖") + "</span></button>";
     }).join("");
   const licBox = S.licenseOk
@@ -1399,9 +1404,9 @@ function renderBriefing() {
   renderHUD();
   const sc = curScenario();
   app().innerHTML =
-    '<div class="card"><div class="tag">' + sc.tag + "</div>" +
-    "<h2>" + sc.title + "</h2>" +
-    sc.briefing.map(b => '<p class="brief">' + b + "</p>").join("") +
+    '<div class="card"><div class="tag">' + escapeHtml(sc.tag) + "</div>" +
+    "<h2>" + escapeHtml(sc.title) + "</h2>" +
+    sc.briefing.map(b => '<p class="brief">' + escapeHtml(b) + "</p>").join("") +
     '<button class="btn primary" onclick="uiBegin()">RUN IT 😈</button></div>';
   focusScreen(); /* PASS 4 (a11y) */
 }
@@ -1423,12 +1428,12 @@ function renderNode() {
   document.getElementById("app").classList.remove("answering");
   const sc = curScenario(), node = sc.nodes[S.run.nodeIdx];
   app().innerHTML =
-    '<div class="card"><div class="tag">' + sc.tag + " — STEP " + (S.run.nodeIdx + 1) + "/" + sc.nodes.length + "</div>" +
-    "<h2>" + node.prompt + "</h2>" +
+    '<div class="card"><div class="tag">' + escapeHtml(sc.tag) + " — STEP " + (S.run.nodeIdx + 1) + "/" + sc.nodes.length + "</div>" +
+    "<h2>" + escapeHtml(node.prompt) + "</h2>" +
     node.options.map((o, i) =>
       '<button class="btn" onclick="uiPick(' + i + ')">' + deltaHtml(o) +
-      '<span class="opt-label">' + o.label + "</span>" +
-      '<span class="sub">' + o.sub + "</span></button>").join("") + "</div>";
+      '<span class="opt-label">' + escapeHtml(o.label) + "</span>" +
+      '<span class="sub">' + escapeHtml(o.sub) + "</span></button>").join("") + "</div>";
   focusScreen(); /* PASS 4 (a11y) */
 }
 
@@ -1470,10 +1475,10 @@ function renderOutcome(lines, pending, warn) {
     '<div class="card"><div class="tag">IT PLAYS OUT</div>' +
     lines.map(l => {
       const m = l.match(/^([A-Z][A-Z .'-]+):\s*(.*)$/);
-      return m ? '<div class="out"><span class="who">' + m[1] + "</span><br>" + m[2] + "</div>"
-               : '<div class="out">' + l + "</div>";
+      return m ? '<div class="out"><span class="who">' + escapeHtml(m[1]) + "</span><br>" + escapeHtml(m[2]) + "</div>"
+               : '<div class="out">' + escapeHtml(l) + "</div>";
     }).join("") +
-    (warn ? '<div class="warn" role="alert">⚠️ ' + warn + "</div>" : "") +
+    (warn ? '<div class="warn" role="alert">⚠️ ' + escapeHtml(warn) + "</div>" : "") +
     '<button class="btn primary" onclick="uiContinue()">CONTINUE →</button></div>';
   focusScreen(); /* PASS 4 (a11y) */
 }
@@ -1485,12 +1490,12 @@ function renderCloseCall(cc, sc) {
   /* PASS 2: delta badges sit top-right, matching the node option buttons */
   const branch = b =>
     '<button class="btn" onclick="uiCC(\'' + b + '\')">' + deltaHtml(cc[b]) +
-    '<span class="opt-label">' + cc[b].label + "</span>" +
-    '<span class="sub">' + cc[b].sub + "</span></button>";
+    '<span class="opt-label">' + escapeHtml(cc[b].label) + "</span>" +
+    '<span class="sub">' + escapeHtml(cc[b].sub) + "</span></button>";
   app().innerHTML =
     '<div class="card"><div class="tag">⚠️ CLOSE CALL</div>' +
     "<h2>Too close...</h2>" +
-    '<div class="warn" role="alert">' + cc.text + "</div>" +
+    '<div class="warn" role="alert">' + escapeHtml(cc.text) + "</div>" +
     branch("layLow") + branch("push") + "</div>";
   document.getElementById("app").classList.remove("answering");
   document.getElementById("app").classList.remove("shake");
@@ -1537,10 +1542,10 @@ function renderDefense(sc) {
   const last = S.run.scIdx >= scs.length - 1;
   app().innerHTML =
     '<div class="card"><div class="tag">🛡️ DEFENSE BRIEF</div>' +
-    "<h2>" + sc.defense.title + "</h2>" +
+    "<h2>" + escapeHtml(sc.defense.title) + "</h2>" +
     '<p class="brief">Crew debrief. Here\'s everywhere you got sloppy — and exactly how your victims could have burned you:</p>' +
     sc.defense.flags.map(f =>
-      '<div class="out flag"><span class="t">🚩 ' + f.t + "</span><p>" + f.p + "</p></div>").join("") +
+      '<div class="out flag"><span class="t">🚩 ' + escapeHtml(f.t) + "</span><p>" + escapeHtml(f.p) + "</p></div>").join("") +
     '<button class="btn primary" onclick="uiDefenseNext()">' +
     (last ? "FINISH THE RUN →" : "NEXT SCAM →") + "</button></div>";
   focusScreen(); /* PASS 4 (a11y) */
@@ -1559,7 +1564,7 @@ function renderUpgrade() {
   document.getElementById("app").classList.remove("answering");
   S.run = null; renderHUD();
   const premScen = CONTENT_MANIFEST.filter(e => e.type === "scenario" && e.tier === "premium")
-    .sort((a, b) => a.order - b.order).map(m => "<div>🔒 " + m.title + "</div>").join("");
+    .sort((a, b) => a.order - b.order).map(m => "<div>🔒 " + escapeHtml(m.title) + "</div>").join("");
   app().innerHTML =
     '<div class="card center"><div class="tag">PREMIUM CONTENT</div>' +
     "<h1>🔒</h1><h2>Want the full empire?</h2>" +
@@ -1609,21 +1614,23 @@ function renderEnd() {
   document.getElementById("app").classList.remove("answering");
   const r = S.run, rank = rankFor(r.victims);
   const debrief = r.flagsShown.map(g =>
-    "<h2>" + g.scenario + "</h2>" +
-    g.flags.map(f => '<div class="out flag"><span class="t">🚩 ' + f.t + "</span><p>" + f.p + "</p></div>").join("")
+    "<h2>" + escapeHtml(g.scenario) + "</h2>" +
+    g.flags.map(f => '<div class="out flag"><span class="t">🚩 ' + escapeHtml(f.t) + "</span><p>" + escapeHtml(f.p) + "</p></div>").join("")
   ).join("");
   const share = buildShareText(rank);
   app().innerHTML =
     '<div class="card center"><div class="tag">👑 RUN COMPLETE</div>' +
-    "<h2>" + rank.title + "</h2>" +
-    '<p class="brief"><i>' + rank.flavor + "</i></p>" +
+    "<h2>" + escapeHtml(rank.title) + "</h2>" +
+    '<p class="brief"><i>' + escapeHtml(rank.flavor) + "</i></p>" +
     '<div class="big-score">' + r.victims + "</div><div class='brief'>victims scammed</div>" +
     '<div class="stat-grid">' +
     '<div class="stat"><div class="v">' + r.maxHeat + '</div><div class="k">HEAT SURVIVED</div></div>' +
     '<div class="stat"><div class="v">x' + r.bestStreak + '</div><div class="k">BEST STREAK</div></div>' +
-    '<div class="stat"><div class="v" style="font-size:16px">' + favoriteScam() + '</div><div class="k">FAVORITE SCAM</div></div>' +
+    '<div class="stat"><div class="v" style="font-size:16px">' + escapeHtml(favoriteScam()) + '</div><div class="k">FAVORITE SCAM</div></div>' +
     '<div class="stat"><div class="v">' + r.flagsShown.length + "/" + getRunScenarios().length + '</div><div class="k">SCAMS CLEARED</div></div></div>' +
-    '<div class="tag">SHARE YOUR RUN</div><div class="sharebox" id="sharebox">' + share + "</div>" +
+    /* share is escaped for display; uiCopy reads textContent, so the
+       copied summary stays clean plain text. */
+    '<div class="tag">SHARE YOUR RUN</div><div class="sharebox" id="sharebox">' + escapeHtml(share) + "</div>" +
     '<button class="btn primary" onclick="uiCopy()">📋 COPY SUMMARY</button>' +
     '<div class="tag mt">FULL RED-FLAG DEBRIEF</div><div style="text-align:left">' + debrief + "</div>" +
     '<button class="btn primary" onclick="uiStart()">RUN IT AGAIN 🔁</button>' +
@@ -1665,7 +1672,7 @@ function renderModule(id) {
   const body = getModuleBody(entry);
   app().innerHTML =
     '<div class="card"><div class="tag">📖 FIELD MANUAL</div>' +
-    "<h2>" + entry.title + "</h2>" +
+    "<h2>" + escapeHtml(entry.title) + "</h2>" +
     (body === null
       ? '<div class="warn">This module failed to load — the premium pack may be corrupt. Try re-entering your license key.</div>'
       : '<div class="module-body">' + body + "</div>") +
