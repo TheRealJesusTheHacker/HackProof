@@ -44,7 +44,7 @@ import json
 import mimetypes
 from pathlib import Path
 
-from PySide6.QtCore import QByteArray, QBuffer, QIODevice, QUrl
+from PySide6.QtCore import QByteArray, QBuffer, QIODevice, QTimer, QUrl
 from PySide6.QtNetwork import QNetworkAccessManager, QNetworkReply, QNetworkRequest
 from PySide6.QtWebEngineCore import (
     QWebEnginePage,
@@ -99,6 +99,13 @@ def register_scheme() -> None:
     cors = getattr(QWebEngineUrlScheme.Flag, "CorsEnabled", None)
     if cors is not None:
         flags |= cors
+    # FetchApiAllowed is the load-bearing one: without it the
+    # browser rejects every fetch() to this scheme ("Failed to
+    # fetch") while page loads still work — which silently kills
+    # in-app certificate delivery, the one fetch the pages make.
+    fetch_api = getattr(QWebEngineUrlScheme.Flag, "FetchApiAllowed", None)
+    if fetch_api is not None:
+        flags |= fetch_api
     scheme.setFlags(flags)
     QWebEngineUrlScheme.registerScheme(scheme)
     _SCHEME_REGISTERED = True
@@ -138,6 +145,7 @@ class SiteSchemeHandler(QWebEngineUrlSchemeHandler):
         self._license = license_provider
         self._net = QNetworkAccessManager(self)
         self._pending: dict[int, tuple] = {}
+        self._pending_bodies: dict[int, tuple] = {}
 
     # ---------------------------------------------------------- dispatch
 
@@ -228,7 +236,22 @@ class SiteSchemeHandler(QWebEngineUrlSchemeHandler):
             )
             return
         method = bytes(job.requestMethod()).decode("ascii", "replace")
-        body = self._read_body(job)
+        if method in ("POST", "PUT"):
+            # The request body device is sequential and arrives
+            # asynchronously — it must be opened and drained via
+            # its signals. Reading it synchronously here returns
+            # zero bytes (proven in the polish audit: every
+            # in-app certificate submission arrived empty).
+            self._read_body_async(
+                job,
+                lambda body: self._proxy_send(
+                    job, path, target, method, body
+                ),
+            )
+        else:
+            self._proxy_send(job, path, target, method, b"")
+
+    def _proxy_send(self, job, path, target, method, body) -> None:
         if path == "/api/certificates" and method == "POST" and body:
             try:
                 parsed = json.loads(body.decode("utf-8"))
@@ -256,15 +279,69 @@ class SiteSchemeHandler(QWebEngineUrlSchemeHandler):
             lambda: self._proxy_finished(job, reply, path)
         )
 
-    def _read_body(self, job) -> bytes:
+    def _read_body_async(self, job, callback) -> None:
+        """Collect a request body from its sequential device and
+        call *callback* with the complete bytes. The device is
+        not open at requestStarted and reports size 0 — it has
+        to be opened, then drained. Draining is POLLED on a
+        timer, never signal-driven: the body device is an
+        internal QIODevice subclass, and connecting to its
+        signals from Python segfaults (proven in the polish
+        audit — faulthandler pinned the crash to the connect
+        call). Polling readAll()/atEnd() touches only plain
+        methods and is safe."""
         device = job.requestBody()
         if device is None:
-            return b""
+            callback(b"")
+            return
         try:
-            device.seek(0)
-            return bytes(device.readAll())
+            if not device.isOpen() and not device.open(
+                QIODevice.OpenModeFlag.ReadOnly
+            ):
+                callback(b"")
+                return
         except Exception:
-            return b""
+            callback(b"")
+            return
+        chunks = bytearray()
+        state = {"done": False, "dead": False, "ticks": 0}
+        key = id(job)
+        timer = QTimer(self)
+        timer.setInterval(10)
+        self._pending_bodies[key] = (job, device, timer)
+
+        def finish():
+            if state["done"] or state["dead"]:
+                return
+            state["done"] = True
+            timer.stop()
+            chunks.extend(bytes(device.readAll()))
+            self._pending_bodies.pop(key, None)
+            callback(bytes(chunks))
+
+        def tick():
+            if state["done"] or state["dead"]:
+                timer.stop()
+                return
+            state["ticks"] += 1
+            data = bytes(device.readAll())
+            if data:
+                chunks.extend(data)
+            # atEnd: the upload channel has closed and the
+            # buffer is drained. The tick cap (~10 s) is a safety
+            # net — forward what arrived rather than hang.
+            if device.atEnd() or state["ticks"] > 1000:
+                finish()
+
+        def mark_dead(*_):
+            state["dead"] = True
+            timer.stop()
+            self._pending_bodies.pop(key, None)
+
+        job.destroyed.connect(mark_dead)
+        timer.timeout.connect(tick)
+        timer.start()
+        tick()
 
     def _proxy_finished(self, job, reply: QNetworkReply, path: str) -> None:
         try:
@@ -351,5 +428,20 @@ class HackProofWebView(QWebEngineView):
             f"{json.dumps(LICENSE_STORAGE_KEY)})) localStorage.setItem("
             f"{json.dumps(LICENSE_STORAGE_KEY)}, {json.dumps(license_key)});"
             " } catch (e) {}"
+        )
+        self.page().runJavaScript(js)
+
+    def clear_seeded_license(self, license_key: str) -> None:
+        """Remove the page's copy of the vault's key — the mirror
+        of seed_license, for "Remove key from this app". Only the
+        exact key the app seeded is removed; a key the person
+        typed into the page themselves is theirs and stays."""
+        if not license_key:
+            return
+        js = (
+            "try { if (localStorage.getItem("
+            f"{json.dumps(LICENSE_STORAGE_KEY)}) === "
+            f"{json.dumps(license_key)}) localStorage.removeItem("
+            f"{json.dumps(LICENSE_STORAGE_KEY)}); }} catch (e) {{}}"
         )
         self.page().runJavaScript(js)
