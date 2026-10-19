@@ -18,6 +18,18 @@
 
 from pathlib import Path
 
+# PyInstaller does NOT inject the version-info classes into the
+# spec namespace (the ARGUS.EXE v1.1.2 lesson): import them.
+from PyInstaller.utils.win32.versioninfo import (
+    FixedFileInfo,
+    StringFileInfo,
+    StringStruct,
+    StringTable,
+    VarFileInfo,
+    VarStruct,
+    VSVersionInfo,
+)
+
 ROOT = Path(SPECPATH).parent.parent  # repo root
 APP = ROOT / "app"
 WEBROOT = APP / "build" / "webroot"
