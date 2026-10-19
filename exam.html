@@ -446,7 +446,15 @@ function shuffled(arr){
   for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); const t=a[i]; a[i]=a[j]; a[j]=t; }
   return a;
 }
-const state = { name:"", lic:null, order:[], optMap:[], answers:new Array(90).fill(-1), cur:0 };
+const state = { name:"", lic:null, order:[], optMap:[], answers:new Array(90).fill(-1), cur:0, inProgress:false };
+
+/* Warn before a mid-exam reload/navigation wipes the attempt (answers
+   live only in memory). Armed only between Begin and Submit. */
+window.addEventListener("beforeunload", function(e){
+  if(!state.inProgress) return;
+  e.preventDefault();
+  e.returnValue = "";
+});
 
 function gateScreen(msg){
   const savedLic = localStorage.getItem(CONFIG.LICENSE_STORAGE_KEY) || "";
@@ -493,6 +501,7 @@ function startExam(){
   });
   state.answers = new Array(90).fill(-1);
   state.cur = 0;
+  state.inProgress = true;
   renderQ();
 }
 
@@ -537,6 +546,7 @@ function renderQ(){
 }
 
 function grade(){
+  state.inProgress = false; /* submitted — disarm the beforeunload guard */
   let correct = 0;
   const wrong = [];
   for(let i=0;i<90;i++){
@@ -702,7 +712,17 @@ function verifySignedCert(str, expectedCid){
   });
 }
 
-gateScreen("");
+/* The exam is a fixed 90-question protocol: the grading loops, the
+   72/90 pass mark, and tools/keygen.py sign-cert's score validation
+   (72-90 of 90, pct over 90) all assume exactly 90. If the bank is
+   ever edited to a different length, fail closed with an explanation
+   instead of crashing mid-exam or issuing an unsignable certificate. */
+if(QUESTIONS.length !== 90){
+  app.innerHTML = '<div class="card"><h2>Exam <span class="accent">unavailable</span></h2>'+
+    '<p class="lead">This build\'s question bank is misconfigured. Please contact Sentinel Safeguard.</p></div>';
+} else {
+  gateScreen("");
+}
 })();
 </script>
 </body>
