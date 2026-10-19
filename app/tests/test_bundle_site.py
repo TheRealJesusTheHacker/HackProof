@@ -86,7 +86,13 @@ def bundled(tmp_path):
 
 def test_exclusions(bundled):
     _, out, _ = bundled
-    names = {str(p.relative_to(out)) for p in out.rglob("*") if p.is_file()}
+    # Compared in POSIX form: the on-disk tree is platform-native,
+    # the shipping contract the literals state is not (on Windows
+    # str(Path) would also make the prefix checks below vacuous).
+    names = {
+        p.relative_to(out).as_posix()
+        for p in out.rglob("*") if p.is_file()
+    }
     assert "index.html" in names and "course/01-welcome.md" in names
     assert not any(n.startswith("tools/") for n in names)
     assert not any(n.startswith("payments/") for n in names)
