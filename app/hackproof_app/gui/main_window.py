@@ -34,6 +34,7 @@ from PySide6.QtWidgets import (
     QListWidgetItem,
     QMainWindow,
     QPushButton,
+    QScrollArea,
     QStackedWidget,
     QVBoxLayout,
     QWidget,
@@ -59,11 +60,13 @@ _PAGE_FILES = {
     "verify": "verify.html",
 }
 
+_SEED_SCRIPT_NAME = "hackproof-license-seed"
+
 
 def _message_page(title: str, text: str) -> QWidget:
     page = QWidget()
     layout = QVBoxLayout(page)
-    layout.setContentsMargins(36, 36, 36, 36)
+    layout.setContentsMargins(22, 20, 22, 20)
     heading = QLabel(title)
     heading.setObjectName("Headline")
     heading.setWordWrap(True)
@@ -90,6 +93,7 @@ class MainWindow(QMainWindow):
         self._setup_state = setup_state
         self._profile_factory = profile_factory
         self._profile = None
+        self._seeded_key = self._store.settings.license_key
         self._views: dict[str, object] = {}
         self._result_timer: QTimer | None = None
 
@@ -124,7 +128,13 @@ class MainWindow(QMainWindow):
         for key, _label in _SECTIONS:
             page = self._build_page(key, client_factory, verify_fn)
             self._pages[key] = page
-            self._stack.addWidget(page)
+            if key in _PAGE_FILES:
+                # Web sections scroll inside their own view.
+                self._stack.addWidget(page)
+            else:
+                # Native pages scroll as a whole: on a short
+                # window nothing is ever squeezed or unreachable.
+                self._stack.addWidget(self._scroll_wrapped(page))
         self._gate_nav_items()
         self._nav.currentRowChanged.connect(self._on_nav)
         self._nav.setCurrentRow(0)
@@ -133,13 +143,27 @@ class MainWindow(QMainWindow):
 
     # ------------------------------------------------------------ pages
 
+    @staticmethod
+    def _scroll_wrapped(page: QWidget) -> QScrollArea:
+        area = QScrollArea()
+        area.setObjectName("PageScroll")
+        area.setFrameShape(QFrame.Shape.NoFrame)
+        area.setWidgetResizable(True)
+        area.setHorizontalScrollBarPolicy(
+            Qt.ScrollBarPolicy.ScrollBarAlwaysOff
+        )
+        area.setWidget(page)
+        return area
+
     def _build_page(self, key, client_factory, verify_fn) -> QWidget:
         if key == "premium":
-            return PremiumPage(
+            page = PremiumPage(
                 self._store, self._manifest,
                 client_factory=client_factory, verify_fn=verify_fn,
                 qr_view_factory=self._make_qr_view,
             )
+            page.license_changed.connect(self._reseed_views)
+            return page
         if key == "settings":
             return self._build_settings_page()
         if key == "about":
@@ -213,10 +237,75 @@ class MainWindow(QMainWindow):
         profile.installUrlSchemeHandler(
             webview.APP_SCHEME.encode(), handler
         )
-        profile.userScripts().insert(webview.bridge_script())
+        profile.scripts().insert(webview.bridge_script())
         self._profile = profile
         self._handler = handler
+        self._sync_seed_script()
         return profile
+
+    def _sync_seed_script(self) -> None:
+        """Keep a document-creation seed script on the profile in
+        step with the vault key. The pages read their saved key
+        the moment they load — seeding on loadFinished is too
+        late for a first open (the exam gate would ask for a key
+        the app already holds). A script at document creation
+        runs before any page script, so the very first open of
+        every section already knows the key. Mirrors the
+        seed_license semantics: never overwrites a key typed
+        into a page, and removal clears only the copy the app
+        itself seeded."""
+        profile = self._profile
+        if profile is None:
+            return
+        scripts_fn = getattr(profile, "scripts", None)
+        if scripts_fn is None:
+            return
+        try:
+            import json
+
+            from PySide6.QtWebEngineCore import QWebEngineScript
+
+            from .webview import LICENSE_STORAGE_KEY
+        except Exception:
+            return
+        current = self._store.settings.license_key
+        if current:
+            source = (
+                "try { if (!localStorage.getItem("
+                f"{json.dumps(LICENSE_STORAGE_KEY)})) "
+                "localStorage.setItem("
+                f"{json.dumps(LICENSE_STORAGE_KEY)}, "
+                f"{json.dumps(current)}); }} catch (e) {{}}"
+            )
+        elif self._seeded_key:
+            source = (
+                "try { if (localStorage.getItem("
+                f"{json.dumps(LICENSE_STORAGE_KEY)}) === "
+                f"{json.dumps(self._seeded_key)}) "
+                "localStorage.removeItem("
+                f"{json.dumps(LICENSE_STORAGE_KEY)}); }}"
+                " catch (e) {}"
+            )
+        else:
+            source = ""
+        try:
+            collection = scripts_fn()
+            for old in collection.find(_SEED_SCRIPT_NAME):
+                collection.remove(old)
+            if source:
+                script = QWebEngineScript()
+                script.setName(_SEED_SCRIPT_NAME)
+                script.setSourceCode(source)
+                script.setInjectionPoint(
+                    QWebEngineScript.InjectionPoint.DocumentCreation
+                )
+                script.setWorldId(
+                    QWebEngineScript.ScriptWorldId.MainWorld
+                )
+                script.setRunsOnSubFrames(False)
+                collection.insert(script)
+        except Exception:
+            pass  # loadFinished seeding remains as the fallback
 
     def _make_qr_view(self):
         try:
@@ -267,9 +356,28 @@ class MainWindow(QMainWindow):
                 self._store.settings.license_key
             )
         )
+        if self._store.settings.license_key:
+            self._seeded_key = self._store.settings.license_key
         view.setUrl(QUrl(f"hackproof://app/{_PAGE_FILES[key]}"))
         self._views[key] = view
         return view
+
+    def _reseed_views(self) -> None:
+        """Keep the web sections in step with the vault: a key
+        saved (or removed) on My Premium applies to the course,
+        exam, and verify views that already exist — without this,
+        a customer who buys in the app would find the course
+        still locked until they restarted it."""
+        current = self._store.settings.license_key
+        for view in self._views.values():
+            if view is None:
+                continue
+            if current:
+                view.seed_license(current)
+            elif self._seeded_key:
+                view.clear_seeded_license(self._seeded_key)
+        self._seeded_key = current
+        self._sync_seed_script()
 
     # ------------------------------------------------------------ banner
 
@@ -405,10 +513,13 @@ class MainWindow(QMainWindow):
         card.setObjectName("Card")
         card_layout = QVBoxLayout(card)
         card_layout.setContentsMargins(18, 16, 18, 16)
+        card_title = QLabel("Service connection")
+        card_title.setStyleSheet("font-size: 16px; font-weight: 700;")
+        card_layout.addWidget(card_title)
         card_layout.addWidget(QLabel(
-            "Service connection — where HackProof checks payments "
-            "and sends certificates. Sentinel Safeguard sets this "
-            "for official editions; it's here so your copy can be "
+            "Where HackProof checks payments and sends "
+            "certificates. Sentinel Safeguard sets this for "
+            "official editions; it's here so your copy can be "
             "pointed at the service you're using."
         ))
         self._service_url = QLineEdit(
@@ -436,6 +547,9 @@ class MainWindow(QMainWindow):
         install_card.setObjectName("Card")
         install_layout = QVBoxLayout(install_card)
         install_layout.setContentsMargins(18, 16, 18, 16)
+        install_title = QLabel("HackProof on this PC")
+        install_title.setStyleSheet("font-size: 16px; font-weight: 700;")
+        install_layout.addWidget(install_title)
         self._install_state_label = QLabel("")
         self._install_state_label.setWordWrap(True)
         install_layout.addWidget(self._install_state_label)
