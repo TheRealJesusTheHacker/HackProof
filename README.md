@@ -81,6 +81,10 @@ Premium is a one-time **$5 USD in BTC**. Pay from the buy page and get your lice
 
 Your license key is validated **offline on your device** using public-key cryptography (Ed25519). No accounts, no tracking, no phone-home — see [PRIVACY.md](PRIVACY.md).
 
+### 🤖 Automated fulfilment — the `payments/` service
+
+Premium purchases are fulfilled automatically by the payment service in [`payments/`](payments/README.md): it watches the purchase address, detects the payment on-chain, mints the license key the moment it confirms, and emails it to the buyer — **the key is the account; there is no login**. It also auto-issues exam certificates for clean passes (flagged exams are held for manual owner review, by design). Contract, setup, and security model: [payments/README.md](payments/README.md).
+
 ## 💜 Support the Project
 
 HackProof is independent security education — no investors, no ads, no data to sell. If it helped you, tip the mission:
