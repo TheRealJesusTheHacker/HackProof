@@ -172,12 +172,18 @@ def _iter_site_files(repo: Path):
 
 
 def copy_site(repo: Path, out: Path) -> list[str]:
+    # Every repo-relative path this module reports — the copied
+    # list, the manifest's fields, the rewired/brand/buy-link
+    # records — is POSIX-normalized (.as_posix()). The manifest
+    # is a product surface produced on the build machine and read
+    # on every platform; a Windows build must not leak
+    # backslashes into it.
     copied: list[str] = []
     for rel, src in _iter_site_files(repo):
         dest = out / rel
         dest.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(src, dest)
-        copied.append(str(rel))
+        copied.append(rel.as_posix())
     # The built pack artifact lives under game/ today (keygen's
     # build-pack writes game/premium-pack.b64); ship the ciphertext
     # even though the game's pages are excluded.
@@ -206,7 +212,7 @@ def rewire_constants(out: Path) -> list[str]:
         def _sub(match: re.Match) -> str:
             name = re.search(r"([A-Z][A-Z0-9_]*)\s*=", match.group(0))
             rewired.append(
-                f"{path.relative_to(out)}:"
+                f"{path.relative_to(out).as_posix()}:"
                 f"{name.group(1) if name else 'CONST'}"
             )
             return match.group(1) + APP_ORIGIN + match.group(2)
@@ -229,7 +235,7 @@ def rewrite_buy_links(out: Path) -> list[str]:
         )
         if n:
             path.write_text(new, encoding="utf-8")
-            touched.append(str(path.relative_to(out)))
+            touched.append(path.relative_to(out).as_posix())
     return touched
 
 
@@ -256,7 +262,7 @@ def apply_brand_theme(out: Path) -> dict[str, int]:
         )
         if new != text:
             path.write_text(new, encoding="utf-8")
-            counts[str(path.relative_to(out))] = n_hex + n_rgba
+            counts[path.relative_to(out).as_posix()] = n_hex + n_rgba
     return counts
 
 
@@ -295,11 +301,13 @@ def collect_modules(out: Path) -> list[dict]:
         for path in sorted(course.rglob("*")):
             if path.suffix == ".md":
                 modules.append(
-                    {"path": str(path.relative_to(out)), "kind": "markdown"}
+                    {"path": path.relative_to(out).as_posix(),
+                     "kind": "markdown"}
                 )
             elif path.suffix == ".html":
                 modules.append(
-                    {"path": str(path.relative_to(out)), "kind": "page"}
+                    {"path": path.relative_to(out).as_posix(),
+                     "kind": "page"}
                 )
     return modules
 
