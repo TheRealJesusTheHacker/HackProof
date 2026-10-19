@@ -1,0 +1,4 @@
+# The service's only third-party dependency — the same one
+# tools/keygen.py already requires. Everything else is Python's
+# standard library (http.server, sqlite3, smtplib, hashlib/hmac).
+cryptography>=41
