@@ -188,7 +188,38 @@ def test_result_file_roundtrip(tmp_path, monkeypatch):
     assert stale is None
 
 
+@pytest.mark.skipif(
+    setup_engine.IS_WINDOWS,
+    reason="the off-Windows contract; Windows behavior is covered "
+           "by test_elevation_helpers_on_windows",
+)
 def test_elevation_helpers_are_safe_off_windows():
-    # On the Linux test VM both must answer cleanly, never raise.
+    # Off Windows both must answer cleanly, never raise.
     assert setup_engine.is_elevated() is False
+    assert setup_engine.relaunch_as_admin(["--run-setup"]) is False
+
+
+@pytest.mark.skipif(
+    not setup_engine.IS_WINDOWS,
+    reason="Windows-only: exercises the real ShellExecuteW boundary",
+)
+def test_elevation_helpers_on_windows(monkeypatch):
+    # is_elevated() reads the process token: whatever it is on
+    # this machine (CI runners run elevated; a normal customer
+    # session usually is not), it must answer a plain bool and
+    # never raise.
+    assert isinstance(setup_engine.is_elevated(), bool)
+    # relaunch_as_admin() maps ShellExecuteW's return: > 32 means
+    # Windows accepted the launch, <= 32 means refused/failed.
+    # Stub the boundary so the test launches nothing.
+    import ctypes
+
+    shell32 = ctypes.windll.shell32  # type: ignore[attr-defined]
+    monkeypatch.setattr(
+        shell32, "ShellExecuteW", lambda *args: 33, raising=False
+    )
+    assert setup_engine.relaunch_as_admin(["--run-setup"]) is True
+    monkeypatch.setattr(
+        shell32, "ShellExecuteW", lambda *args: 5, raising=False
+    )
     assert setup_engine.relaunch_as_admin(["--run-setup"]) is False
