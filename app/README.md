@@ -114,10 +114,16 @@ The bundler copies the **site tree at release time** — app
 content is never forked into `app/**`. It excludes owner tooling
 (`tools/`), the payments service (`payments/` — a server
 component), the premium pack **sources** (`content/` — premium
-ships only as ciphertext), repository plumbing, and the game's
-pages (the built pack artifact, when present, still ships). It
-rewires the bundled copies' service constants to the app origin
-and writes `app-manifest.json` (pages present, pack state,
+ships only as ciphertext), and repository plumbing. From
+`game/` it ships only `index.html` — that page IS the course
+catalog and reader — while the web buy page stays out (buying
+happens natively in the app; in-app links to it are rewritten
+to an in-app guidance page). The built pack artifact, when
+present, still ships. The bundler rewires the bundled copies'
+service constants to the app origin, applies the Sentinel
+brand pass to the copies (the site's purple design tokens
+become the app's greens — the app ships zero purple), and
+writes `app-manifest.json` (pages present, pack state,
 free-module list, the license public key read from `shared.js`,
 what was rewired, warnings). The repo's own files are never
 modified.
