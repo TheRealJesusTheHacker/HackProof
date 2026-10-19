@@ -1223,14 +1223,31 @@ async function unlockFromKey(str) {
   S.licenseOk = true;
 }
 
-/** Re-apply a remembered key at boot. Never rejects. A bad remembered
-    key is forgotten (fail closed) rather than kept. */
+/** Re-apply a remembered key at boot. Never rejects. A remembered key
+    whose LICENSE is bad (garbled, forged, wrong tier, expired) is
+    forgotten (fail closed) rather than kept. But a key that still
+    verifies as a genuine license is KEPT when only the premium pack
+    fails to load (pack not deployed yet, corrupt blob, transient
+    WebCrypto failure) — wiping it would punish a paying customer for
+    a content problem, and they'd have to find and re-paste their key
+    once the pack is fixed. The session simply stays on the free tier
+    and the title screen explains why. */
 async function restoreLicense() {
   let str = null;
   try { str = localStorage.getItem(CONFIG.LICENSE_STORAGE_KEY); } catch (e) { str = null; }
   if (!str) return;
   try { await unlockFromKey(str); }
-  catch (e) { try { localStorage.removeItem(CONFIG.LICENSE_STORAGE_KEY); } catch (e2) {} }
+  catch (e) {
+    let licenseItselfBad = false;
+    try { await License.verifyLicense(str, CONFIG.LICENSE_PUBLIC_KEY_HEX); }
+    catch (e2) { licenseItselfBad = true; }
+    if (licenseItselfBad) {
+      try { localStorage.removeItem(CONFIG.LICENSE_STORAGE_KEY); } catch (e3) {}
+    } else {
+      S.licenseMsg = "Your saved license is valid, but the premium content couldn't be loaded right now (" +
+        e.message + ") Your key is still saved on this device — try reloading the page.";
+    }
+  }
 }
 
 function removeLicense() {
