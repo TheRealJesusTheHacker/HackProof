@@ -1,25 +1,48 @@
-# HACKPROOF — Scam Defense Course
+# HackProof — Scam Defense & Cybersecurity Course
 
-```
-┌──────────────────────────────────────────────────┐
-│  > 46 modules. 7 tracks. plain language.         │
-│  > from spotting a phish to certification        │
-│  > knowledge domains — real depth, no fluff.     │
-└──────────────────────────────────────────────────┘
-```
+**46 modules, 7 tracks, plain language: from spotting a phish to the knowledge domains behind professional IT and security certifications — in an installable Windows app and in the browser.**
 
-**HackProof** is a commercial cybersecurity-education product built by **JesusTheHacker** (Sentinel Safeguard LLC). Every module is written to an enterprise curriculum standard: stated learning objectives, worked real-world case breakdowns, step-by-step procedures and checklists, a hands-on exercise, a knowledge check with answer feedback, key takeaways, a glossary, and further reading from official sources.
+[![App release](https://img.shields.io/github/v/release/TheRealJesusTheHacker/HackProof?filter=app-v*&style=flat-square&label=app%20release)](https://github.com/TheRealJesusTheHacker/HackProof/releases/tag/app-v1.0.2)
+[![App build](https://img.shields.io/github/actions/workflow/status/TheRealJesusTheHacker/HackProof/build-app-windows.yml?style=flat-square&label=app%20build)](https://github.com/TheRealJesusTheHacker/HackProof/actions/workflows/build-app-windows.yml)
+[![License: PROPRIETARY](https://img.shields.io/badge/license-PROPRIETARY-red?style=flat-square)](LICENSE)
+[![Platform: Windows](https://img.shields.io/badge/platform-Windows-blue?style=flat-square)](https://github.com/TheRealJesusTheHacker/HackProof/releases/tag/app-v1.0.2)
+[![Site: GitHub Pages](https://img.shields.io/badge/site-GitHub%20Pages-green?style=flat-square)](https://therealjesusthehacker.github.io/HackProof/)
+[![Python](https://img.shields.io/badge/python-3.10%2B-blue?style=flat-square)](payments/README.md)
 
-The first **3 modules are free**. The **premium tier** unlocks the full course — all 46 modules across 7 tracks — plus the 90-question final exam and a verifiable certificate of completion.
+## Overview
 
-## Status
+**HackProof** is a commercial cybersecurity-education product built by **JesusTheHacker** (Sentinel Safeguard LLC). It teaches everyday people to recognize and defeat scams, and it carries serious students much further: the upper tracks teach the knowledge domains behind the certification ladder Sentinel Safeguard hires to.
 
-- **Live:** the course runs today as a static site on GitHub Pages — the free preview and the full premium course run in the browser, with no accounts and no installation.
-- **In development:** an installable Windows app (see below), and the automated payments service in `payments/` (see "How it works"). The buy page is wired to that service's API contract; until its endpoint is configured on the live page, the page runs an interim mode (live BTC amount plus the manual fulfilment paths described in `payments/README.md` and `CHANGELOG.md`).
+Every module is written to one curriculum template: stated learning objectives, worked real-world case breakdowns, step-by-step procedures and checklists, a hands-on exercise, a knowledge check with answer feedback, key takeaways, a glossary, further reading from official sources, and a certification-alignment note that says exactly which certification domains the module supports — and what that does and does not mean (see *Certification alignment — honestly*, below).
 
-## The HackProof App
+HackProof comes in two forms that run the same course:
 
-HackProof is becoming an **installable Windows app** — the same course on your PC, working offline. The app is **in development**; until it ships, this GitHub Pages site is the course's home: the free preview and full course run here in your browser, and this page is the download front door once the app releases. The buy flow below is the purchase path today.
+- **The Windows app (primary)** — one self-installing `HackProof.exe`, currently **app-v1.0.2**. The course, the final exam, certificate verification, and the premium screens run inside the app, and the unlocked course works fully offline. See [app/README.md](app/README.md).
+- **The website** — a static GitHub Pages site in Sentinel green and black. It is the landing and download front door, the free web preview of the course, and home to the public certificate verify page.
+
+The first **3 modules are free** — no account, no sign-up. The **premium tier is a one-time $5 USD in Bitcoin** and unlocks all 46 modules across 7 tracks, plus the 90-question final exam and a verifiable certificate of completion. There are no accounts anywhere in HackProof: a buyer's Ed25519-signed license key *is* the account, and it is validated offline on the student's own device.
+
+## Status — what is live, what is built, what is pending
+
+This section is kept honest on purpose. The three states below are different states, and the documentation does not blur them.
+
+- **Live — the website.** The course site runs today on GitHub Pages: the free preview, the course catalog and reader, the buy page, the exam page, and the certificate verify page.
+- **Released — the Windows app.** App release **app-v1.0.2** is published on GitHub Releases with two assets: `HackProof.exe` and `SHA256SUMS.txt`. The release build runs in the `build-app-windows.yml` workflow, which checks the tag against the app version in code, runs the app test suite, builds the exe with PyInstaller, and smoke-tests the built exe before attaching it to the release.
+- **Built and ready — the payments service.** The automated Bitcoin checkout and certificate-issuance service in [`payments/`](payments/README.md) is built and tested: BTC orders with unique satoshi-offset amounts, an esplora/mempool.space chain watcher, minting at 1 confirmation, exactly-once license minting, key delivery by email with an order-status claim path, and automatic certificate issuance for clean exam results. **It is not yet processing live orders:** deployment on the owner's server is an owner step that has not happened yet. The site constants that wire the pages to it — `PAYMENTS_API_BASE` in `game/buy.html` and in `exam.html` — are currently empty, so the live buy page runs its interim mode (live CoinGecko $5 amount plus the manual fulfilment paths) and certificate countersigning runs through the manual tool route until deployment.
+- **Owner-built — the premium pack.** Premium module bodies ship only as an AES-256-GCM encrypted pack. The pack is built locally by the owner with `tools/keygen.py build-pack` from the sources in `content/premium/`; it is never built in CI and its plaintext sources never ship in the app bundle. Premium unlock therefore depends on the owner-built pack being present in an edition — the app treats "pack not built yet" as a designed state with a plain status line, never as an error, and purchases and license keys stay valid across editions.
+
+## Features — verified against this repository
+
+- **46 modules in 7 tracks** (tables below), from scam defense for beginners through IT foundations, security operations, offensive security, systems and cloud, physical installs and safety, and professional pathways.
+- **Free tier with no gate:** modules 01–03 are readable in the browser and in the app with no license and no account.
+- **One curriculum standard:** every module carries learning objectives, case breakdowns, procedures, a hands-on exercise, a knowledge check with feedback, key takeaways, a glossary, official further reading, and a certification-alignment note.
+- **90-question final exam:** question order and answer order are shuffled every attempt; pass mark is **80% — 72/90**; the exam is premium-gated and includes a full wrong-answer review with explanations.
+- **Verifiable certificate:** passing generates a Sentinel Safeguard Certificate of Completion on the page instantly; the official countersigned certificate is Ed25519-based and anyone can check a countersigned certificate on the public [verify page](https://therealjesusthehacker.github.io/HackProof/verify.html).
+- **Exam integrity layer:** behavioral signals (tab switches, window blurs, copy/cut/paste attempts, per-question timing, total duration) are computed locally in the browser and summarized into a clean/flagged verdict inside the certificate code. A clean verdict can be countersigned automatically by the payments service once it is deployed; a flagged verdict is **held for owner review and never auto-sent**. Signals are evidence, not proof — see [PRIVACY.md](PRIVACY.md) for exactly what is recorded and what is sent.
+- **Offline license validation:** license keys are Ed25519-signed and wrap the premium content key. Validation happens on the student's device with public-key cryptography — no tracking, no phone-home, no account server.
+- **Installable Windows app:** a single exe that is the app, the self-install engine, and the uninstaller. Install is an offer, never a gate; the course runs immediately, installed or not, and portable mode (data directory on a USB stick or folder) never installs at all.
+- **No accounts, by design:** no usernames, no passwords, no login — in the app, on the site, or in the payments service. The license key is the account; the order ID is the claim credential for a paid key if the delivery email is lost.
+- **Zero-collection posture:** the course collects nothing; see [PRIVACY.md](PRIVACY.md).
 
 ## The Course — 46 Modules, 7 Tracks
 
@@ -99,6 +122,7 @@ The original HackProof course: recognize and defeat the scams hitting your phone
 | 45 | Missouri Guard & PI Licensing Pathways |
 | 46 | Leadership, Projects & Service Management |
 
+
 **Start the course:** https://therealjesusthehacker.github.io/HackProof/
 
 ## Certification alignment — honestly
@@ -117,49 +141,109 @@ Every module carries a **Certification alignment** note naming the specific cert
 - **Aspiring IT and security professionals** building toward the Sentinel credential standard.
 - **Small businesses** training staff against phishing, vishing, business email compromise, and social engineering.
 
-## The Final Exam + Verifiable Certificate
+## Get HackProof
 
-Finish the course, then prove it. The **90-question final exam** spans the full course — question order and answer order are shuffled every attempt, so no two sittings are alike.
+### In the browser (free preview — start here)
 
-- **Pass at 80% (72/90)** and your **Sentinel Safeguard Certificate of Completion** generates instantly on the page — print it or save it as PDF.
-- The official, **countersigned certificate is emailed to you**: submit your result from the exam page and the signed certificate arrives by email. Anyone can check a countersigned certificate at the [verify page](https://therealjesusthehacker.github.io/HackProof/verify.html) — no fakes.
-- The exam runs with **integrity monitoring**: behavioral signals (tab switches, copy attempts, answer timing) are computed locally in your browser and an integrity verdict travels inside your certificate code, visible to Sentinel Safeguard when your certificate is countersigned. See [PRIVACY.md](PRIVACY.md) for exactly what is recorded and what is sent.
-- The exam requires a premium license (it tests the full premium course).
+Open **https://therealjesusthehacker.github.io/HackProof/** — the first 3 modules are free and run entirely in the browser, with no installation and no account.
 
-**Take the exam:** https://therealjesusthehacker.github.io/HackProof/exam.html
+### The Windows app (primary product form)
 
-## Get Premium — $5 in Bitcoin
+1. Download `HackProof.exe` and `SHA256SUMS.txt` from the **app-v1.0.2** release: https://github.com/TheRealJesusTheHacker/HackProof/releases/tag/app-v1.0.2
+2. Verify the download (recommended): compare the SHA-256 of your `HackProof.exe` against `SHA256SUMS.txt` — in PowerShell, `Get-FileHash .\HackProof.exe -Algorithm SHA256`.
+3. Run `HackProof.exe`. The course opens and works immediately — installation is not required to learn.
+4. To install, accept the in-app install offer (or Settings → *Install / repair*): the same exe relaunches elevated, Windows shows its standard prompt, and HackProof places a byte-verified copy of itself at `C:\Program Files\Sentinel Safeguard\HackProof\HackProof.exe`, registers an Apps & Features entry, and adds a Start Menu shortcut — then verifies all three before claiming done. Uninstall runs from Apps & Features (`--uninstall`); your settings and saved license key are kept unless you tick the box to remove them.
+5. Portable use: set the `HACKPROOF_DATA_DIR` environment variable to a folder and all app data lives there; in portable mode the app never installs. Full details in [app/README.md](app/README.md).
 
-Premium is a one-time **$5 USD in BTC**:
+## Usage — the student and buyer flows
 
-https://therealjesusthehacker.github.io/HackProof/game/buy.html
+### Learn (free)
 
-**How it works:** send the BTC, and the payment is **detected on-chain automatically** — your license key is generated and **emailed to you automatically**. There are **no accounts**: the key itself is your account. Whoever holds the key holds the premium access, so keep it safe.
+Open the site or the app and read modules 01–03. Progress is stored only on your own device.
 
-Your license key is validated **offline on your device** using public-key cryptography (Ed25519). No tracking, no phone-home — see [PRIVACY.md](PRIVACY.md).
+### Unlock premium ($5 in Bitcoin)
+
+Premium is a one-time **$5 USD in BTC**, bought on the buy page: https://therealjesusthehacker.github.io/HackProof/game/buy.html
+
+- **Today (interim mode):** the buy page shows the live $5 equivalent in BTC (CoinGecko rate, BIP21 QR code) at the purchase address below, and fulfilment uses the manual paths described on the page and in [payments/README.md](payments/README.md).
+- **Once the payments service is deployed (built and ready):** you enter an email, the service creates an order and assigns a **unique exact BTC amount** (the $5 base amount plus a small per-order satoshi offset — that exact amount is how a payment on the shared address is matched to your order), you pay exactly that amount from a wallet you control, the watcher sees it on-chain, and at **1 confirmation** exactly one license key is minted and emailed to you. If the email is lost, the order-status endpoint is the claim path: the order ID shows the key once the order is paid — so treat the order link like a receipt with a key printed on it.
+- Either way, there are **no accounts**: the key itself is your account. Whoever holds the key holds the premium access, so keep it safe. Paste the key into the course (site or app) to unlock all 46 modules and the exam. Keys are validated offline on your device.
+
+### Take the exam and earn the certificate
+
+1. Finish the course with a premium license, then open the exam: https://therealjesusthehacker.github.io/HackProof/exam.html (or the Exam section in the app).
+2. The exam is **90 questions** spanning the full course, shuffled on every attempt. **Pass at 80% (72/90).**
+3. On a pass, your **Sentinel Safeguard Certificate of Completion** generates instantly on the page — print it or save it as PDF.
+4. For the official countersigned certificate, submit your result as the exam page directs. The signed certificate is emailed to you; a clean integrity verdict is issued automatically once the payments service is deployed, and a flagged verdict is held for owner review rather than auto-sent. Until deployment, countersigning runs through the owner's manual tool (`tools/keygen.py sign-cert`) — the checks are identical either way.
+5. Anyone can check a countersigned certificate at the verify page: https://therealjesusthehacker.github.io/HackProof/verify.html
 
 ## How It Works
 
-- **The site** is a static GitHub Pages site: the course pages, the final exam (`exam.html`), and the certificate verifier (`verify.html`) all run in the browser. Premium course content ships as an encrypted pack, unlocked by a license key.
-- **License keys** are Ed25519-signed and wrap the premium content key. Validation happens offline on the student's device — there is no account system and no phone-home. Keys are minted by `tools/keygen.py`, the seller-side tooling, which also countersigns certificates (`sign-cert`).
-- **The payments service** (`payments/`, contract in `payments/README.md`) automates fulfilment on the seller's own machine: a buyer creates an order, the service locks the $5 price and assigns a unique exact BTC amount, watches the purchase address on a public block-explorer API, and at 1 confirmation mints exactly one license key and emails it to the buyer. Course completion works the same way — a passed exam with a clean integrity verdict gets its certificate countersigned, generated, and emailed automatically; flagged verdicts are held for review instead of being auto-sent. The service holds no Bitcoin keys and cannot move funds.
+- **The site** is a static GitHub Pages site in the Sentinel green/black design: the course catalog and reader (`game/index.html` — the path survives from an earlier product shape; the current product is the course), the buy page (`game/buy.html`), the final exam (`exam.html`), and the certificate verifier (`verify.html`) all run in the browser. Premium course content ships as an encrypted pack, unlocked by a license key.
+- **The app** ([app/README.md](app/README.md)) is a PySide6 + Qt WebEngine shell that bundles the site at release time and serves it through a custom `hackproof://` scheme registered as a secure local scheme, so the course's WebCrypto pack decryption works exactly like HTTPS. One exe contains the app, the self-install/uninstall engine, and native buy/license screens. The unlocked course (free + premium) works fully offline; the network is used only for creating/polling an order and submitting a certificate, and there is no telemetry and no self-update — updates are delivered as new downloads.
+- **License keys** are Ed25519-signed and wrap the premium content key (AES-256-GCM). The same key format is minted by the owner's `tools/keygen.py` and by the payments service, and each accepts the other's keys — the test suites prove that agreement in both directions. `tools/keygen.py` also builds the encrypted premium pack (`build-pack`) and countersigns certificates (`sign-cert`).
+- **The payments service** ([payments/README.md](payments/README.md)) is a small Python service (standard library plus `cryptography`) that runs on the seller's own machine. It holds **no Bitcoin keys and cannot move funds** — it watches a public address on a public block-explorer API. Fulfilment is exactly-once by construction: a single conditional database update claims an order, so it cannot mint twice — not on a second poll, not after a restart, not if two watchers race. Problem payments (wrong amount, late, duplicate, exchange-batched) never auto-mint; they are logged for the owner's manual resolution.
+- **Certificate issuance** validates a submission exactly like the manual `sign-cert` tool: score 72–90 of 90, percentage exactly consistent with the score, license binding, Ed25519-valid license, and HMAC proof. Clean integrity verdicts issue; flagged, missing, or unreadable verdicts fail closed to the owner's review hold. Issuance is idempotent — one certificate per license and exam pass.
 - **Content protection** on course and exam pages (copy/selection deterrents) is a deterrent layer, not an absolute control — see `CHANGELOG.md` for the honest limits the project states for it.
 
 ### Repository layout
 
 | Path | What it is |
 |------|------------|
-| `index.html` | Site entry / redirect |
-| `course/` | The free modules and micro-lessons |
-| `content/premium/` | Premium module sources and authoring notes |
-| `exam.html` | The 90-question final exam |
+| `index.html` | Site entry / redirect to the course |
+| `game/index.html` | Course catalog and reader (free modules in plaintext; premium from the encrypted pack) |
+| `game/buy.html` | The premium buy page ($5 in BTC; interim mode until `PAYMENTS_API_BASE` is set) |
+| `course/` | The free modules and micro-lessons as standalone Markdown |
+| `content/premium/` | Premium module sources (04–46) and authoring notes — sources only, never shipped in plaintext |
+| `exam.html` | The 90-question final exam + integrity layer |
 | `verify.html` | Public certificate verification page |
-| `game/buy.html` | The premium buy page |
-| `payments/` | Automated BTC checkout + certificate issuance service |
-| `tools/keygen.py` | License minting, premium pack building, certificate countersigning |
-| `shared.js` | Shared site logic |
+| `shared.js` | Shared site logic, including the license public key |
+| `app/` | The Windows app (PySide6 + Qt WebEngine) — see [app/README.md](app/README.md) |
+| `payments/` | Automated BTC checkout + certificate issuance service — see [payments/README.md](payments/README.md) |
+| `tools/keygen.py` | Owner tooling: license minting, premium pack building, certificate countersigning |
+| `.github/workflows/build-app-windows.yml` | Release build for `app-v*` tags (test, build, smoke-test, attach assets) |
 
-Further detail: [CHANGELOG.md](CHANGELOG.md) (release history), [payments/README.md](payments/README.md) (payments API contract and flows).
+Further detail: [CHANGELOG.md](CHANGELOG.md) (release history), [app/README.md](app/README.md) (the Windows app), [payments/README.md](payments/README.md) (payments API contract and flows).
+
+## Configuration
+
+| Where | Name | What it does |
+|-------|------|--------------|
+| `game/buy.html` | `PAYMENTS_API_BASE` | Base URL of the payments service for order creation/status. Empty (`""`) in the repo today = interim mode on the live page. |
+| `exam.html` | `PAYMENTS_API_BASE` | Base URL of the same service for automatic certificate delivery (`POST /api/certificates`). Empty = the manual countersigning route applies. |
+| Windows app | `HACKPROOF_SERVICE_BASE_URL` | The same service base URL for the app; environment variable wins over the saved Settings value. |
+| Windows app | `HACKPROOF_DATA_DIR` | Portable mode: all app data lives in that folder and the app never installs. |
+| Windows app | `HACKPROOF_WEBROOT` | Bundle override for development. |
+| Payments host | `~/.hackproof-payments/config.json` | The service's one JSON config file (price, address, confirmations, SMTP, admin token) — full reference in [payments/README.md](payments/README.md). |
+
+## Development and Testing
+
+Requirements: Python 3.10+ for the tooling and payments service; the app additionally needs PySide6 (see `app/packaging/requirements-ci.txt`).
+
+```bash
+# Owner tooling (license keys, premium pack, certificate countersigning)
+python3 tools/keygen.py setup        # one-time: signing keypair + content key in ~/.hackproof
+python3 tools/keygen.py mint --tier premium --days 365
+python3 tools/keygen.py build-pack   # encrypt content/premium into the premium pack
+python3 tools/keygen.py sign-cert --license <student key> <certificate code>
+
+# Payments service
+python3 -m unittest discover -s payments/tests -v   # 29 tests, network stubbed
+python3 payments/service.py --selftest               # dress rehearsal: no network, no money
+python3 payments/service.py --check                  # validate config + key store
+
+# Windows app
+python app/tools/bundle_site.py      # site tree -> app/build/webroot
+python -m pytest app/tests -q        # 89 test functions across 8 files (see app/README.md)
+```
+
+The payments suite (29 tests) stubs CoinGecko, the esplora API, and SMTP, and proves — against the real `tools/keygen.py` — that service-minted and keygen-minted keys accept each other, that 1 confirmation mints exactly once (including across restarts), and that the certificate accept/refuse matrix matches `sign-cert` exactly. The app suite covers Ed25519 verification against the real keygen, license refusals, the install state machine, the bundler, the service client and proxy shim, and headless GUI tests. Release builds additionally run both exe self-checks (`--self-check`, `--self-check-qt`) in the workflow before any asset is attached.
+
+## Status and Roadmap
+
+- **Now:** website live; Windows app at **app-v1.0.2**; course at 46 modules / 7 tracks; exam and verifiable certificate in place.
+- **Next owner step:** deploy the payments service on the owner's server and set `PAYMENTS_API_BASE` on the buy and exam pages, which switches fulfilment and certificate delivery from the interim/manual paths to the automated flow described above.
+- **Ongoing:** course and app maintenance under the project's build → audit → fix → re-audit cycle; per-release history is recorded in [CHANGELOG.md](CHANGELOG.md).
 
 ## Support the Project
 
@@ -169,7 +253,7 @@ HackProof is independent security education — no investors, no ads, no data to
 bc1qvydns2fmyjzj55wzxq7ta28nxdhcmu9l9m6yg0
 ```
 
-Copy it character-for-character. Every donation goes back into building more training.
+Copy it character-for-character. Every donation goes back into building more training. (This is also the purchase address used by the buy page.)
 
 ## Contact
 
