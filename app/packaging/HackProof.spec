@@ -44,12 +44,12 @@ if not (WEBROOT / "app-manifest.json").is_file():
 
 # Windows version resource: Explorer, the task manager, and
 # SmartScreen read THIS — an exe with no version info looks
-# anonymous. Version 1.0.2 matches hackproof_app.__version__
+# anonymous. Version 1.0.3 matches hackproof_app.__version__
 # (the release workflow's tag check keeps them from drifting).
 version_info = VSVersionInfo(
     ffi=FixedFileInfo(
-        filevers=(1, 0, 2, 0),
-        prodvers=(1, 0, 2, 0),
+        filevers=(1, 0, 3, 0),
+        prodvers=(1, 0, 3, 0),
         mask=0x3F,
         flags=0x0,
         OS=0x40004,
@@ -70,7 +70,7 @@ version_info = VSVersionInfo(
                             "FileDescription",
                             "HackProof — cybersecurity course",
                         ),
-                        StringStruct("FileVersion", "1.0.2.0"),
+                        StringStruct("FileVersion", "1.0.3.0"),
                         StringStruct("InternalName", "HackProof"),
                         StringStruct(
                             "LegalCopyright",
@@ -78,7 +78,7 @@ version_info = VSVersionInfo(
                         ),
                         StringStruct("OriginalFilename", "HackProof.exe"),
                         StringStruct("ProductName", "HackProof"),
-                        StringStruct("ProductVersion", "1.0.2"),
+                        StringStruct("ProductVersion", "1.0.3"),
                     ],
                 )
             ]
