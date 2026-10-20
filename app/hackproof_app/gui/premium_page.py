@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import json
 import threading
+import time
 from datetime import datetime, timezone
 
 from PySide6.QtCore import QObject, Qt, QTimer, Signal
@@ -38,11 +39,16 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from .. import license_keys, site_bundle
+from .. import license_keys, promo, site_bundle
 from ..config import OrderRef, SettingsStore
 from ..service_client import Order, ServiceClient, ServiceError
 
 POLL_SECONDS = 20
+
+#: Constructor sentinel: "load the promo metadata from the
+#: bundled webroot" (the default) vs an explicitly injected
+#: metadata dict / None (tests).
+_PROMO_UNSET = object()
 
 
 class _Bridge(QObject):
@@ -65,7 +71,7 @@ def _card(title: str) -> tuple[QFrame, QVBoxLayout]:
     frame = QFrame()
     frame.setObjectName("Card")
     layout = QVBoxLayout(frame)
-    layout.setContentsMargins(18, 16, 18, 16)
+    layout.setContentsMargins(18, 12, 18, 12)
     heading = QLabel(title)
     heading.setStyleSheet("font-size: 16px; font-weight: 700;")
     layout.addWidget(heading)
@@ -88,6 +94,7 @@ class PremiumPage(QWidget):
 
     def __init__(self, store: SettingsStore, manifest: site_bundle.SiteManifest,
                  *, client_factory=None, verify_fn=None, qr_view_factory=None,
+                 promo_meta=_PROMO_UNSET,
                  parent=None):
         super().__init__(parent)
         self._store = store
@@ -97,13 +104,23 @@ class PremiumPage(QWidget):
         )
         self._verify = verify_fn or license_keys.verify_license
         self._qr_view_factory = qr_view_factory
+        if promo_meta is _PROMO_UNSET:
+            promo_meta = promo.load_meta(site_bundle.webroot())
+        self._promo_meta = promo_meta
         self._inflight: list[_Bridge] = []
         self._order: Order | None = None
         self._busy = False
+        self._promo_busy = False
 
         root = QVBoxLayout(self)
-        root.setContentsMargins(22, 20, 22, 20)
-        root.setSpacing(14)
+        root.setContentsMargins(22, 14, 22, 14)
+        # Tight vertical rhythm (8px spacing, slimmer card
+        # margins): with the promo card added, the column must
+        # still fit the designed window height with the payment
+        # panel open — the QR holder test guards that budget,
+        # and a squeezed layout is how the status line once slid
+        # under the QR code.
+        root.setSpacing(8)
         title = QLabel("My Premium")
         title.setObjectName("Headline")
         root.addWidget(title)
@@ -156,6 +173,32 @@ class PremiumPage(QWidget):
         self._key_status = _label("", "Dim")
         key_layout.addWidget(self._key_status)
         root.addWidget(self._key_card)
+
+        self._promo_card, promo_layout = _card("Promo / test code")
+        # Slimmer vertical padding than the other cards: this
+        # utility card is the column's newest tenant and pays
+        # part of its own height budget (see the root note).
+        promo_layout.setContentsMargins(18, 8, 18, 8)
+        self._promo_explainer = _label(
+            "A short code from Sentinel Safeguard — for testing or "
+            "a promotion — unlocks premium here. No purchase needed."
+        )
+        promo_layout.addWidget(self._promo_explainer)
+        self._promo_note = _label("", "Dim")
+        promo_layout.addWidget(self._promo_note)
+        self._promo_edit = QLineEdit()
+        self._promo_edit.setPlaceholderText("Enter promo / test code")
+        self._promo_edit.setInputMethodHints(
+            Qt.InputMethodHint.ImhDigitsOnly
+        )
+        promo_layout.addWidget(self._promo_edit)
+        self._promo_btn = QPushButton("Unlock with code")
+        self._promo_btn.setObjectName("Primary")
+        self._promo_btn.clicked.connect(self.submit_promo)
+        promo_layout.addWidget(self._promo_btn)
+        self._promo_status = _label("", "Dim")
+        promo_layout.addWidget(self._promo_status)
+        root.addWidget(self._promo_card)
         root.addStretch(1)
 
         self._poll = QTimer(self)
@@ -222,10 +265,18 @@ class PremiumPage(QWidget):
                 # The exam works without the pack; the lessons
                 # genuinely are not in this edition yet — say so.
                 closing = " The final exam is unlocked."
-            self._status_label.setText(
-                f"Premium is active. License {info.id}, good through "
-                f"{when}." + closing
-            )
+            if promo.is_promo_info(info, self._promo_meta):
+                # The saved key is the promo license — label it
+                # honestly instead of dressing it as a purchase.
+                self._status_label.setText(
+                    f"Premium — promo access. Good through {when}."
+                    + closing
+                )
+            else:
+                self._status_label.setText(
+                    f"Premium is active. License {info.id}, good through "
+                    f"{when}." + closing
+                )
             self._status_label.setObjectName("Good")
             self._copy_key_btn.setVisible(True)
             self._remove_key_btn.setVisible(True)
@@ -262,6 +313,28 @@ class PremiumPage(QWidget):
                   "purchase stay valid, and the lessons unlock here as "
                   "soon as an edition carrying the pack reaches you."
             )
+        # Promo card: pointless once premium is active (any route);
+        # in an edition without promo metadata it shows its
+        # designed not-active note instead of dead controls.
+        promo_active = info is not None
+        self._promo_card.setVisible(not promo_active)
+        if not promo_active:
+            has_meta = self._promo_meta is not None
+            self._promo_note.setText(
+                "" if has_meta else promo.INACTIVE_MESSAGE
+            )
+            self._promo_edit.setVisible(has_meta)
+            self._promo_btn.setVisible(has_meta)
+            # Without metadata the not-active note says it all;
+            # the explainer only earns its height when a code
+            # can actually be entered.
+            self._promo_explainer.setVisible(has_meta)
+        # Idle labels stay out of the layout entirely — an empty
+        # label still eats line height, and this column's height
+        # budget is guarded (see the root layout note).
+        self._promo_note.setVisible(bool(self._promo_note.text()))
+        self._promo_status.setVisible(bool(self._promo_status.text()))
+        self._key_status.setVisible(bool(self._key_status.text()))
         self._update_buy_availability()
 
     def _update_buy_availability(self) -> None:
@@ -285,6 +358,11 @@ class PremiumPage(QWidget):
 
     # -------------------------------------------------------------- keys
 
+    def _set_key_status(self, style: str, text: str) -> None:
+        self._key_status.setObjectName(style)
+        self._key_status.setText(text)
+        self._key_status.setVisible(bool(text))
+
     def submit_key(self) -> None:
         text = self._key_edit.toPlainText().strip()
         try:
@@ -294,14 +372,12 @@ class PremiumPage(QWidget):
                 high_water_ms=self._store.clock_high_water_ms(),
             )
         except license_keys.LicenseError as exc:
-            self._key_status.setObjectName("Bad")
-            self._key_status.setText(exc.user_message)
+            self._set_key_status("Bad", exc.user_message)
             return
         self._store.settings.license_key = text
         self._store.save()
-        self._key_status.setObjectName("Good")
-        self._key_status.setText(
-            f"Premium unlocked — welcome in. License {info.id}."
+        self._set_key_status(
+            "Good", f"Premium unlocked — welcome in. License {info.id}."
         )
         self._key_edit.clear()
         self.refresh()
@@ -321,6 +397,87 @@ class PremiumPage(QWidget):
     def _remove_key(self) -> None:
         self._store.settings.license_key = ""
         self._store.save()
+        self.refresh()
+        self.license_changed.emit()
+
+    # ------------------------------------------------------------- promo
+
+    def _set_promo_status(self, style: str, text: str) -> None:
+        self._promo_status.setObjectName(style)
+        self._promo_status.setText(text)
+        self._promo_status.setVisible(bool(text))
+
+    def submit_promo(self) -> None:
+        """Promo / test code unlock. The derivation (a 600k-round
+        KDF plus signature check) runs on a worker thread; the
+        reconstructed license is verified with the same native
+        verifier as a pasted key, then stored in the same vault
+        slot — from there it is indistinguishable from a purchased
+        key (premium state, exam, certificate submission). This
+        path never touches the payments service: no order, no
+        payment, just the code and the signature."""
+        if self._promo_busy:
+            return
+        settings = self._store.settings
+        remaining = promo.throttle_remaining(
+            settings.promo_fail_count,
+            settings.promo_last_fail_ms,
+            int(time.time() * 1000),
+        )
+        if remaining > 0:
+            self._set_promo_status(
+                "Bad",
+                f"Too many tries — wait about {remaining} seconds "
+                "and try again.",
+            )
+            return
+        if self._promo_meta is None:
+            self._set_promo_status("Bad", promo.INACTIVE_MESSAGE)
+            return
+        code = self._promo_edit.text()
+        public_key = self._manifest.public_key_hex or ""
+        meta = self._promo_meta
+
+        def work():
+            key = promo.derive_promo_key(code, meta, public_key)
+            info = self._verify(
+                key,
+                public_key,
+                high_water_ms=self._store.clock_high_water_ms(),
+            )
+            return key, info
+
+        self._promo_busy = True
+        self._set_promo_status("Dim", "Checking code…")
+        self._dispatch(work, self._promo_done)
+
+    def _promo_done(self, result) -> None:
+        self._promo_busy = False
+        ok, value = result
+        settings = self._store.settings
+        if not ok:
+            settings.promo_fail_count += 1
+            settings.promo_last_fail_ms = int(time.time() * 1000)
+            self._store.save()
+            if isinstance(value, license_keys.LicenseError):
+                message = value.user_message
+            else:  # pragma: no cover - defensive, designed wording
+                message = ("Something went wrong checking that code. "
+                           "Try again.")
+            wait = promo.throttle_wait_seconds(settings.promo_fail_count)
+            if wait:
+                message += (
+                    f" Too many tries — wait about {wait} seconds "
+                    "before trying again."
+                )
+            self._set_promo_status("Bad", message)
+            return
+        key, _info = value
+        settings.license_key = key
+        settings.promo_fail_count = 0
+        settings.promo_last_fail_ms = 0
+        self._store.save()
+        self._promo_edit.clear()
         self.refresh()
         self.license_changed.emit()
 
