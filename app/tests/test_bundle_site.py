@@ -168,11 +168,11 @@ def test_brand_theme_applied_to_bundled_copies_only(bundled):
     assert counts  # something changed
     index = (out / "index.html").read_text().lower()
     assert "#a855f7" not in index and "#0a0612" not in index
-    assert "#1e7a3c" in index and "#060a07" in index
-    assert "#1e7a3c33" in index  # the alpha form keeps its alpha
+    assert "#167547" in index and "#050807" in index
+    assert "#16754733" in index  # the alpha form keeps its alpha
     course = (out / "game" / "index.html").read_text()
     assert "168,85,247" not in course
-    assert "30,122,60" in course
+    assert "22,117,71" in course
     # Repository originals keep the website's own palette.
     assert "#a855f7" in (repo / "index.html").read_text()
 

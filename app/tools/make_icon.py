@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Generate the HackProof icon (PNG asset + Windows .ico).
 
-Design: the watcher motif in Sentinel colors — a green ring (the
-eye that checks everything) around a solid pupil, on the
-green-black rounded square. Drawn with QPainter so the shapes are
+Design: the watcher motif in the academy colors — an emerald
+ring (the eye that checks everything) around a solid pupil, on
+the ink-black rounded square (hackproof_app.gui.theme: BG,
+PANEL_BORDER, PRIMARY). Drawn with QPainter so the shapes are
 vector-clean at every size; the .ico embeds PNG frames (the
 format Windows accepts for 256px icons).
 
@@ -33,18 +34,18 @@ def render_png(size: int) -> bytes:
     painter.setRenderHint(QPainter.RenderHint.Antialiasing)
     s = float(size)
     # Rounded square in green-black.
-    painter.setBrush(QColor("#060a07"))
-    painter.setPen(QPen(QColor("#1e3323"), max(1.0, s * 0.012)))
+    painter.setBrush(QColor("#050807"))
+    painter.setPen(QPen(QColor("#1e2b21"), max(1.0, s * 0.012)))
     radius = s * 0.20
     painter.drawRoundedRect(
         QRectF(s * 0.03, s * 0.03, s * 0.94, s * 0.94), radius, radius
     )
     # The eye: green ring + solid pupil.
     painter.setBrush(QColor(0, 0, 0, 0))
-    painter.setPen(QPen(QColor("#2ee06f"), s * 0.075))
+    painter.setPen(QPen(QColor("#1da463"), s * 0.075))
     painter.drawEllipse(QRectF(s * 0.24, s * 0.24, s * 0.52, s * 0.52))
-    painter.setBrush(QColor("#2ee06f"))
-    painter.setPen(QPen(QColor("#2ee06f"), 1))
+    painter.setBrush(QColor("#1da463"))
+    painter.setPen(QPen(QColor("#1da463"), 1))
     painter.drawEllipse(QRectF(s * 0.415, s * 0.415, s * 0.17, s * 0.17))
     painter.end()
     array = QByteArray()

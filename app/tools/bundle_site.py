@@ -30,14 +30,16 @@ What it does, and why:
   land in the app's proxy, which forwards them to the service
   base URL from the app's Settings. Repository files are never
   touched.
-- **Applies the Sentinel brand palette** to the bundled copies:
-  the website's pages are designed in a purple palette; the app
-  is a Sentinel Safeguard product and ships green-on-black only
-  (the owner's standing brand rule — no purple anywhere). A fixed
-  token map (:data:`BRAND_MAP`) rewrites the purple design tokens
-  to their Sentinel green equivalents in the bundled copies only.
-  Page content, layout, and wording are untouched; the website
-  itself keeps its own design.
+- **Applies the academy brand palette** to the bundled copies:
+  the app wears HackProof's own colors (the academy's emerald
+  and certificate gold on ink-black — see
+  ``hackproof_app.gui.theme``) and ships no purple anywhere. A
+  fixed token map (:data:`BRAND_MAP`) rewrites both the pages'
+  original purple design tokens and the 2026-10 house-green
+  tokens the website itself now carries to their academy
+  equivalents in the bundled copies only. Page content, layout,
+  and wording are untouched; the website itself keeps its own
+  design.
 - **Detects the premium pack**: a built pack (ciphertext inlined
   behind the ``/*__PREMIUM_PACK__*/`` marker, or a
   ``premium-pack.b64`` artifact) means premium can unlock in this
@@ -92,67 +94,100 @@ BUY_LINK_PATTERN = re.compile(
 )
 BUY_LINK_TARGET = "/_app/buy-in-app.html"
 
-#: The Sentinel brand pass: the site palette's purple design
-#: tokens -> the Sentinel green equivalents the app chrome uses
-#: (hackproof_app.gui.theme). Role-preserving: page backgrounds
-#: stay near-black, cards stay cards, the bright accent stays the
-#: accent, text stays text — only the hue family changes. The
-#: certificate's purple on its cream stock becomes the deep
-#: green a certificate seal traditionally wears. Functional
-#: colors (danger reds, warning gold, success greens, the cream
-#: certificate stock itself) are NOT in this map and never move.
+#: The academy brand pass: design tokens -> the academy
+#: equivalents the app chrome uses (hackproof_app.gui.theme —
+#: every target below is one of its constants or documented
+#: derivations, and the theme tests pin the agreement).
+#: Role-preserving: page backgrounds stay near-black, cards stay
+#: cards, the bright accent stays the accent, text stays text —
+#: only the hue family changes. Two generations of tokens are
+#: mapped: the pages' original purple design tokens, and the
+#: house-green tokens the website itself has carried since its
+#: own 2026-10 brand pass (the bundled copies move to the
+#: academy palette; the website keeps the house design). The
+#: certificate's accents on its cream stock become the deep
+#: emerald a certificate seal traditionally wears, in the
+#: academy's own derivation. Functional colors (danger reds,
+#: warning gold, success greens, the cream certificate stock
+#: itself) are NOT in this map and never move.
 BRAND_MAP = {
-    # page backgrounds (purple-black -> green-black)
-    "#0a0612": "#060a07",
-    "#100a1c": "#060a07",
-    "#0d0718": "#060a07",
-    "#140c24": "#060a07",
-    "#150b26": "#060a07",
-    "#120a1e": "#0a120b",
-    "#120a1f": "#0a120b",
-    "#1d0f38": "#0a120b",
+    # page backgrounds (purple-black -> ink-black)
+    "#0a0612": "#050807",
+    "#100a1c": "#050807",
+    "#0d0718": "#050807",
+    "#140c24": "#050807",
+    "#150b26": "#050807",
+    "#120a1e": "#080d09",
+    "#120a1f": "#080d09",
+    "#1d0f38": "#080d09",
     # cards and raised surfaces
-    "#170d28": "#0c130d",
-    "#1a0f2e": "#0c130d",
-    "#1c1530": "#0c130d",
-    "#1c0f33": "#0c130d",
-    "#1d1030": "#0c130d",
-    "#241538": "#0c130d",
-    "#221338": "#111a12",
-    "#221239": "#111a12",
-    "#241641": "#16251a",
-    "#2a1650": "#14532d",
+    "#170d28": "#0a100c",
+    "#1a0f2e": "#0a100c",
+    "#1c1530": "#0a100c",
+    "#1c0f33": "#0a100c",
+    "#1d1030": "#0a100c",
+    "#241538": "#0a100c",
+    "#221338": "#171e19",
+    "#221239": "#171e19",
+    "#241641": "#182b20",
+    "#2a1650": "#115635",
     # hairlines and deep-purple fills
-    "#241536": "#1e3323",
-    "#2c1847": "#1e3323",
-    "#3b2163": "#1e3323",
-    "#4a2a7a": "#14532d",
-    "#4c1d95": "#14532d",
-    "#6d28d9": "#14532d",
+    "#241536": "#1e2b21",
+    "#2c1847": "#1e2b21",
+    "#3b2163": "#1e2b21",
+    "#4a2a7a": "#115635",
+    "#4c1d95": "#115635",
+    "#6d28d9": "#115635",
     # the purple accents themselves
-    "#7c3aed": "#14532d",
-    "#a855f7": "#1e7a3c",
-    "#c084fc": "#2ee06f",
-    "#d8b4fe": "#8fd6a4",
+    "#7c3aed": "#115635",
+    "#a855f7": "#167547",
+    "#c084fc": "#1da463",
+    # the pale-lavender light accent (the pages' --purple-l slot:
+    # small caps tags, headings, key text, the focus outline)
+    # takes certificate gold — the academy's second accent,
+    # 8.3:1 on the ink-black ground.
+    "#d8b4fe": "#c9a227",
     # purple-grey text tones -> the theme's text tones
-    "#9d8bb5": "#9db3a4",
-    "#9d8fb8": "#9db3a4",
+    "#9d8bb5": "#90a894",
+    "#9d8fb8": "#90a894",
     # #8a7fa8 and #5b5470 occur ONLY as certificate small print
     # (.cert .label / .sub / .sig) on the cream stock, never on a
-    # dark surface, so they take the certificate's dark muted
-    # green: the light text tones fail contrast on cream
-    # (2.2:1 / 3.2:1 against the 4.5:1 standard).
-    "#8a7fa8": "#2f4536",
-    "#5b5470": "#2f4536",
-    "#3d3654": "#2f4536",  # muted text on the cream certificate
-    "#efe8fa": "#e8f2ea",
-    "#f3efff": "#e8f2ea",
-    "#e6dcf7": "#e8f2ea",
-    "#e8e2f5": "#e8f2ea",
+    # dark surface, so they take the certificate's dark academy
+    # tone (the theme's PRIMARY mixed 70% toward BG): the light
+    # text tones fail contrast on cream (2.2:1 / 3.2:1 against
+    # the 4.5:1 standard), and certificate gold measures only
+    # 2.3:1 there — gold never carries certificate text.
+    "#8a7fa8": "#0c3723",
+    "#5b5470": "#0c3723",
+    "#3d3654": "#0c3723",  # muted text on the cream certificate
+    "#efe8fa": "#e9f2ea",
+    "#f3efff": "#e9f2ea",
+    "#e6dcf7": "#e9f2ea",
+    "#e8e2f5": "#e9f2ea",
+    # --- the website's current house-green tokens, retinted to
+    # the academy palette in the bundled copies only (the
+    # website itself is never rewritten) ---
+    "#060a07": "#050807",  # house background -> BG
+    "#0a120b": "#080d09",  # deeper page ground -> INPUT_BG
+    "#0c130d": "#0a100c",  # cards -> PANEL
+    "#111a12": "#171e19",  # raised surfaces -> PANEL_RAISED
+    "#16251a": "#182b20",  # hover surfaces -> HOVER
+    "#16281c": "#182b20",  # correct-answer surface tint -> HOVER
+    "#1e3323": "#1e2b21",  # hairlines -> PANEL_BORDER
+    "#14532d": "#115635",  # deep accent -> DEEP (certificate
+    # frame and accents on cream included: 8.4:1 on the stock)
+    "#1e7a3c": "#167547",  # the pages' --purple -> the mapped
+    # academy mid-tone (PRIMARY mixed 30% toward BG)
+    "#2ee06f": "#1da463",  # bright accent -> PRIMARY
+    "#8fd6a4": "#c9a227",  # --purple-l light accent ->
+    # certificate gold, as with #d8b4fe above
+    "#9db3a4": "#90a894",  # secondary text -> TEXT_FAINT
+    "#e8f2ea": "#e9f2ea",  # primary text -> TEXT
+    "#2f4536": "#0c3723",  # certificate small print, as above
 }
 #: rgba() form of the primary purple (glow shadows in the pages).
 BRAND_RGBA_FROM = "168,85,247"
-BRAND_RGBA_TO = "30,122,60"  # #1e7a3c, the mapped --purple
+BRAND_RGBA_TO = "22,117,71"  # #167547, the mapped --purple
 _BRAND_HEX_PATTERN = re.compile(
     "(" + "|".join(re.escape(k) for k in BRAND_MAP) + ")"
     r"([0-9a-fA-F]{2})?(?![0-9a-fA-F])",

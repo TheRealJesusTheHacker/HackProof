@@ -42,6 +42,7 @@ from PySide6.QtWidgets import (
 from .. import license_keys, promo, site_bundle
 from ..config import OrderRef, SettingsStore
 from ..service_client import Order, ServiceClient, ServiceError
+from . import theme
 
 POLL_SECONDS = 20
 
@@ -489,7 +490,8 @@ class PremiumPage(QWidget):
         layout.setContentsMargins(0, 8, 0, 0)
         self._pay_amount = _label("", None)
         self._pay_amount.setStyleSheet(
-            "font-size: 20px; font-weight: 700; color: #2ee06f;"
+            "font-size: 20px; font-weight: 700; "
+            f"color: {theme.PRIMARY};"
         )
         layout.addWidget(self._pay_amount)
         self._pay_address = _label("", "Mono")

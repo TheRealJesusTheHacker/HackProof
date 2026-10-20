@@ -63,12 +63,135 @@ def test_theme_is_green_black_no_purple(qapp):
     palette = qapp.palette()
     from PySide6.QtGui import QPalette
 
-    assert palette.color(QPalette.ColorRole.Window).name() == "#060a07"
-    assert palette.color(QPalette.ColorRole.WindowText).name() == "#e8f2ea"
+    assert palette.color(QPalette.ColorRole.Window).name() == "#050807"
+    assert palette.color(QPalette.ColorRole.WindowText).name() == "#e9f2ea"
     qss = qapp.styleSheet().lower()
     for purple in ("#a855f7", "#7c3aed", "#8b5cf6", "purple", "#9333ea"):
         assert purple not in qss
-    assert "#2ee06f" in qss  # Sentinel green is the accent
+    assert "#1da463" in qss  # academy emerald is the accent
+    # The retired house palette is gone from the chrome.
+    for retired in ("#2ee06f", "#060a07", "#0c130d", "#0a120b",
+                    "#111a12", "#16251a", "#1e3323", "#14532d",
+                    "#1e7a3c", "#8fd6a4", "#9db3a4", "#7d927f",
+                    "#e8f2ea", "#ffd23d", "#4be884", "#04160a",
+                    "#17301f", "#54855f", "#43543f", "#2f4536"):
+        assert retired not in qss
+
+
+def _mix(a: str, b: str, t: float) -> str:
+    ca = [int(a[i:i + 2], 16) for i in (1, 3, 5)]
+    cb = [int(b[i:i + 2], 16) for i in (1, 3, 5)]
+    return "#" + "".join(
+        f"{round(x + (y - x) * t):02x}" for x, y in zip(ca, cb)
+    )
+
+
+def _ratio(fg: str, bg: str) -> float:
+    def lum(h: str) -> float:
+        def lin(c: int) -> float:
+            c = c / 255
+            return c / 12.92 if c <= 0.04045 else (
+                (c + 0.055) / 1.055) ** 2.4
+
+        r, g, b = (int(h[i:i + 2], 16) for i in (1, 3, 5))
+        return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b)
+
+    hi, lo = max(lum(fg), lum(bg)), min(lum(fg), lum(bg))
+    return (hi + 0.05) / (lo + 0.05)
+
+
+def test_theme_palette_is_the_locked_academy_set():
+    # The locked design constants, exactly.
+    assert theme.BG == "#050807"
+    assert theme.PANEL == "#0a100c"
+    assert theme.PANEL_BORDER == "#1e2b21"
+    assert theme.INPUT_BG == "#080d09"
+    assert theme.TEXT == "#e9f2ea"
+    assert theme.TEXT_FAINT == "#90a894"
+    assert theme.DISABLED_TEXT == "#77897b"
+    assert theme.PRIMARY == "#1da463"
+    assert theme.PRIMARY != "#2ee06f"  # NOT the fleet house green
+    assert theme.PRIMARY_DARK_TEXT == "#02120a"
+    assert theme.ACCENT == "#c9a227"  # certificate gold
+    # The working-name aliases agree with what they name.
+    assert theme.BORDER == theme.PANEL_BORDER
+    assert theme.GREEN == theme.PRIMARY
+    assert theme.GREEN_HOVER == theme.PRIMARY_HOVER
+    assert theme.GREEN_DEEP == theme.DEEP
+    assert theme.GREEN_DIM == theme.DIM
+    assert theme.TEXT_DIM == theme.TEXT_FAINT
+    assert theme.PRIMARY_TEXT == theme.PRIMARY_DARK_TEXT
+    assert theme.GOLD == theme.ACCENT
+    # Derived tones recompute from the constants by the formulas
+    # documented in the theme module — they cannot drift.
+    assert theme.PANEL_RAISED == _mix(theme.PANEL, theme.TEXT, 0.06)
+    assert theme.HOVER == _mix(theme.PANEL_RAISED, theme.PRIMARY, 0.10)
+    assert theme.PRIMARY_HOVER == _mix(theme.PRIMARY, theme.TEXT, 0.18)
+    assert theme.DEEP == _mix(theme.PRIMARY, theme.BG, 0.50)
+    assert theme.DIM == _mix(theme.PRIMARY, theme.TEXT, 0.55)
+    assert theme.DISABLED_FILL == _mix(theme.PRIMARY, theme.BG, 0.75)
+    assert theme.OUTLINE == _mix(theme.PANEL_BORDER, theme.TEXT, 0.25)
+
+
+def test_theme_pairs_meet_wcag_aa():
+    t = theme
+    pairs = [
+        (t.TEXT, t.BG), (t.TEXT, t.PANEL), (t.TEXT, t.INPUT_BG),
+        (t.TEXT, t.PANEL_RAISED), (t.TEXT, t.HOVER), (t.TEXT, t.DEEP),
+        (t.TEXT_FAINT, t.BG), (t.TEXT_FAINT, t.PANEL),
+        (t.TEXT_FAINT, t.INPUT_BG), (t.TEXT_FAINT, t.PANEL_RAISED),
+        (t.TEXT_FAINT, t.DISABLED_FILL),
+        (t.DISABLED_TEXT, t.BG), (t.DISABLED_TEXT, t.PANEL),
+        (t.PRIMARY, t.BG), (t.PRIMARY, t.PANEL), (t.PRIMARY, t.INPUT_BG),
+        (t.ACCENT, t.BG), (t.ACCENT, t.PANEL),
+        (t.DIM, t.BG), (t.DIM, t.PANEL),
+        (t.PRIMARY_DARK_TEXT, t.PRIMARY),
+        (t.PRIMARY_DARK_TEXT, t.PRIMARY_HOVER),
+        (t.SELECTION_TEXT, t.DEEP),
+        (t.DANGER_TEXT, t.BG), (t.DANGER_TEXT, t.DANGER_BG),
+    ]
+    for fg, bg in pairs:
+        assert _ratio(fg, bg) >= 4.5, (fg, bg, _ratio(fg, bg))
+    # The design's weakest pair, on the nose.
+    assert abs(_ratio(t.DISABLED_TEXT, t.PANEL) - 5.17) < 0.01
+
+
+def test_brand_map_targets_agree_with_theme():
+    from tools.bundle_site import BRAND_MAP, BRAND_RGBA_TO
+
+    # Every house token retints to the theme constant of its role.
+    assert BRAND_MAP["#060a07"] == theme.BG
+    assert BRAND_MAP["#0a120b"] == theme.INPUT_BG
+    assert BRAND_MAP["#0c130d"] == theme.PANEL
+    assert BRAND_MAP["#111a12"] == theme.PANEL_RAISED
+    assert BRAND_MAP["#16251a"] == theme.HOVER
+    assert BRAND_MAP["#16281c"] == theme.HOVER
+    assert BRAND_MAP["#1e3323"] == theme.PANEL_BORDER
+    assert BRAND_MAP["#14532d"] == theme.DEEP
+    assert BRAND_MAP["#2ee06f"] == theme.PRIMARY
+    assert BRAND_MAP["#9db3a4"] == theme.TEXT_FAINT
+    assert BRAND_MAP["#e8f2ea"] == theme.TEXT
+    # The pages' --purple mid-tone is PRIMARY mixed 30% toward BG,
+    # and the rgba glow form is the same color.
+    mid = _mix(theme.PRIMARY, theme.BG, 0.30)
+    assert BRAND_MAP["#1e7a3c"] == mid
+    assert BRAND_MAP["#a855f7"] == mid
+    r, g, b = (int(mid[i:i + 2], 16) for i in (1, 3, 5))
+    assert BRAND_RGBA_TO == f"{r},{g},{b}"
+    # Certificate gold carries the pages' light-accent slot.
+    assert BRAND_MAP["#8fd6a4"] == theme.ACCENT
+    assert BRAND_MAP["#d8b4fe"] == theme.ACCENT
+    # Certificate small print is PRIMARY mixed 70% toward BG —
+    # and it holds up on the cream stock where gold cannot.
+    certprint = _mix(theme.PRIMARY, theme.BG, 0.70)
+    assert BRAND_MAP["#2f4536"] == certprint
+    assert _ratio(certprint, "#fdfbf7") >= 4.5
+    assert _ratio(theme.ACCENT, "#fdfbf7") < 4.5  # why gold stays off it
+    # The original purple tokens land on the same academy roles.
+    assert BRAND_MAP["#0a0612"] == theme.BG
+    assert BRAND_MAP["#170d28"] == theme.PANEL
+    assert BRAND_MAP["#c084fc"] == theme.PRIMARY
+    assert BRAND_MAP["#efe8fa"] == theme.TEXT
 
 
 # -------------------------------------------------------- main window
