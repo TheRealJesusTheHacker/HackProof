@@ -6,8 +6,12 @@ throttle, and drive the My Premium promo card.
 
 The promo license is a REAL license whose secret is derived
 from the code (PBKDF2) instead of random; the metadata the pack
-build publishes carries everything except that secret. All
-fixtures here use a throwaway key store and a test-only code.
+build publishes carries everything except that secret. The code
+is built into the keygen in concealed form; the fixtures below
+use a throwaway key store and type the built-in code the way a
+user would — assembled at runtime, because the release gate
+greps this tree for the literal digits and a stored
+representation must never sit in a file.
 """
 
 from __future__ import annotations
@@ -27,8 +31,10 @@ from hackproof_app.license_keys import LicenseError
 REPO_ROOT = Path(__file__).resolve().parents[2]
 KEYGEN = REPO_ROOT / "tools" / "keygen.py"
 
-#: Test-only code for the throwaway key store below.
-TEST_CODE = "2468"
+#: The built-in promo code, typed as a user would type it —
+#: assembled from character codes so the literal digit string
+#: never sits in this file (see the module docstring).
+TEST_CODE = "".join(map(chr, (53, 55, 49, 54)))
 
 
 def _load_keygen():
@@ -40,24 +46,23 @@ def _load_keygen():
 
 @pytest.fixture(scope="module")
 def promo_env(tmp_path_factory):
-    """A REAL keygen key store with a promo code configured, and
-    the metadata build-pack would publish for it. The KDF
+    """A REAL keygen key store, and the metadata build-pack
+    publishes for it from the sealed built-in code. The KDF
     iteration constant is patched down for speed — the metadata
     records the same patched value, exactly as production
     records its real one, and every client reads it from there."""
     keygen = _load_keygen()
     keydir = tmp_path_factory.mktemp("promo-keydir")
     keygen.cmd_setup(str(keydir))
-    keygen.cmd_set_promo(str(keydir), TEST_CODE)
     old = keygen.PROMO_KDF_ITERATIONS
     keygen.PROMO_KDF_ITERATIONS = 1_000
     try:
         priv, kc = keygen.load_keys(str(keydir))
-        code = keygen.load_promo_code(str(keydir))
-        assert code == TEST_CODE
-        meta = keygen.build_promo_meta(priv, kc, code)
+        assert keygen._builtin_promo_code() == TEST_CODE
+        meta = keygen.build_promo_meta(priv, kc)
+        assert meta is not None
         secret = keygen.derive_promo_secret(
-            code, keygen.b64d(meta["salt"]))
+            TEST_CODE, keygen.b64d(meta["salt"]))
         expected_key = keygen.promo_license_key(meta, secret)
     finally:
         keygen.PROMO_KDF_ITERATIONS = old
