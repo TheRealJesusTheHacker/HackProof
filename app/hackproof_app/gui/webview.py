@@ -1,7 +1,7 @@
 """The embedded browser: serves the bundled course and enforces
 the product's rules around it.
 
-Three jobs:
+Four jobs:
 
 1. **Serve the bundle.** Pages load from ``hackproof://app/...``
    through :class:`SiteSchemeHandler`, which reads files from the
@@ -29,6 +29,18 @@ Three jobs:
    pasting a license key or a certificate code is a designed
    flow, never something to block.
 
+4. **Confine navigation.** The views share one persistent
+   profile, and the scheme handler answers any request to the
+   app origin — including proxying service calls and injecting
+   the vault license into certificate submissions. So a page
+   must never be able to steer the view somewhere else:
+   :class:`HackProofWebPage` classifies every navigation with
+   :func:`hackproof_app.proxy_logic.navigation_decision` —
+   app-origin targets navigate in-app (every course page, the
+   buy guidance page, and the reader/QR assets live there),
+   web links open in the system browser, and anything else is
+   refused.
+
 Exam integrity note: the exam page counts tab switches through
 ``visibilitychange`` and window blurs. The app's navigation is a
 stacked widget — switching sections hides the exam view, which is
@@ -45,6 +57,7 @@ import mimetypes
 from pathlib import Path
 
 from PySide6.QtCore import QByteArray, QBuffer, QIODevice, QTimer, QUrl
+from PySide6.QtGui import QDesktopServices
 from PySide6.QtNetwork import QNetworkAccessManager, QNetworkReply, QNetworkRequest
 from PySide6.QtWebEngineCore import (
     QWebEnginePage,
@@ -363,9 +376,44 @@ class SiteSchemeHandler(QWebEngineUrlSchemeHandler):
             reply.deleteLater()
 
 
+def _open_external(url: QUrl) -> None:
+    """Hand a web link to the system browser. A module-level
+    seam so tests can observe the hand-off without opening a
+    real browser."""
+    QDesktopServices.openUrl(url)
+
+
+class HackProofWebPage(QWebEnginePage):
+    """A page that cannot wander off the app origin.
+
+    Every navigation — link click, script-driven location
+    change, redirect — is classified by
+    :func:`hackproof_app.proxy_logic.navigation_decision`:
+    app-origin targets proceed; a web link in the main frame
+    opens in the system browser and the in-app navigation is
+    refused (a web link inside a sub-frame is just refused —
+    an embedded frame must never pop a browser window); every
+    other scheme is refused outright. Fetches and resource
+    loads are not navigations and are untouched, so the pages'
+    service calls work exactly as before.
+    """
+
+    def acceptNavigationRequest(self, url, navigation_type,  # noqa: N802
+                                is_main_frame) -> bool:
+        decision = proxy_logic.navigation_decision(
+            url.scheme(), url.host()
+        )
+        if decision == "app":
+            return True
+        if decision == "external" and is_main_frame:
+            _open_external(url)
+        return False
+
+
 class HackProofWebView(QWebEngineView):
     """A course web view with the product's frame rules applied:
-    copy protection reinforced, Paste preserved, no dev tools."""
+    copy protection reinforced, Paste preserved, no dev tools,
+    navigation confined to the app origin."""
 
     _DISABLED_ACTIONS = (
         "Copy", "Cut", "ViewSource", "InspectElement",
@@ -376,7 +424,7 @@ class HackProofWebView(QWebEngineView):
 
     def __init__(self, profile: QWebEngineProfile, parent=None):
         super().__init__(parent)
-        page = QWebEnginePage(profile, self)
+        page = HackProofWebPage(profile, self)
         self.setPage(page)
         self._harden(page)
 
