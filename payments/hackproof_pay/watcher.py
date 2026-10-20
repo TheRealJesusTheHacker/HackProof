@@ -18,6 +18,7 @@ from __future__ import annotations
 import logging
 import re
 import secrets
+import threading
 import time
 
 from . import crypto_core
@@ -41,11 +42,21 @@ class OrderService:
         self._cfg = cfg
         self._store = store
         self._pricer = pricer
+        # Serializes the reserve-allocate-insert sequence in
+        # create_order: the reserved-totals read and the order
+        # insert are separate store calls, so without this lock two
+        # concurrent creations could read the same reserved set and
+        # allocate the SAME total — and amount uniqueness is the
+        # payment-matching key the whole watcher relies on.
+        self._create_lock = threading.Lock()
 
     # ------------------------------------------------------------ orders
 
     def create_order(self, email):
-        email = (email or "").strip()
+        if not isinstance(email, str):
+            raise OrderError("a valid email address is required — "
+                             "your license key is delivered there")
+        email = email.strip()
         if len(email) > 254 or not EMAIL_RE.match(email):
             raise OrderError("a valid email address is required — "
                              "your license key is delivered there")
@@ -53,22 +64,23 @@ class OrderService:
         rate = self._pricer.btc_rate_usd()       # may raise PricingError
         base = self._pricer.base_sats(rate)
         now = int(time.time())
-        reserved = self._store.open_totals(now)
-        total, offset = allocate_total(
-            base, reserved, int(cfg["max_order_offset_sats"]))
-        order = {
-            "order_id": secrets.token_urlsafe(24),
-            "email": email,
-            "price_usd": float(cfg["price_usd"]),
-            "rate_usd": rate,
-            "base_sats": base,
-            "offset_sats": offset,
-            "total_sats": total,
-            "btc_address": cfg["btc_address"],
-            "created_at": now,
-            "expires_at": now + int(cfg["order_ttl_seconds"]),
-        }
-        self._store.create_order(order)
+        with self._create_lock:
+            reserved = self._store.open_totals(now)
+            total, offset = allocate_total(
+                base, reserved, int(cfg["max_order_offset_sats"]))
+            order = {
+                "order_id": secrets.token_urlsafe(24),
+                "email": email,
+                "price_usd": float(cfg["price_usd"]),
+                "rate_usd": rate,
+                "base_sats": base,
+                "offset_sats": offset,
+                "total_sats": total,
+                "btc_address": cfg["btc_address"],
+                "created_at": now,
+                "expires_at": now + int(cfg["order_ttl_seconds"]),
+            }
+            self._store.create_order(order)
         log.info("order created id=%s total_sats=%d offset=%d rate=%s",
                  order["order_id"], total, offset, rate)
         return self.public_order(self._store.get_order(
