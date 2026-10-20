@@ -12,14 +12,22 @@ bytes (a 32-byte key contains a 0x0A with probability ~12%, so
 the app-v1.0.3 Windows builds died while Linux stayed green, and
 the same wall the owner's own `keygen.py setup` hits on Windows.
 
-Linux has no text-mode translation, so these tests MODEL the CRT
-behaviour: os.open/os.write are wrapped so descriptors opened
-without O_BINARY translate 0x0A -> 0x0D 0x0A on write, exactly as
-the Windows CRT does. A control test proves the model really
-translates, so the round-trip tests cannot pass vacuously. Key
-material is forced to adversarial bytes (0x0A, 0x0D, 0x0D0A pairs,
-a trailing 0x0A) so the round-trip is deterministic instead of a
-coin flip.
+Linux has no text-mode translation, so on POSIX these tests MODEL
+the CRT behaviour: os.open/os.write are wrapped so descriptors
+opened without O_BINARY translate 0x0A -> 0x0D 0x0A on write,
+exactly as the Windows CRT does. On Windows itself no model is
+needed — or possible: a descriptor the real os.open returns
+without O_BINARY is already a genuine CRT text-mode descriptor, so
+wrapping os.write there would translate on top of the CRT's own
+translation and every 0x0A would land as 0x0D 0x0D 0x0A. That
+double translation is exactly what the second app-v1.0.3 build
+died on (the control below produced a\\r\\r\\nb\\r\\r\\n on the
+Windows runner while passing on Linux), so on a Windows host the
+fixture steps aside and lets the real CRT be the model. A control
+test proves translation really happens on each host, so the
+round-trip tests cannot pass vacuously. Key material is forced to
+adversarial bytes (0x0A, 0x0D, 0x0D0A pairs, a trailing 0x0A) so
+the round-trip is deterministic instead of a coin flip.
 """
 
 from __future__ import annotations
@@ -58,9 +66,19 @@ def windows_text_mode(monkeypatch):
     text-mode descriptor whose writes translate 0x0A -> 0x0D 0x0A;
     an os.open with O_BINARY is left alone. Reads are untouched —
     the model's point is the write side, matching load_keys' "rb".
+
+    The model supplies the CRT only where the host has none. When
+    os.O_BINARY already exists natively — CPython defines it only
+    on Windows — the host's descriptors are real CRT descriptors
+    and the real CRT performs the translation itself; installing
+    the wrappers there would translate a second time (every 0x0A
+    landing as 0x0D 0x0D 0x0A), so the fixture yields untouched
+    and the control below exercises genuine text mode instead.
     """
-    if not hasattr(os, "O_BINARY"):
-        monkeypatch.setattr(os, "O_BINARY", _WIN_O_BINARY, raising=False)
+    if hasattr(os, "O_BINARY"):
+        yield
+        return
+    monkeypatch.setattr(os, "O_BINARY", _WIN_O_BINARY, raising=False)
     real_open, real_write, real_close = os.open, os.write, os.close
     text_fds = set()
 
