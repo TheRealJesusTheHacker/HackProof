@@ -1,5 +1,47 @@
 # HackProof — the Windows app
 
+[![App release](https://img.shields.io/github/v/release/TheRealJesusTheHacker/HackProof?filter=app-v*&style=flat-square&label=app%20release)](https://github.com/TheRealJesusTheHacker/HackProof/releases/tag/app-v1.0.2)
+[![App build](https://img.shields.io/github/actions/workflow/status/TheRealJesusTheHacker/HackProof/build-app-windows.yml?style=flat-square&label=app%20build)](https://github.com/TheRealJesusTheHacker/HackProof/actions/workflows/build-app-windows.yml)
+[![License: PROPRIETARY](https://img.shields.io/badge/license-PROPRIETARY-red?style=flat-square)](../LICENSE)
+[![Platform: Windows](https://img.shields.io/badge/platform-Windows-blue?style=flat-square)](https://github.com/TheRealJesusTheHacker/HackProof/releases/tag/app-v1.0.2)
+
+The installable Windows edition of HackProof — the primary product form.
+Current release: **app-v1.0.2** (assets: `HackProof.exe` + `SHA256SUMS.txt`).
+Product overview, course tables, and pricing live in the [root README](../README.md);
+the payments service the app talks to is documented in [payments/README.md](../payments/README.md).
+
+## Download, verify, run
+
+1. Download `HackProof.exe` and `SHA256SUMS.txt` from the app-v1.0.2 release:
+   https://github.com/TheRealJesusTheHacker/HackProof/releases/tag/app-v1.0.2
+2. Verify the exe before running it (recommended): in PowerShell,
+   `Get-FileHash .\HackProof.exe -Algorithm SHA256`, and compare the result
+   with `SHA256SUMS.txt`.
+3. Run `HackProof.exe`. The course opens immediately — installation is an
+   offer, never a gate (details below). `--version` prints the app version.
+
+## What a student sees
+
+The main window is a navigation shell with six sections — **Course**,
+**My Premium**, **Exam**, **Verify**, **Settings**, and **About**:
+
+- **Course** — the full course catalog and reader (the bundled website,
+  served inside the app). Modules 01–03 are free; premium modules unlock
+  with a license key. The unlocked course works fully offline.
+- **My Premium** — native buy and license screens: enter a license key to
+  unlock, or run the purchase flow against the payments service when a
+  service base URL is configured. If the premium pack has not been built
+  into an edition yet, this screen says so in plain language — that is a
+  designed state, not an error (see *Premium pack states* below).
+- **Exam** — the 90-question final exam (pass at 72/90), with the same
+  integrity layer as the web exam.
+- **Verify** — check a countersigned certificate code.
+- **Settings** — the service base URL, install / repair, and the saved
+  license key.
+- **About** — version, pack state, and the plain statement of the app's
+  network posture: no telemetry, no self-update; updates are delivered
+  as new downloads.
+
 One `HackProof.exe` is the whole product (the ARGUS.EXE pattern):
 the course app, the self-install engine, and the setup/uninstall
 flows, routed at launch by `hackproof_app/entry.py`.
@@ -199,7 +241,9 @@ downloads"). The version constant lives in
 python -m pytest app/tests -q
 ```
 
-82 tests: Ed25519 (RFC vectors, cross-implementation agreement,
+89 test functions across eight files (pytest collects more cases than
+function names — the entry-routing test alone is parametrized over
+eight invocations): Ed25519 (RFC vectors, cross-implementation agreement,
 real-keygen interop), license refusals (tamper/expiry/clock),
 canonical-bytes equality with keygen, service client against the
 stubbed contract, proxy shim normalization, config
@@ -226,3 +270,26 @@ focus/blur → `visibilitychange` counting, Ctrl+C inertness in
 course pages with Paste live, the payment QR scanning to the
 right BIP21 string, proxy POST body forwarding against a stub
 service, and the release tag/version gate.
+
+## Status
+
+- **app-v1.0.2** is the current release. The release workflow
+  (`.github/workflows/build-app-windows.yml`, at the repo root) runs only
+  for `app-v*` tags, checks the tag against `hackproof_app.__version__`,
+  runs this suite, builds the exe, greps the PyInstaller warn file for
+  the lazy-import watchlist, and runs both self-checks against the built
+  exe before attaching `HackProof.exe` and `SHA256SUMS.txt`.
+- Buying and automatic certificate delivery inside the app light up when
+  a payments-service base URL is configured; the service itself is built
+  and ready, and its deployment on the owner's server is the remaining
+  owner step (see the root README's status section). Everything else —
+  the course, the exam, offline license validation, the manual
+  certificate route — works without it.
+
+## License
+
+Proprietary — see [LICENSE](../LICENSE) at the repo root. Purchasing
+premium grants a personal, non-transferable license to use the premium
+content; no copying, redistribution, resale, or derivative works
+without prior written permission. Questions and bulk/business
+licensing: **Sentinelsafeguard@outlook.com**.
