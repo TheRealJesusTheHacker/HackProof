@@ -12,7 +12,7 @@ is the shell: premium chrome, native buy/license screens, the
 payments-service client, and the installer.
 """
 
-__version__ = "1.0.1"
+__version__ = "1.0.2"
 
 #: Product identity, shared by the GUI, the installer, and the
 #: Windows version resource (the release workflow keeps the spec's
