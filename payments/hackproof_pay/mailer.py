@@ -33,20 +33,25 @@ class Mailer:
                 "(subject: %s). Buyer falls back to the claim "
                 "endpoint.", to, subject)
             return False
-        msg = EmailMessage()
-        frm_name = self._cfg.get("from_name") or "Sentinel Safeguard"
-        frm_addr = self._cfg.get("from_address") or self._support
-        msg["From"] = "%s <%s>" % (frm_name, frm_addr)
-        msg["To"] = to
-        msg["Subject"] = subject
-        msg.set_content(body)
-        for filename, data, maintype, subtype in attachments:
-            msg.add_attachment(data, maintype=maintype, subtype=subtype,
-                               filename=filename)
         host = self._cfg["host"]
         port = int(self._cfg.get("port") or 587)
         security = (self._cfg.get("security") or "starttls").lower()
         try:
+            # Message construction lives inside the try as well:
+            # a malformed address or attachment filename raises
+            # here (header validation), and a delivery failure must
+            # degrade to "not sent" — never crash the caller's
+            # issuance path after the fact.
+            msg = EmailMessage()
+            frm_name = self._cfg.get("from_name") or "Sentinel Safeguard"
+            frm_addr = self._cfg.get("from_address") or self._support
+            msg["From"] = "%s <%s>" % (frm_name, frm_addr)
+            msg["To"] = to
+            msg["Subject"] = subject
+            msg.set_content(body)
+            for filename, data, maintype, subtype in attachments:
+                msg.add_attachment(data, maintype=maintype,
+                                   subtype=subtype, filename=filename)
             if security == "ssl":
                 server = smtplib.SMTP_SSL(host, port, timeout=30)
             else:
