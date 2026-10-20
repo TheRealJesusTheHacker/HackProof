@@ -2,7 +2,7 @@
 
 Reproduces, as a standalone print-ready HTML file, the certificate
 exam.html renders (same content, same design language: cream stock,
-double purple border, Sentinel Safeguard masthead) — with the
+double green border, Sentinel Safeguard masthead) — with the
 VERIFIED badge lit, because by the time this is generated the payload
 has passed sign-cert validation and been countersigned.
 """
@@ -20,27 +20,27 @@ _TEMPLATE = """<!DOCTYPE html>
 <meta charset="UTF-8">
 <title>%(title)s</title>
 <style>
-  body{margin:0;background:#0d0718;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;padding:24px}
-  .cert-shell{max-width:880px;margin:0 auto;background:#0d0718;border:1px solid #3b2163;border-radius:14px;padding:14px}
-  .cert{background:linear-gradient(180deg,#fdfbf7,#f5efe4);color:#1c1530;border-radius:8px;
-    padding:34px 26px;text-align:center;position:relative;overflow:hidden;border:10px double #6d28d9}
-  .cert::before{content:"";position:absolute;inset:14px;border:1px solid #a855f7aa;pointer-events:none}
-  .cert .org{font-size:13px;letter-spacing:.34em;color:#6d28d9;font-weight:800}
-  .cert h3{font-size:30px;margin:10px 0 2px;color:#1c1530;letter-spacing:.02em}
-  .cert .sub{font-size:14px;color:#5b5470;margin:0 0 18px}
-  .cert .label{font-size:12px;letter-spacing:.28em;color:#8a7fa8;text-transform:uppercase;margin:14px 0 2px}
-  .cert .name{font-size:34px;font-weight:800;color:#1c1530;font-family:Georgia,"Times New Roman",serif;margin:2px 0 6px;word-wrap:break-word}
-  .cert .rule{width:60%%;margin:6px auto;border:0;border-top:2px solid #6d28d955}
-  .cert .details{font-size:15px;color:#3d3654;margin:8px 0}
-  .cert .details b{color:#1c1530}
-  .cert .cid{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:15px;letter-spacing:.1em;color:#4c1d95;font-weight:700}
+  body{margin:0;background:#060a07;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;padding:24px}
+  .cert-shell{max-width:880px;margin:0 auto;background:#060a07;border:1px solid #1e3323;border-radius:14px;padding:14px}
+  .cert{background:linear-gradient(180deg,#fdfbf7,#f5efe4);color:#0c130d;border-radius:8px;
+    padding:34px 26px;text-align:center;position:relative;overflow:hidden;border:10px double #14532d}
+  .cert::before{content:"";position:absolute;inset:14px;border:1px solid #1e7a3caa;pointer-events:none}
+  .cert .org{font-size:13px;letter-spacing:.34em;color:#14532d;font-weight:800}
+  .cert h3{font-size:30px;margin:10px 0 2px;color:#0c130d;letter-spacing:.02em}
+  .cert .sub{font-size:14px;color:#2f4536;margin:0 0 18px}
+  .cert .label{font-size:12px;letter-spacing:.28em;color:#2f4536;text-transform:uppercase;margin:14px 0 2px}
+  .cert .name{font-size:34px;font-weight:800;color:#0c130d;font-family:Georgia,"Times New Roman",serif;margin:2px 0 6px;word-wrap:break-word}
+  .cert .rule{width:60%%;margin:6px auto;border:0;border-top:2px solid #14532d55}
+  .cert .details{font-size:15px;color:#2f4536;margin:8px 0}
+  .cert .details b{color:#0c130d}
+  .cert .cid{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:15px;letter-spacing:.1em;color:#14532d;font-weight:700}
   .cert .sealrow{display:flex;justify-content:space-between;align-items:flex-end;margin:26px 6px 0;text-align:left}
-  .cert .sig{font-size:13px;color:#5b5470}
-  .cert .sig .line{border-top:1px solid #6d28d9;margin-top:26px;padding-top:4px;font-size:12px}
-  .cert .badge{display:inline-block;background:#059669;color:#fff;font-size:11px;font-weight:800;
+  .cert .sig{font-size:13px;color:#2f4536}
+  .cert .sig .line{border-top:1px solid #14532d;margin-top:26px;padding-top:4px;font-size:12px}
+  .cert .badge{display:inline-block;background:#14532d;color:#fff;font-size:11px;font-weight:800;
     letter-spacing:.14em;border-radius:99px;padding:6px 14px;margin-top:10px}
-  .verify-note{max-width:880px;margin:14px auto 0;color:#9d8fb8;font-size:13px;text-align:center;line-height:1.6}
-  .verify-note b{color:#d8b4fe}
+  .verify-note{max-width:880px;margin:14px auto 0;color:#9db3a4;font-size:13px;text-align:center;line-height:1.6}
+  .verify-note b{color:#8fd6a4}
   @media print{ @page{size:letter;margin:0.45in} body{background:#fff;padding:0} .verify-note{display:none} }
 </style>
 </head>
