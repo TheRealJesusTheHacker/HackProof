@@ -196,6 +196,15 @@ def copy_site(repo: Path, out: Path) -> list[str]:
     if pack_file.is_file():
         shutil.copyfile(pack_file, out / "premium-pack.b64")
         copied.append("premium-pack.b64")
+    # The promo metadata lives in the app's own layer of the tree
+    # (app/promo-meta.json — build-pack writes it there, and app/
+    # is excluded from the walk above); the app reads it from the
+    # webroot root. It carries only derived wrap material — the
+    # promo code itself is never in the tree (see tools/keygen.py).
+    meta_file = repo / "app" / "promo-meta.json"
+    if meta_file.is_file():
+        shutil.copyfile(meta_file, out / "promo-meta.json")
+        copied.append("promo-meta.json")
     return copied
 
 
