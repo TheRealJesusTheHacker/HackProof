@@ -46,7 +46,16 @@ class Pricer:
         now = time.time()
         if self._cached and now - self._cached[1] < self._cache_seconds:
             return self._cached[0]
-        status, body = self._fetch(self._url)
+        try:
+            status, body = self._fetch(self._url)
+        except PricingError:
+            raise
+        except Exception as exc:
+            # A network-level failure (DNS, timeout, reset) is a
+            # price-source outage too: surface it as PricingError so
+            # the API answers 503, not an unhandled 500.
+            raise PricingError(
+                "price source unreachable: %s" % exc) from exc
         if status != 200:
             raise PricingError("price source returned HTTP %s" % status)
         try:
