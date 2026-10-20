@@ -543,58 +543,24 @@ function gateScreen(msg){
     '<textarea id="gate-lic" placeholder="Paste your premium license key here">'+esc(savedLic)+'</textarea>'+
     '<p class="hint">The exam tests the full premium course, so it requires a premium license. '+
     '<a href="game/buy.html">Get premium — $5 in BTC</a></p>'+
-    '<label class="field" for="gate-promo">Promo / test code</label>'+
-    '<input type="text" id="gate-promo" inputmode="numeric" autocomplete="off" placeholder="If Sentinel Safeguard gave you a promo or test code, enter it here instead">'+
-    '<p class="hint">A promo / test code unlocks the exam the same way a license key does — no purchase needed. Leave it blank if you pasted a license key above.</p>'+
     '<button class="btn primary" id="gate-go">Begin the exam</button>'+
   '</div>';
   $("#gate-go").onclick = function(){
     const name = $("#gate-name").value.trim();
     const licStr = $("#gate-lic").value.trim();
-    const promoStr = ($("#gate-promo").value || "").trim();
     const err = $("#gate-err");
     if(name.length < 2){ err.textContent = "Enter your name — it goes on your certificate."; err.classList.add("show"); return; }
     err.classList.remove("show");
-    const btn = $("#gate-go");
-    function beginWith(keyStr, kind){
-      License.verifyLicense(keyStr, CONFIG.LICENSE_PUBLIC_KEY_HEX).then(function(lic){
-        state.name = name; state.lic = lic;
-        try{ localStorage.setItem(CONFIG.EXAM_NAME_KEY, name); localStorage.setItem(CONFIG.LICENSE_STORAGE_KEY, keyStr); localStorage.setItem("hackproof_license_kind", kind); }catch(e){}
-        startExam();
-      }).catch(function(e){
-        err.textContent = (e && e.message) || "License check failed.";
-        err.classList.add("show");
-        btn.disabled = false; btn.textContent = "Begin the exam";
-      });
-    }
-    if(promoStr){
-      /* Promo / test code path: reconstruct the promo license
-         (a real license — see shared.js Promo) and begin with it.
-         Fully independent of the purchase/order flow: no order,
-         no payment service, just the code and the signature. */
-      const rem = Promo.throttleRemaining();
-      if(rem > 0){
-        err.textContent = "Too many tries with the code — wait about "+rem+" seconds and try again.";
-        err.classList.add("show");
-        return;
-      }
-      btn.disabled = true; btn.textContent = "Checking code…";
-      Promo.fetchMeta().then(function(meta){
-        if(!meta) throw new Error("Promo codes aren't active right now — enter a license key instead, or ask Sentinel Safeguard about the code.");
-        return Promo.derivePromoKey(promoStr, meta, CONFIG.LICENSE_PUBLIC_KEY_HEX);
-      }).then(function(keyStr){
-        Promo.resetFailures();
-        beginWith(keyStr, "promo");
-      }).catch(function(e){
-        Promo.noteFailure();
-        err.textContent = (e && e.message) || "That code didn't work — check the digits and try again.";
-        err.classList.add("show");
-        btn.disabled = false; btn.textContent = "Begin the exam";
-      });
-      return;
-    }
-    btn.disabled = true; btn.textContent = "Verifying license…";
-    beginWith(licStr, "license");
+    const btn = $("#gate-go"); btn.disabled = true; btn.textContent = "Verifying license…";
+    License.verifyLicense(licStr, CONFIG.LICENSE_PUBLIC_KEY_HEX).then(function(lic){
+      state.name = name; state.lic = lic;
+      try{ localStorage.setItem(CONFIG.EXAM_NAME_KEY, name); localStorage.setItem(CONFIG.LICENSE_STORAGE_KEY, licStr); }catch(e){}
+      startExam();
+    }).catch(function(e){
+      err.textContent = (e && e.message) || "License check failed.";
+      err.classList.add("show");
+      btn.disabled = false; btn.textContent = "Begin the exam";
+    });
   };
 }
 
