@@ -137,8 +137,13 @@ BRAND_MAP = {
     # purple-grey text tones -> the theme's text tones
     "#9d8bb5": "#9db3a4",
     "#9d8fb8": "#9db3a4",
-    "#8a7fa8": "#9db3a4",
-    "#5b5470": "#7d927f",
+    # #8a7fa8 and #5b5470 occur ONLY as certificate small print
+    # (.cert .label / .sub / .sig) on the cream stock, never on a
+    # dark surface, so they take the certificate's dark muted
+    # green: the light text tones fail contrast on cream
+    # (2.2:1 / 3.2:1 against the 4.5:1 standard).
+    "#8a7fa8": "#2f4536",
+    "#5b5470": "#2f4536",
     "#3d3654": "#2f4536",  # muted text on the cream certificate
     "#efe8fa": "#e8f2ea",
     "#f3efff": "#e8f2ea",
