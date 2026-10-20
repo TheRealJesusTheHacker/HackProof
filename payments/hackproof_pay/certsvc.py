@@ -25,6 +25,7 @@ import logging
 from . import crypto_core
 from .certgen import certificate_filename, render_certificate_html
 from .mailer import certificate_email_body
+from .watcher import EMAIL_RE
 
 log = logging.getLogger("hackproof_pay.certsvc")
 
@@ -86,14 +87,28 @@ class CertificateService:
         """Returns (http_status, response_dict)."""
         if not isinstance(body, dict):
             raise CertificateError("JSON object body required")
-        email = (body.get("email") or "").strip()
-        if not email or "@" not in email or len(email) > 254:
+        # Same address rule as order creation (watcher.EMAIL_RE):
+        # the address becomes an email header, so whitespace and
+        # control characters — CRLF header injection above all —
+        # must be refused here, not discovered inside the mailer
+        # after the certificate has already been issued.
+        email = body.get("email")
+        if not isinstance(email, str):
             raise CertificateError(
                 "a valid email is required — the certificate is "
                 "delivered there")
-        license_key = body.get("license_key") or ""
+        email = email.strip()
+        if len(email) > 254 or not EMAIL_RE.match(email):
+            raise CertificateError(
+                "a valid email is required — the certificate is "
+                "delivered there")
+        license_key = body.get("license_key")
+        if not isinstance(license_key, str):
+            license_key = ""
         # ---- decode the payload (code form preferred: byte-exact) --
         code = body.get("certificate_code") or body.get("code")
+        if not isinstance(code, str):
+            code = None
         try:
             if code:
                 payload = crypto_core.parse_cert_code(code)
