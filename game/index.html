@@ -95,8 +95,6 @@
   
   textarea.keybox{width:100%; min-height:74px; background:#060a07; color:var(--purple-l); border:1px solid #14532d;
     border-radius:12px; padding:12px; font-family:monospace; font-size:12px; resize:vertical;}
-  input.keybox{width:100%; background:#060a07; color:var(--purple-l); border:1px solid #14532d;
-    border-radius:12px; padding:12px; font-family:monospace; font-size:14px; letter-spacing:2px;}
   .checkrow{display:flex; gap:10px; align-items:flex-start; font-size:13px; color:var(--dim); margin:10px 0; line-height:1.5;}
   .checkrow input{margin-top:3px; transform:scale(1.3);}
   .module-body{font-size:14.5px; line-height:1.65; color:#e8f2ea; white-space:pre-wrap;}
@@ -254,14 +252,6 @@ const COURSES_FREE = [
 /* Encrypted premium pack (ciphertext). Written by `tools/keygen.py build-pack`.
    Without a valid license key this is random bytes — the game cannot read it. */
 const PREMIUM_PACK_B64 = /*__PREMIUM_PACK__*/ "";
-
-/* Promo / test access metadata. Written by `tools/keygen.py build-pack`
-   from the owner's LOCAL key-store config — the code itself is never
-   written here or anywhere in this file. The metadata carries the
-   promo license's KDF salt, its signed public fields, and its
-   signature: everything EXCEPT the secret the code derives. null
-   means no promo is baked into this build. */
-const PROMO_META = /*__PROMO_META__*/ null;
 
 /* ---------------- 3b. ED25519 (vendored) ----------------
    Verify-only subset of TweetNaCl (public domain).
@@ -859,65 +849,6 @@ const License = (() => {
     return JSON.stringify({ id: lic.id, tier: lic.tier, expiry: lic.expiry, S: lic.S, wrapped_Kc: lic.wrapped_Kc });
   }
 
-  /** Encode bytes to standard base64 (chunked; safe for any size). */
-  function bytesToB64(bytes) {
-    let bin = "";
-    const CHUNK = 0x8000;
-    for (let i = 0; i < bytes.length; i += CHUNK)
-      bin += String.fromCharCode.apply(null, bytes.subarray(i, i + CHUNK));
-    return btoa(bin);
-  }
-
-  /**
-   * Reconstruct the promo license key from a promo / test code.
-   *
-   * The promo license is a REAL license (see tools/keygen.py): its
-   * secret S is PBKDF2-HMAC-SHA256(code, salt) instead of random,
-   * and the pack build published everything except S in PROMO_META
-   * (salt, signed fields, signature). Deriving S from the typed
-   * code and checking the Ed25519 signature is the whole test —
-   * a wrong code derives the wrong S and the signature fails,
-   * exactly like a forged key. Nothing about the code is stored
-   * in this page, and the derived key string returned here is
-   * indistinguishable from a minted license key downstream.
-   */
-  async function derivePromoKey(code, meta, pubkeyHex) {
-    const INACTIVE = "Promo codes aren't active in this edition.";
-    if (!meta || typeof meta !== "object") throw new Error(INACTIVE);
-    const clean = (code || "").trim();
-    if (!clean) throw new Error("Enter your promo / test code first.");
-    const lm = meta.license;
-    if (meta.v !== 1 || meta.kdf !== "PBKDF2-HMAC-SHA256" ||
-        !lm || typeof lm !== "object" ||
-        typeof lm.id !== "string" || lm.tier !== "premium" ||
-        typeof lm.expiry !== "number" ||
-        typeof lm.wrapped_Kc !== "string" ||
-        typeof meta.salt !== "string" || typeof meta.sig !== "string" ||
-        typeof meta.iterations !== "number" ||
-        !(meta.iterations >= 1 && meta.iterations <= 10000000))
-      throw new Error(INACTIVE);
-    let salt, sigBytes;
-    try { salt = b64ToBytes(meta.salt); sigBytes = b64ToBytes(meta.sig); }
-    catch (e) { throw new Error(INACTIVE); }
-    if (salt.length !== 16 || sigBytes.length !== 64)
-      throw new Error(INACTIVE);
-    const subtle = webCrypto();
-    const base = await subtle.importKey("raw", te(clean), "PBKDF2", false, ["deriveBits"]);
-    const sBits = await subtle.deriveBits(
-      { name: "PBKDF2", salt: salt, iterations: meta.iterations, hash: "SHA-256" },
-      base, 256);
-    const lic = { id: lm.id, tier: lm.tier, expiry: lm.expiry,
-                  S: bytesToB64(new Uint8Array(sBits)), wrapped_Kc: lm.wrapped_Kc };
-    const msg = te(canonicalFields(lic));
-    const pk = hexToBytes(pubkeyHex);
-    let ok = false;
-    try { ok = nacl.sign.detached.verify(msg, sigBytes, pk); }
-    catch (e) { ok = false; }
-    if (!ok) throw new Error("That code didn't work — check the digits and try again.");
-    return btoa(JSON.stringify({ id: lic.id, tier: lic.tier, expiry: lic.expiry,
-                                 S: lic.S, wrapped_Kc: lic.wrapped_Kc, sig: meta.sig }));
-  }
-
   function webCrypto() {
     if (typeof crypto === "undefined" || !crypto.subtle)
       throw new Error("WebCrypto is unavailable here — premium unlock needs it.");
@@ -997,7 +928,7 @@ const License = (() => {
     catch (e) { throw new Error("Premium pack is corrupt."); }
   }
 
-  return { parseLicense, canonicalFields, verifyLicense, unwrapKc, decryptPack, derivePromoKey, b64ToBytes, bytesToB64, hexToBytes };
+  return { parseLicense, canonicalFields, verifyLicense, unwrapKc, decryptPack, b64ToBytes, hexToBytes };
 })();
 /*__LICENSE_END__*/
 
@@ -1015,8 +946,7 @@ const S = {
   licenseOk: false,  // a license verified + pack decrypted this session
   license: null,     // { tier, expiry } once verified
   pack: null,        // decrypted premium pack { modules: [...] }
-  licenseMsg: "",    // last license-flow message for the home screen
-  promoMsg: ""       // last promo-code message for the home screen
+  licenseMsg: ""     // last license-flow message for the home screen
 };
 
 /** THE tier gate. Free modules are always unlocked; premium modules
@@ -1113,59 +1043,6 @@ function removeLicense() {
   S.license = null;
   S.pack = null;
   try { localStorage.removeItem(CONFIG.LICENSE_STORAGE_KEY); } catch (e) {}
-  try { localStorage.removeItem(LICENSE_KIND_KEY); } catch (e) {}
-}
-
-/* How the stored license arrived: "license" (a purchased key) or
-   "promo" (reconstructed from a promo / test code). Only drives
-   honest labeling — the license itself is identical either way. */
-const LICENSE_KIND_KEY = "hackproof_license_kind";
-function licenseKind() {
-  try { return localStorage.getItem(LICENSE_KIND_KEY) || "license"; }
-  catch (e) { return "license"; }
-}
-function setLicenseKind(kind) {
-  try {
-    if (kind) localStorage.setItem(LICENSE_KIND_KEY, kind);
-    else localStorage.removeItem(LICENSE_KIND_KEY);
-  } catch (e) {}
-}
-
-/* Promo-code attempt throttling. A short code is guessable in
-   principle, so repeated failures slow down hard: the wait after
-   the n-th failure is 5s, 10s, 20s, ... capped at 300s, counted
-   from the last failure. State lives in localStorage so it is
-   shared with the exam gate (shared.js Promo, same keys) and
-   survives reloads. Success clears it. */
-const PROMO_FAIL_KEY = "hackproof_promo_fails";
-function promoFailState() {
-  try {
-    const raw = JSON.parse(localStorage.getItem(PROMO_FAIL_KEY) || "null");
-    if (raw && typeof raw.count === "number" && typeof raw.last === "number")
-      return raw;
-  } catch (e) {}
-  return { count: 0, last: 0 };
-}
-function promoWaitSeconds(count) {
-  if (!count || count < 1) return 0;
-  return Math.min(5 * Math.pow(2, count - 1), 300);
-}
-function promoThrottleRemaining() {
-  const st = promoFailState();
-  const wait = promoWaitSeconds(st.count);
-  if (!wait || !st.last) return 0;
-  const left = wait - (Date.now() - st.last) / 1000;
-  return left > 0 ? Math.ceil(left) : 0;
-}
-function promoNoteFailure() {
-  const st = promoFailState();
-  try {
-    localStorage.setItem(PROMO_FAIL_KEY,
-      JSON.stringify({ count: st.count + 1, last: Date.now() }));
-  } catch (e) {}
-}
-function promoResetFailures() {
-  try { localStorage.removeItem(PROMO_FAIL_KEY); } catch (e) {}
 }
 
 /* ---------------- 6. UI ----------------
@@ -1204,36 +1081,11 @@ function moduleRow(e) {
 
 function licenseBoxHtml() {
   if (S.licenseOk) {
-    if (licenseKind() === "promo") {
-      return '<div class="okbox">✅ <b>Premium — promo access</b> — expires ' +
-        new Date(S.license.expiry * 1000).toLocaleDateString() +
-        '. Full course unlocked — all 46 modules across 7 tracks.</div>' +
-        (S.licenseMsg ? '<div class="okbox">' + escapeHtml(S.licenseMsg) + '</div>' : '') +
-        '<button class="btn ghost" onclick="uiRemoveLicense()">Remove license from this device</button>';
-    }
     return '<div class="okbox">✅ <b>PREMIUM ACTIVE</b> — expires ' +
       new Date(S.license.expiry * 1000).toLocaleDateString() +
       '. Full course unlocked — all 46 modules across 7 tracks.</div>' +
       (S.licenseMsg ? '<div class="okbox">' + escapeHtml(S.licenseMsg) + '</div>' : '') +
       '<button class="btn ghost" onclick="uiRemoveLicense()">Remove license from this device</button>';
-  }
-  let promoCard;
-  if (PROMO_META) {
-    promoCard =
-      '<div class="card"><div class="tag">PROMO / TEST CODE</div>' +
-      '<div class="brief">Got a promo or test code from Sentinel Safeguard? Enter it below — ' +
-      'it unlocks the full premium course on this device, no purchase needed.</div>' +
-      '<div class="mt"><input class="keybox" id="promocode" aria-label="Promo or test code" ' +
-      'inputmode="numeric" autocomplete="off" placeholder="Enter promo / test code"></div>' +
-      '<button class="btn" onclick="uiUnlockPromo()">UNLOCK WITH CODE</button>' +
-      (S.promoMsg ? '<div class="warn">' + escapeHtml(S.promoMsg) + '</div>' : '') +
-      '</div>';
-  } else {
-    promoCard =
-      '<div class="card"><div class="tag">PROMO / TEST CODE</div>' +
-      '<div class="brief">Sentinel Safeguard sometimes hands out a short promo or test code ' +
-      'that unlocks the full course — no purchase needed. No promo code is active in this ' +
-      'edition right now; if you were given one, ask Sentinel Safeguard about it.</div></div>';
   }
   return '<div class="card"><div class="tag">LICENSE KEY</div>' +
     '<div class="brief">Got a premium key? Paste it below. Your key <b>is</b> your account — it ' +
@@ -1242,8 +1094,7 @@ function licenseBoxHtml() {
     '<label class="checkrow"><input type="checkbox" id="remember"> <span>Remember on this device (stored only in this browser — uncheck to keep this session only)</span></label>' +
     '<button class="btn primary" onclick="uiUnlock()">UNLOCK PREMIUM</button>' +
     (S.licenseMsg ? '<div class="warn">' + escapeHtml(S.licenseMsg) + '</div>' : '') +
-    '<div class="center"><a href="buy.html" style="color:var(--purple-l)">Don\'t have a key? Get premium — $5 in BTC →</a></div></div>' +
-    promoCard;
+    '<div class="center"><a href="buy.html" style="color:var(--purple-l)">Don\'t have a key? Get premium — $5 in BTC →</a></div></div>';
 }
 
 /* ---------- home ---------- */
@@ -1404,51 +1255,10 @@ async function uiUnlock() {
     if (remember) {
       try { localStorage.setItem(CONFIG.LICENSE_STORAGE_KEY, str.trim()); }
       catch (e) { saveNote = " (Note: this browser refused to store the key — you stay unlocked for this session only.)"; }
-      setLicenseKind("license");
     }
-    else { try { localStorage.removeItem(CONFIG.LICENSE_STORAGE_KEY); } catch (e) {} setLicenseKind(null); }
+    else { try { localStorage.removeItem(CONFIG.LICENSE_STORAGE_KEY); } catch (e) {} }
     S.licenseMsg = "Full course unlocked — all 46 modules. Welcome." + saveNote;
   } catch (e) { S.licenseMsg = e.message; }
-  renderHome();
-}
-
-/**
- * Promo / test code unlock: derive the promo license from the
- * typed code (License.derivePromoKey does the cryptography),
- * then run it through the exact same unlock path as a purchased
- * key. The reconstructed key is remembered on this device like a
- * license, labeled "promo" so the status stays honest. Failed
- * attempts feed the throttle (see promoThrottleRemaining).
- */
-async function uiUnlockPromo() {
-  const el = document.getElementById("promocode");
-  const code = el ? el.value : "";
-  const remaining = promoThrottleRemaining();
-  if (remaining > 0) {
-    S.promoMsg = "Too many tries — wait about " + remaining +
-      " seconds and try again.";
-    renderHome();
-    return;
-  }
-  S.promoMsg = "Checking code...";
-  renderHome();
-  try {
-    const keyStr = await License.derivePromoKey(code, PROMO_META, CONFIG.LICENSE_PUBLIC_KEY_HEX);
-    await unlockFromKey(keyStr);
-    let saveNote = "";
-    try { localStorage.setItem(CONFIG.LICENSE_STORAGE_KEY, keyStr); }
-    catch (e) { saveNote = " (Note: this browser refused to store it — you stay unlocked for this session only.)"; }
-    setLicenseKind("promo");
-    promoResetFailures();
-    S.promoMsg = "";
-    S.licenseMsg = "Premium — promo access. Full course unlocked — all 46 modules. Welcome." + saveNote;
-  } catch (e) {
-    promoNoteFailure();
-    S.promoMsg = e.message;
-    const left = promoThrottleRemaining();
-    if (left > 0)
-      S.promoMsg += " Too many tries — wait about " + left + " seconds before trying again.";
-  }
   renderHome();
 }
 /* re-render home but keep the typed key in place while checking */
