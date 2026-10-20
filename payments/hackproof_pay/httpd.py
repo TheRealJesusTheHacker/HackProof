@@ -102,8 +102,11 @@ def make_handler(app):
 
         def _read_json(self):
             length = int(self.headers.get("Content-Length") or 0)
-            if length > MAX_BODY:
-                raise ValueError("request body too large")
+            if length < 0 or length > MAX_BODY:
+                # A negative length makes rfile.read() block waiting
+                # for EOF on a keep-alive connection — refuse it
+                # like any other unusable body.
+                raise ValueError("request body size invalid")
             raw = self.rfile.read(length) if length else b""
             if not raw:
                 return {}
@@ -127,7 +130,14 @@ def make_handler(app):
                                                "admin_token configured)"})
                 return False
             given = self.headers.get("X-Admin-Token") or ""
-            if not hmac.compare_digest(given, token):
+            # Compare as BYTES: hmac.compare_digest on str raises
+            # TypeError for non-ASCII input, and a request header can
+            # carry any latin-1 byte — a garbage token must get a
+            # clean 401, not a 500. Header values arrive latin-1
+            # decoded, so latin-1 encoding restores the raw bytes.
+            if not hmac.compare_digest(
+                    given.encode("latin-1", "replace"),
+                    token.encode("utf-8")):
                 self._send_json(401, {"error": "admin token required"})
                 return False
             return True
@@ -196,6 +206,9 @@ def make_handler(app):
                 if path == "/api/orders":
                     if self._limited("orders_write"):
                         return
+                    if not isinstance(body, dict):
+                        return self._send_json(
+                            400, {"error": "JSON object body required"})
                     try:
                         order = app.orders.create_order(
                             body.get("email"))
