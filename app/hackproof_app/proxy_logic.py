@@ -100,3 +100,39 @@ def normalize_cert_response(body):
 NOT_CONFIGURED_BODY = {
     "error": "automatic delivery is not connected in this edition"
 }
+
+
+# ------------------------------------------------------------ navigation
+
+def navigation_decision(scheme: str, host: str) -> str:
+    """Classify a navigation target for the app's web views:
+    ``"app"`` (navigate in-app — the app's own origin),
+    ``"external"`` (a web page — hand it to the system browser,
+    never load it in-app), or ``"block"`` (refuse the navigation
+    outright).
+
+    Why the views need this: they share one persistent profile,
+    and the scheme handler answers any ``hackproof://app/api``
+    call by proxying it to the service — including injecting the
+    vault license into certificate submissions. If a link inside
+    a lesson could navigate the view to a web origin, that
+    origin's pages would render inside the same privileged
+    shell. Confining navigation to the app origin and sending
+    http(s) to the real browser removes the whole class at the
+    navigation layer. (Certificate issuance separately requires
+    an HMAC proof keyed by the license secret, which page
+    JavaScript outside the exam never receives — this guard is
+    the cheap, fail-closed layer in front of that.)
+
+    Designed flows are unaffected: every in-app page, the buy
+    guidance page (``/_app/buy-in-app.html`` — buy links are
+    rewired to it at bundle time), and the reader/QR assets live
+    on the app origin, so they classify ``"app"``.
+    """
+    scheme = (scheme or "").lower()
+    if scheme == APP_SCHEME:
+        # Our scheme — but only our own host is our origin.
+        return "app" if (host or "").lower() == APP_HOST else "block"
+    if scheme in ("http", "https"):
+        return "external"
+    return "block"
