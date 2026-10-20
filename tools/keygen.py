@@ -12,9 +12,9 @@ HackProof license-key + premium-pack tooling.
 !!  `setup` writes TWO secrets to ~/.hackproof/ (chmod 600):          !!
 !!    1. Ed25519 signing keypair (ed25519-private.key = 32-byte seed)  !!
 !!    2. 256-bit master content key Kc (content-master.key)            !!
-!!  A promo code, if you set one (step 6), lives in the same folder !!
-!!  as promo-code.json (chmod 600) — it derives a full premium        !!
-!!  license, so guard it like one. It is NEVER written anywhere else. !!
+!!  The promo/test code (step 6) is BUILT INTO this tooling in       !!
+!!  concealed (sealed) form — it exists nowhere in plaintext, and     !!
+!!  this file NEVER ships: the app bundler excludes tools/ entirely.  !!
 !!  These are the master keys to your product. Anyone holding them    !!
 !!  can mint licenses and decrypt the premium pack.                   !!
 !!                                                                    !!
@@ -65,23 +65,23 @@ GOING LIVE (4 commands, all on your own machine):
         failing/impossible/inconsistent scores) are REFUSED —
         no signature is issued.
 
-  6. OPTIONAL — a promo / test code (a short numeric code you can
-     hand to testers or give the course away with, no purchase):
-       python3 tools/keygen.py set-promo --code <digits>
-     -> writes the code to ~/.hackproof/promo-code.json (chmod
-        600). That local key-store config is the ONLY place the
-        digits live — never in this repo, the shipped site, or
-        the app. Then run `build-pack` (step 3): the build reads
-        the config automatically and bakes a promo license into
-        the pack metadata (promo-meta.json at the repo root +
-        inlined into game/index.html). There is NO separate mint
-        step. Students enter the code on the course page, the
-        exam gate, or in the app; it unlocks the same premium,
-        and a certificate earned under it countersigns exactly
-        like a purchased license's (it IS a license — see SCHEME).
-        Rotate or retire it: change the config (or run
-        `clear-promo`), re-run `build-pack`, deploy. The old
-        code dies the moment the rebuilt pack ships.
+  6. PROMO / TEST CODE — built in, nothing to set. A short numeric
+     code is sealed into this tooling (see _PROMO_SEALED below: the
+     digits exist in this file ONLY as an AES-256-GCM ciphertext —
+     never in plaintext, in this repo or anywhere else). Every
+     `build-pack` (step 3) derives the promo license from it and
+     writes the promo metadata to app/promo-meta.json, which the
+     app bundler ships inside the app (the website is NOT part of
+     this feature — the promo lives in the app only). There is NO
+     config step and NO separate mint step. Students enter the
+     code in the app; it unlocks the same premium, and a
+     certificate earned under it countersigns exactly like a
+     purchased license's (it IS a license — see SCHEME).
+     Rotate the code: replace the sealed built-in (new sealed
+     blob for the new digits), re-run `build-pack`, ship the new
+     app edition. Retire it for good: delete the sealed built-in,
+     re-run `build-pack`, ship. The old code dies the moment the
+     rebuilt edition ships.
 
 Requires: pip install cryptography
 
@@ -102,15 +102,20 @@ SCHEME (so you can audit it):
     S_promo    = PBKDF2-HMAC-SHA256(code, salt, 600k iterations)
     salt       = fresh 128-bit random per pack build
     metadata   = {v, kdf, iterations, salt, {id,tier,expiry,wrapped_Kc},
-                  sig} — everything EXCEPT S, published as
-                  promo-meta.json + inlined into game/index.html.
-  The client re-derives S from the typed code, rebuilds the license,
+                  sig} — everything EXCEPT S, written to
+                  app/promo-meta.json and bundled into the app.
+  The app re-derives S from the typed code, rebuilds the license,
   and checks sig + unwraps Kc exactly like a minted key; a wrong
   code fails the signature check before any decryption is tried.
   The code itself is never stored in, or recoverable from, anything
   that ships. A short code is guessable in principle — the cost
-  imposed is the 600k-iteration KDF, the clients throttle repeated
-  failures, and revocation is a config change + pack rebuild.
+  imposed is the 600k-iteration KDF, the app throttles repeated
+  failures, and revocation is a tooling change + pack rebuild.
+  Concealment honesty: the sealed built-in is obfuscation-grade —
+  anyone who reads this tooling's source can reconstruct the
+  digits with effort. That is acceptable because this file is
+  owner-side only (never bundled, never shipped); the shipped
+  artifacts contain no trace of the code, sealed or otherwise.
 """
 
 import argparse
@@ -126,17 +131,53 @@ REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DEFAULT_KEYDIR = os.path.expanduser("~/.hackproof")
 WRAP_INFO = b"hackproof-wrap"
 
-# --- Promo / test access (variant B) --------------------------------
-# The promo code lives ONLY in the owner's local key-store config,
-# <keydir>/promo-code.json ({"code": "<digits>"}). build-pack reads
-# it and bakes the promo license into the pack metadata
-# automatically — there is no separate mint step, and the digits
-# never appear in the repo, the shipped site, or the app.
-PROMO_CONFIG_NAME = "promo-code.json"
+# --- Promo / test access ---------------------------------------------
+# The promo code is BUILT INTO this tooling in concealed form (see
+# _PROMO_SEALED below): build-pack derives the promo license from
+# it automatically on every build — no config file, no mint step —
+# and writes the public metadata to app/promo-meta.json for the
+# app bundler. The digits never appear in plaintext in this repo,
+# the shipped site, or the app; the shipped artifacts carry only
+# the derived metadata (salt, wrapped key, signature).
 PROMO_META_NAME = "promo-meta.json"
 PROMO_KDF = "PBKDF2-HMAC-SHA256"
 PROMO_KDF_ITERATIONS = 600_000
 PROMO_DAYS = 3650
+
+# The built-in promo code, sealed. Construction: the digits were
+# encrypted with AES-256-GCM under a random 32-byte key; the key
+# is stored XOR-masked with SHA-256 of the label string below, and
+# the sealed blob is nonce || ciphertext. Neither hex string IS
+# the code, and the literal digits appear nowhere in this file.
+# To ROTATE the code: regenerate both strings for the new digits
+# (same construction) and rebuild the pack. To RETIRE the code:
+# delete both strings (leave them empty) and rebuild the pack —
+# build-pack then writes null metadata and the code stops working
+# in every edition built from that tree.
+_PROMO_KEY_LABEL = b"hackproof-promo-tooling-v1"
+_PROMO_KEY_MASKED = bytes.fromhex(
+    "2c7b42e77629253cf1b4199d6d2faa48"
+    "41fd56ace1c68518689d4d00a3cc303d")
+_PROMO_SEALED = bytes.fromhex(
+    "cda5f128080eb7b78e0a77554df8ca1a"
+    "b9f6a746f41f25b4798a316daf12b1e2")
+
+
+def _builtin_promo_code():
+    """The built-in promo code, unsealed — or None when the
+    built-in has been removed (the retire-the-code state)."""
+    if not _PROMO_KEY_MASKED or not _PROMO_SEALED:
+        return None
+    _, AESGCM, _, _ = need_crypto()
+    mask = hashlib.sha256(_PROMO_KEY_LABEL).digest()
+    key = bytes(a ^ b for a, b in zip(_PROMO_KEY_MASKED, mask))
+    code = AESGCM(key).decrypt(
+        _PROMO_SEALED[:12], _PROMO_SEALED[12:], None).decode("utf-8")
+    if not (code.isdigit() and 4 <= len(code) <= 12):
+        sys.exit("REFUSING: the sealed promo built-in did not unseal "
+                 "to a valid code — the tooling is damaged; restore "
+                 "it before building a pack.")
+    return code
 
 
 def b64e(data: bytes) -> str:
@@ -274,38 +315,6 @@ def cmd_mint(keydir, tier, days):
           (lic["id"], time.strftime("%Y-%m-%d", time.gmtime(lic["expiry"]))))
 
 
-def valid_promo_code(code):
-    """A promo code is 4-12 digits — short enough to hand out and
-    type, long enough that the KDF + client throttling mean
-    something. Anything else is a config mistake, refused loudly."""
-    return (isinstance(code, str) and code.isdigit()
-            and 4 <= len(code) <= 12)
-
-
-def load_promo_code(keydir):
-    """The owner's promo/test code from the local key-store config.
-
-    Absent file -> promo off (returns None). A present-but-malformed
-    file REFUSES the build: silently shipping a pack without the
-    promo the owner believes is live — or with a garbled one —
-    is worse than no build at all."""
-    path = os.path.join(keydir, PROMO_CONFIG_NAME)
-    if not os.path.exists(path):
-        return None
-    try:
-        with open(path, encoding="utf-8") as f:
-            cfg = json.load(f)
-    except Exception:
-        sys.exit("REFUSING: %s exists but is not valid JSON — fix it "
-                 "or delete it (promo off) and rebuild." % path)
-    code = cfg.get("code") if isinstance(cfg, dict) else None
-    if not valid_promo_code(code):
-        sys.exit("REFUSING: %s must hold {\"code\": \"<4-12 digits>\"} "
-                 "— fix it or delete it (promo off) and rebuild."
-                 % path)
-    return code
-
-
 def derive_promo_secret(code, salt):
     """S for the promo license: PBKDF2-HMAC-SHA256 over the code.
     The iteration count is the guessing cost — it ships in the
@@ -314,14 +323,19 @@ def derive_promo_secret(code, salt):
                                PROMO_KDF_ITERATIONS, dklen=32)
 
 
-def build_promo_meta(priv, kc, code):
-    """Construct the promo license and the public metadata clients
-    reconstruct it from. The metadata carries everything EXCEPT
-    the code-derived secret S: the KDF salt + parameters, the
-    signed license fields, and the Ed25519 signature over them.
-    Entering the right code re-derives S; the signature then
-    verifies and the wrap unwraps. A wrong code fails the
-    signature check, exactly like a forged license key."""
+def build_promo_meta(priv, kc):
+    """Construct the promo license and the public metadata the app
+    reconstructs it from, deriving the secret from the SEALED
+    BUILT-IN code. Returns None when the built-in has been removed
+    (retired). The metadata carries everything EXCEPT the
+    code-derived secret S: the KDF salt + parameters, the signed
+    license fields, and the Ed25519 signature over them. Entering
+    the right code re-derives S; the signature then verifies and
+    the wrap unwraps. A wrong code fails the signature check,
+    exactly like a forged license key."""
+    code = _builtin_promo_code()
+    if code is None:
+        return None
     _, AESGCM, HKDF, hashes = need_crypto()
     import time
     salt = os.urandom(16)
@@ -362,44 +376,6 @@ def promo_license_key(meta, S):
     return b64e(json.dumps(lic, separators=(",", ":")).encode("utf-8"))
 
 
-def cmd_set_promo(keydir, code):
-    """Write the promo code into the local key-store config. This
-    is config editing, NOT minting: no license material exists
-    until build-pack derives it from the config."""
-    if not valid_promo_code(code):
-        sys.exit("REFUSING: a promo code is 4-12 digits (got %r). "
-                 "Pick digits you can hand to a tester and type "
-                 "without mistakes." % (code,))
-    if not os.path.isdir(keydir):
-        sys.exit("No key dir at %s — run `setup` first." % keydir)
-    path = os.path.join(keydir, PROMO_CONFIG_NAME)
-    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
-    try:
-        os.write(fd, json.dumps({"code": code},
-                                separators=(",", ":")).encode("utf-8"))
-    finally:
-        os.close(fd)
-    os.chmod(path, 0o600)
-    print("Promo code set (%d digits) in %s (chmod 600)."
-          % (len(code), path))
-    print("It takes effect at the next `build-pack` — the build reads")
-    print("this local config automatically; there is no mint step.")
-    print("The code is stored ONLY here: never in the repo, the")
-    print("shipped site, or the app. Rotate or retire it by changing")
-    print("this file (or `clear-promo`) and rebuilding the pack.")
-
-
-def cmd_clear_promo(keydir):
-    path = os.path.join(keydir, PROMO_CONFIG_NAME)
-    if os.path.exists(path):
-        os.remove(path)
-        print("Promo config removed (%s)." % path)
-    else:
-        print("No promo config at %s — nothing to clear." % path)
-    print("A pack already built still honors the old code until you")
-    print("run `build-pack` again and deploy the result.")
-
-
 def cmd_build_pack(keydir, content_dir, game_dir):
     _, AESGCM, _, _ = need_crypto()
     priv, kc = load_keys(keydir)
@@ -419,24 +395,20 @@ def cmd_build_pack(keydir, content_dir, game_dir):
                            ensure_ascii=False).encode("utf-8")
     iv_p = os.urandom(12)
     blob = b64e(iv_p + AESGCM(kc).encrypt(iv_p, plaintext, None))
-    # Promo (variant B): if the local key-store config carries a
-    # code, bake the promo license's metadata into this build.
-    # The metadata is written BOTH as promo-meta.json at the repo
-    # root (the exam page fetches it; the app reads it from its
-    # bundled webroot) and inlined into game/index.html behind
-    # the /*__PROMO_META__*/ marker (so the course page works
-    # from file:// with no fetch). With no config, both become
-    # `null` — a rebuild WITHOUT the config is how a code is
-    # retired, so a stale metadata file must never survive one.
-    promo_code = load_promo_code(keydir)
-    if promo_code is not None:
-        meta = build_promo_meta(priv, kc, promo_code)
-        meta_json = json.dumps(meta, separators=(",", ":"))
-    else:
-        meta = None
-        meta_json = "null"
-    meta_path = os.path.join(
-        os.path.dirname(os.path.abspath(game_dir)), PROMO_META_NAME)
+    # Promo: the sealed built-in code is baked into EVERY build —
+    # no config, no switch. The metadata (everything except the
+    # code-derived secret) is written to app/promo-meta.json, in
+    # the app's own layer of the tree; the app bundler ships it
+    # inside the app. The website is not part of this feature and
+    # build-pack writes NO promo material into any page. If the
+    # built-in has been removed (retired), the metadata is `null`
+    # — a stale metadata file must never survive a rebuild.
+    meta = build_promo_meta(priv, kc)
+    meta_json = (json.dumps(meta, separators=(",", ":"))
+                 if meta is not None else "null")
+    repo_root = os.path.dirname(os.path.abspath(game_dir))
+    meta_path = os.path.join(repo_root, "app", PROMO_META_NAME)
+    os.makedirs(os.path.dirname(meta_path), exist_ok=True)
     with open(meta_path, "w", encoding="utf-8") as f:
         f.write(meta_json + "\n")
     # 1) canonical artifact on disk
@@ -458,17 +430,6 @@ def cmd_build_pack(keydir, content_dir, game_dir):
         html, count=1)
     if n != 1:
         sys.exit("Could not replace the premium-pack placeholder line.")
-    pmarker = "/*__PROMO_META__*/"
-    if pmarker not in html2:
-        sys.exit("Marker %s not found in %s" % (pmarker, html_path))
-    # The marked statement is:  /*__PROMO_META__*/ null;
-    # (or a previous build's metadata — compact JSON, no ';' inside)
-    html2, n = re.subn(
-        r"/\*__PROMO_META__\*/[^;]*;",
-        pmarker + " " + meta_json + ";",
-        html2, count=1)
-    if n != 1:
-        sys.exit("Could not replace the promo-meta placeholder line.")
     with open(html_path, "w", encoding="utf-8") as f:
         f.write(html2)
     print("Pack built: %d course modules, %d plaintext bytes" %
@@ -477,12 +438,12 @@ def cmd_build_pack(keydir, content_dir, game_dir):
     print("  inlined ciphertext into %s" % html_path)
     if meta is not None:
         print("  promo access: ENABLED — promo license id %s baked "
-              "into the pack metadata" % meta["license"]["id"])
-        print("    (code read from the local key-store config; the")
-        print("     code itself is never written to the repo)")
+              "into the app metadata" % meta["license"]["id"])
+        print("    (derived from the sealed built-in code; the code")
+        print("     itself is never written anywhere)")
     else:
-        print("  promo access: off (no %s in the key dir)"
-              % PROMO_CONFIG_NAME)
+        print("  promo access: off (the sealed built-in has been "
+              "removed)")
     print("  wrote %s" % meta_path)
     print("Commit + deploy both.")
 
@@ -675,11 +636,6 @@ def main():
     b.add_argument("--keydir", default=DEFAULT_KEYDIR)
     b.add_argument("--content", default=os.path.join(REPO_ROOT, "content", "premium"))
     b.add_argument("--game", default=os.path.join(REPO_ROOT, "game"))
-    sp = sub.add_parser("set-promo", help="set the promo/test code in the local key-store config")
-    sp.add_argument("--keydir", default=DEFAULT_KEYDIR)
-    sp.add_argument("--code", required=True, help="4-12 digits")
-    cp = sub.add_parser("clear-promo", help="remove the promo/test code from the local key-store config")
-    cp.add_argument("--keydir", default=DEFAULT_KEYDIR)
     c = sub.add_parser("sign-cert", help="countersign a student's certificate code")
     c.add_argument("--keydir", default=DEFAULT_KEYDIR)
     c.add_argument("code", help="unsigned certificate code from the student (or - for stdin)")
@@ -693,10 +649,6 @@ def main():
         cmd_mint(args.keydir, args.tier, args.days)
     elif args.cmd == "build-pack":
         cmd_build_pack(args.keydir, args.content, args.game)
-    elif args.cmd == "set-promo":
-        cmd_set_promo(args.keydir, args.code)
-    elif args.cmd == "clear-promo":
-        cmd_clear_promo(args.keydir)
     elif args.cmd == "sign-cert":
         code = args.code
         if code == "-":
