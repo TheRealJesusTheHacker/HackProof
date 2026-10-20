@@ -105,3 +105,35 @@ def test_cert_response_issued_untouched():
 
 def test_not_configured_body_is_designed():
     assert "error" in proxy_logic.NOT_CONFIGURED_BODY
+
+
+def test_navigation_decision_app_origin():
+    # Every designed in-app destination lives on the app origin:
+    # course pages, the buy guidance page (buy links are rewired
+    # to /_app/buy-in-app.html at bundle time), the reader and QR
+    # assets.
+    nav = proxy_logic.navigation_decision
+    assert nav("hackproof", "app") == "app"
+    # QUrl lowercases both parts; the policy is case-insensitive
+    # anyway so a raw caller can't slip past on case.
+    assert nav("HACKPROOF", "APP") == "app"
+
+
+def test_navigation_decision_web_goes_external():
+    nav = proxy_logic.navigation_decision
+    assert nav("https", "example.com") == "external"
+    assert nav("http", "example.com") == "external"
+
+
+def test_navigation_decision_everything_else_blocked():
+    nav = proxy_logic.navigation_decision
+    # Our scheme on any other host is not our origin.
+    assert nav("hackproof", "evil.example") == "block"
+    assert nav("hackproof", "") == "block"
+    # Local files, data blobs, and engine-internal schemes never
+    # navigate in-app.
+    assert nav("file", "") == "block"
+    assert nav("data", "") == "block"
+    assert nav("about", "") == "block"
+    assert nav("blob", "app") == "block"
+    assert nav("", "") == "block"
