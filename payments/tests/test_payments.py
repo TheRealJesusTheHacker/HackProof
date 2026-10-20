@@ -44,10 +44,10 @@ from hackproof_pay.chain import confirmations  # noqa: E402
 from hackproof_pay.certsvc import (CertificateError,  # noqa: E402
                                    CertificateService, integrity_verdict)
 from hackproof_pay.config import DEFAULTS, Config  # noqa: E402
-from hackproof_pay.httpd import App  # noqa: E402
+from hackproof_pay.httpd import App, make_server  # noqa: E402
 from hackproof_pay.mailer import Mailer  # noqa: E402
-from hackproof_pay.pricing import (Pricer, allocate_total,  # noqa: E402
-                                   sats_to_btc_str)
+from hackproof_pay.pricing import (Pricer, PricingError,  # noqa: E402
+                                   allocate_total, sats_to_btc_str)
 from hackproof_pay.store import Store  # noqa: E402
 
 # --- load the REAL seller tool for equivalence testing ---------------
@@ -404,7 +404,13 @@ def keygen_sign_cert(keydir, code, license_key):
     except SystemExit as exc:
         return "refused", str(exc.code)
     lines = buf.getvalue().splitlines()
-    return "ok", lines[1].strip()
+    # keygen prints an INTEGRITY line first, then the banner, then
+    # the code — locate the code relative to the banner instead of
+    # assuming a fixed line number (the integrity print landed
+    # after these tests were written and silently shifted it).
+    banner = next(i for i, line in enumerate(lines)
+                  if line.startswith("COUNTERSIGNED CERTIFICATE"))
+    return "ok", lines[banner + 1].strip()
 
 
 class TestCertificates(ServiceFixture):
@@ -546,6 +552,96 @@ class TestCertificates(ServiceFixture):
         self.assertEqual(integrity_verdict(None), "flagged")
         self.assertEqual(integrity_verdict({"verdict": "weird"}),
                          "flagged")
+
+
+class TestSweep2Regressions(ServiceFixture):
+    """Bug-hunt sweep #2 (2026-10-19): concurrency + HTTP edge cases."""
+
+    def test_concurrent_create_order_totals_stay_unique(self):
+        # Slow the reserved-totals read down so concurrent creators
+        # overlap inside the reserve-allocate-insert sequence; the
+        # totals are the payment-matching key and must never repeat
+        # among open orders.
+        import threading
+        import time as _time
+        orig = self.store.open_totals
+
+        def slow(now):
+            reserved = orig(now)
+            _time.sleep(0.02)
+            return reserved
+
+        self.store.open_totals = slow
+        barrier = threading.Barrier(6)
+        results, errors = [], []
+
+        def worker(i):
+            barrier.wait()
+            try:
+                results.append(
+                    self.app.orders.create_order("u%d@x.co" % i))
+            except Exception as exc:  # noqa: BLE001 - recorded below
+                errors.append(exc)
+
+        threads = [threading.Thread(target=worker, args=(i,))
+                   for i in range(6)]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+        self.assertEqual(errors, [])
+        totals = [r["btc_amount_sats"] for r in results]
+        self.assertEqual(len(set(totals)), len(totals))
+
+    def test_pricer_network_failure_is_pricing_error(self):
+        import urllib.error
+
+        def boom(url):
+            raise urllib.error.URLError("dns exploded")
+
+        pricer = Pricer("https://price.invalid", 5.0, fetcher=boom)
+        with self.assertRaises(PricingError):
+            pricer.btc_rate_usd()
+
+    def test_cert_email_header_injection_refused(self):
+        license_key, lic, S = self.mint_genuine_license()
+        _, code = make_payload(S, lic["id"])
+        certs = CertificateService(self.cfg, self.store, self.keys,
+                                   self.mailer)
+        body = {"certificate_code": code, "license_key": license_key,
+                "email": "victim@example.com\r\nBcc: evil@example.com",
+                "integrity": {"verdict": "clean"}}
+        with self.assertRaises(CertificateError):
+            certs.submit(body)
+        self.assertEqual(self.mailer.sent, [])
+
+    def test_mailer_bad_address_degrades_to_not_sent(self):
+        mailer = Mailer(
+            {"host": "127.0.0.1", "port": 9, "security": "none",
+             "from_address": "a@b.co"}, "s@x.co")
+        self.assertFalse(mailer.send(
+            "victim@example.com\r\nBcc: evil@example.com", "hi",
+            "body"))
+
+    def test_admin_token_non_ascii_gets_401_not_500(self):
+        import socket
+        import threading
+        server = make_server(self.app, "127.0.0.1", 0)
+        port = server.server_address[1]
+        thread = threading.Thread(target=server.serve_forever,
+                                  daemon=True)
+        thread.start()
+        try:
+            with socket.create_connection(("127.0.0.1", port),
+                                          timeout=5) as sock:
+                sock.sendall(
+                    b"GET /api/admin/review HTTP/1.1\r\nHost: x\r\n"
+                    b"X-Admin-Token: s\xe9kret\r\n"
+                    b"Connection: close\r\n\r\n")
+                response = sock.recv(4096)
+        finally:
+            server.shutdown()
+        self.assertIn(b" 401 ", response.split(b"\r\n")[0])
 
 
 if __name__ == "__main__":
