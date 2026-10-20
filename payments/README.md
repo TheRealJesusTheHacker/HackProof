@@ -1,5 +1,18 @@
 # HackProof Payments — automated Bitcoin checkout + certificate issuance
 
+[![Python](https://img.shields.io/badge/python-3.10%2B-blue?style=flat-square)](../README.md)
+[![License: PROPRIETARY](https://img.shields.io/badge/license-PROPRIETARY-red?style=flat-square)](../LICENSE)
+
+> **Deployment status — built and ready, not yet live.** This service is
+> complete and tested, but it is **not yet deployed on the owner's server**
+> and is therefore **not processing live orders**. The site constants that
+> wire the pages to it — `PAYMENTS_API_BASE` in `game/buy.html` and in
+> `exam.html` — are currently `""`, so the live buy page runs its interim
+> mode (live CoinGecko $5 amount plus the manual fulfilment paths) and
+> certificate countersigning runs through the manual `sign-cert` tool.
+> Deploying this service and setting those constants is the remaining
+> owner step; everything below describes the service as built.
+
 This service replaces manual, email-me-your-transaction-ID fulfilment
 with automation, in the owner's settled model:
 
@@ -367,8 +380,8 @@ python3 -m unittest discover -s payments/tests -v
 python3 payments/service.py --selftest
 ```
 
-The suite stubs CoinGecko, the esplora API, and SMTP — no live
-network. It proves, against the **real** `tools/keygen.py`:
+The suite (29 tests) stubs CoinGecko, the esplora API, and SMTP — no
+live network. It proves, against the **real** `tools/keygen.py`:
 
 - service-minted keys are accepted by keygen and unwrap the real
   content key; keygen-minted keys verify in the service;
@@ -384,12 +397,11 @@ network. It proves, against the **real** `tools/keygen.py`:
 - certificates: clean issues + emails once, flagged is held and
   never sent, duplicate submissions return the existing issuance.
 
-## Note for the site crew
+## Note on PRIVACY.md
 
-`PRIVACY.md`'s purchase section still describes manual tx-ID
-fulfilment ("purchases fulfilled by emailing a txid"). With this
-service live, purchases are fulfilled automatically and the buyer's
-email + order link are the fulfilment record — that section should be
-updated to match when the site wires the new flow in. (This service
-changes nothing else about the site's privacy posture: still no
-accounts, no tracking, no third-party analytics.)
+`PRIVACY.md` (repo root, legal content — not edited from here) already
+describes the automated purchase and certificate flows this service
+implements: the buyer's email and order link are the fulfilment record,
+and the order ID is documented there as a claim credential to keep
+private. This service changes nothing else about the site's privacy
+posture: still no accounts, no tracking, no third-party analytics.
