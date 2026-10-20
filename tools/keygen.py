@@ -234,10 +234,20 @@ def cmd_setup(keydir):
     kc = os.urandom(32)
     # Write with final permissions from the first byte — a plain open()
     # would leave the secrets at umask defaults until the chmod below.
+    # O_BINARY is load-bearing on Windows: without it the descriptor
+    # is in CRT text mode and os.write translates every 0x0A byte in
+    # the raw key material to 0x0D 0x0A, so the file on disk is no
+    # longer the key — load_keys reads "rb", sees more than 32 bytes,
+    # and refuses the store as corrupt whenever a drawn key happens
+    # to contain a newline byte. (Regression tests:
+    # app/tests/test_keygen_keyfiles.py models the CRT behaviour.)
     def _write_new(path, data, mode):
-        fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, mode)
+        fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL
+                     | getattr(os, "O_BINARY", 0), mode)
         try:
-            os.write(fd, data)
+            view = memoryview(data)
+            while view:
+                view = view[os.write(fd, view):]
         finally:
             os.close(fd)
     _write_new(paths["priv"], seed, 0o600)
