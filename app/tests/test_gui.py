@@ -284,6 +284,91 @@ def test_scheme_allows_fetch_api(qapp):
         assert scheme.flags() & flag
 
 
+def test_navigation_guard_confines_the_page(qapp):
+    """The navigation guard on the REAL page class: app-origin
+    navigations proceed (course pages and the buy guidance page
+    included), a main-frame web link is refused in-app and handed
+    to the system browser, a sub-frame web link is refused
+    silently, and foreign schemes are refused outright. Runs in
+    a subprocess for the same reason as
+    test_web_view_real_profile_path: real web-engine objects are
+    fragile beside the rest of the suite in this VM, and the
+    policy matrix itself is covered without Qt in
+    test_proxy_logic."""
+    import os
+    import subprocess
+    import sys
+
+    program = (
+        "import os, sys\n"
+        "os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')\n"
+        "from PySide6.QtWidgets import QApplication\n"
+        "app = QApplication(['probe'])\n"
+        "try:\n"
+        "    from PySide6.QtWebEngineCore import QWebEngineProfile\n"
+        "    from PySide6.QtWebEngineWidgets import QWebEngineView\n"
+        "    QWebEngineView()\n"
+        "except Exception as exc:\n"
+        "    print('ENV-SKIP', exc); sys.exit(3)\n"
+        "from PySide6.QtCore import QUrl\n"
+        "from PySide6.QtWebEngineCore import QWebEnginePage\n"
+        "from hackproof_app.gui import webview\n"
+        "webview.register_scheme()\n"
+        "opened = []\n"
+        "webview._open_external = opened.append\n"
+        "profile = QWebEngineProfile.defaultProfile()\n"
+        "page = webview.HackProofWebPage(profile)\n"
+        # Enum member spelling differs across Qt builds
+        # (LinkClicked vs NavigationTypeLinkClicked).
+        "nt = QWebEnginePage.NavigationType\n"
+        "link = getattr(nt, 'LinkClicked', None)\n"
+        "if link is None:\n"
+        "    link = nt.NavigationTypeLinkClicked\n"
+        "def go(url, main=True):\n"
+        "    return page.acceptNavigationRequest(QUrl(url), link, main)\n"
+        # App origin: course pages and the designed buy guidance
+        # page navigate in-app; nothing is handed out.
+        "assert go('hackproof://app/index.html') is True\n"
+        "assert go('hackproof://app/_app/buy-in-app.html') is True\n"
+        "assert go('hackproof://app/_app/qr.html') is True\n"
+        "assert opened == [], opened\n"
+        # A web link in the main frame: refused in-app, handed
+        # to the system browser exactly once.
+        "assert go('https://example.com/lesson-ref') is False\n"
+        "assert [u.toString() for u in opened] =="
+        " ['https://example.com/lesson-ref'], opened\n"
+        "assert go('http://example.com/') is False\n"
+        "assert len(opened) == 2, opened\n"
+        # A web link in a sub-frame: refused, and no browser
+        # window pops for an embedded frame.
+        "assert go('https://example.com/embed', main=False) is False\n"
+        "assert len(opened) == 2, opened\n"
+        # Foreign schemes and our scheme on a foreign host:
+        # refused outright, nothing handed out.
+        "assert go('file:///etc/passwd') is False\n"
+        "assert go('hackproof://evil.example/index.html') is False\n"
+        "assert go('data:text/html,<h1>x</h1>') is False\n"
+        "assert len(opened) == 2, opened\n"
+        "print('NAV-GUARD-OK')\n"
+    )
+    env = dict(os.environ)
+    env["QT_QPA_PLATFORM"] = "offscreen"
+    env.setdefault(
+        "QTWEBENGINE_CHROMIUM_FLAGS",
+        "--disable-gpu --no-sandbox --disable-dev-shm-usage",
+    )
+    app_dir = str(Path(__file__).resolve().parent.parent)
+    env["PYTHONPATH"] = app_dir + os.pathsep + env.get("PYTHONPATH", "")
+    proc = subprocess.run(
+        [sys.executable, "-c", program],
+        capture_output=True, text=True, env=env, timeout=120,
+    )
+    if proc.returncode == 3:
+        pytest.skip("web engine cannot start in this environment")
+    assert proc.returncode == 0, proc.stderr[-2000:]
+    assert "NAV-GUARD-OK" in proc.stdout, proc.stdout + proc.stderr[-2000:]
+
+
 def test_native_pages_are_scroll_wrapped(qapp, store, tmp_path):
     """Native pages live in scroll areas — on a short window
     their content scrolls instead of being squeezed or cut off.
