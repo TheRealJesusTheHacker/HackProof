@@ -214,6 +214,21 @@ def test_game_pack_artifact_ships_without_the_buy_page(tmp_path):
     assert manifest["pack"]["state"] == site_bundle.PACK_BUILT
 
 
+def test_promo_meta_ships_from_the_app_layer(tmp_path):
+    # The promo metadata lives in the app's own layer of the tree
+    # (app/ is otherwise excluded from the bundle); copy_site
+    # ships it at the webroot root, where the app reads it. Only
+    # derived wrap material — the code itself is never in the tree.
+    repo = make_site(tmp_path / "repo")
+    (repo / "app" / "promo-meta.json").write_text('{"v": 1}\n')
+    out = tmp_path / "webroot"
+    out.mkdir()
+    copied = copy_site(repo, out)
+    assert "promo-meta.json" in copied
+    assert (out / "promo-meta.json").read_text() == '{"v": 1}\n'
+    assert not (out / "app" / "promo-meta.json").exists()
+
+
 def test_main_writes_manifest(tmp_path):
     repo = make_site(tmp_path / "repo")
     out = tmp_path / "webroot"
