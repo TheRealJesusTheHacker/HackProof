@@ -137,6 +137,12 @@ class Settings:
     #: seen at a successful license verification. Mirrors the
     #: website's localStorage guard in shared.js.
     max_clock_ms: int = 0
+    #: Promo-code throttle state (see hackproof_app.promo):
+    #: consecutive failed code attempts and when the last one
+    #: happened (ms). Persisted so closing the app doesn't reset
+    #: the wait; a successful unlock clears both.
+    promo_fail_count: int = 0
+    promo_last_fail_ms: int = 0
 
     # ---------------------------------------------------------- io
 
@@ -148,6 +154,8 @@ class Settings:
             "order": self.order.to_json(),
             "install_banner_dismissed": self.install_banner_dismissed,
             "max_clock_ms": self.max_clock_ms,
+            "promo_fail_count": self.promo_fail_count,
+            "promo_last_fail_ms": self.promo_last_fail_ms,
         }
 
     @classmethod
@@ -158,6 +166,13 @@ class Settings:
             max_clock_ms = int(raw.get("max_clock_ms") or 0)
         except (TypeError, ValueError):
             max_clock_ms = 0  # a hand-edited file never wedges startup
+
+        def _count(name: str) -> int:
+            try:
+                return max(0, int(raw.get(name) or 0))
+            except (TypeError, ValueError):
+                return 0
+
         return cls(
             service_base_url=str(raw.get("service_base_url") or ""),
             license_key=str(raw.get("license_key") or ""),
@@ -167,6 +182,8 @@ class Settings:
                 raw.get("install_banner_dismissed")
             ),
             max_clock_ms=max_clock_ms,
+            promo_fail_count=_count("promo_fail_count"),
+            promo_last_fail_ms=_count("promo_last_fail_ms"),
         )
 
     # ------------------------------------------------------ access
