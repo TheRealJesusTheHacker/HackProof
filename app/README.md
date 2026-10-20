@@ -1,19 +1,19 @@
 # HackProof — the Windows app
 
-[![App release](https://img.shields.io/github/v/release/TheRealJesusTheHacker/HackProof?filter=app-v*&style=flat-square&label=app%20release)](https://github.com/TheRealJesusTheHacker/HackProof/releases/tag/app-v1.0.2)
+[![App release](https://img.shields.io/github/v/release/TheRealJesusTheHacker/HackProof?filter=app-v*&style=flat-square&label=app%20release)](https://github.com/TheRealJesusTheHacker/HackProof/releases/tag/app-v1.0.4)
 [![App build](https://img.shields.io/github/actions/workflow/status/TheRealJesusTheHacker/HackProof/build-app-windows.yml?style=flat-square&label=app%20build)](https://github.com/TheRealJesusTheHacker/HackProof/actions/workflows/build-app-windows.yml)
 [![License: PROPRIETARY](https://img.shields.io/badge/license-PROPRIETARY-red?style=flat-square)](../LICENSE)
-[![Platform: Windows](https://img.shields.io/badge/platform-Windows-blue?style=flat-square)](https://github.com/TheRealJesusTheHacker/HackProof/releases/tag/app-v1.0.2)
+[![Platform: Windows](https://img.shields.io/badge/platform-Windows-blue?style=flat-square)](https://github.com/TheRealJesusTheHacker/HackProof/releases/tag/app-v1.0.4)
 
 The installable Windows edition of HackProof — the primary product form.
-Current release: **app-v1.0.2** (assets: `HackProof.exe` + `SHA256SUMS.txt`).
+Current release: **app-v1.0.4** (assets: `HackProof.exe` + `SHA256SUMS.txt`).
 Product overview, course tables, and pricing live in the [root README](../README.md);
 the payments service the app talks to is documented in [payments/README.md](../payments/README.md).
 
 ## Download, verify, run
 
-1. Download `HackProof.exe` and `SHA256SUMS.txt` from the app-v1.0.2 release:
-   https://github.com/TheRealJesusTheHacker/HackProof/releases/tag/app-v1.0.2
+1. Download `HackProof.exe` and `SHA256SUMS.txt` from the app-v1.0.4 release:
+   https://github.com/TheRealJesusTheHacker/HackProof/releases/tag/app-v1.0.4
 2. Verify the exe before running it (recommended): in PowerShell,
    `Get-FileHash .\HackProof.exe -Algorithm SHA256`, and compare the result
    with `SHA256SUMS.txt`.
@@ -273,7 +273,7 @@ service, and the release tag/version gate.
 
 ## Status
 
-- **app-v1.0.2** is the current release. The release workflow
+- **app-v1.0.4** is the current release. The release workflow
   (`.github/workflows/build-app-windows.yml`, at the repo root) runs only
   for `app-v*` tags, checks the tag against `hackproof_app.__version__`,
   runs this suite, builds the exe, greps the PyInstaller warn file for
