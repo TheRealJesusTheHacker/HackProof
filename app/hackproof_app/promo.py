@@ -8,8 +8,10 @@ everything except ``S`` as ``promo-meta.json`` (KDF salt and
 parameters, the signed license fields, and the Ed25519
 signature over them). The metadata ships inside the app's
 bundled webroot; the code itself is never in the app, the site,
-or the repository — it lives only in the owner's local key-store
-config, read by ``build-pack`` on the owner's machine.
+or the repository in plaintext — it is built into the owner's
+keygen tooling in concealed (sealed) form, and ``build-pack``
+derives the promo license from it on the owner's machine. The
+promo is an app-only feature: the website carries none of it.
 
 Reconstruction is: derive ``S`` from the typed code, rebuild the
 exact license object, and check the signature with the same
@@ -40,8 +42,9 @@ from pathlib import Path
 from . import license_keys
 from .license_keys import LicenseError
 
-#: The metadata file the pack build writes at the site root; the
-#: bundler copies it into the webroot beside the pages.
+#: The metadata file the pack build writes into the app's layer
+#: of the tree (app/promo-meta.json); the bundler ships it at the
+#: webroot root, beside the app's manifest.
 META_NAME = "promo-meta.json"
 
 KDF_NAME = "PBKDF2-HMAC-SHA256"
@@ -51,7 +54,7 @@ KDF_NAME = "PBKDF2-HMAC-SHA256"
 #: file must not be able to stall the unlock for minutes.
 MAX_ITERATIONS = 10_000_000
 
-#: User-facing verdicts (the website's wording, reused).
+#: User-facing verdicts.
 INACTIVE_MESSAGE = "Promo access isn't available in this edition."
 WRONG_CODE_MESSAGE = "That code didn't work — check the digits and try again."
 
