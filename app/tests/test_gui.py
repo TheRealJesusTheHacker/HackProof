@@ -654,6 +654,34 @@ def test_premium_buy_flow_to_paid_key(qapp, store, tmp_path, monkeypatch):
     retire(page)
 
 
+def test_premium_paid_claim_only_does_not_claim_emailed(
+        qapp, store, tmp_path, monkeypatch):
+    # Sweep #3: when the service's delivery record says the key
+    # email did NOT go out (claim_only / failed), the paid panel
+    # must not claim it was emailed — the key shown in-app is the
+    # claim path, and the panel says exactly that.
+    store.settings.service_base_url = "https://svc.example"
+    client = StubClient()
+    page = premium_page(qapp, store, tmp_path, client=client,
+                        monkeypatch=monkeypatch)
+    page.show()
+    page._email.setText("buyer@example.com")
+    page.submit_email()
+    assert pump_until(lambda: page._payment_panel.isVisible())
+    client.polled = Order(
+        order_id="hp_1", status="paid", btc_address="bc1qaddress",
+        btc_amount_sats=6123, btc_amount_btc="0.00006123",
+        price_usd=5.0, confirmations=1,
+        expires_at="2030-01-01T00:00:00Z",
+        license_key="MINTED-KEY", delivery="claim_only",
+    )
+    page._poll_order_now()
+    assert pump_until(lambda: page._save_arrived_btn.isVisible())
+    assert "has been emailed" not in page._pay_status.text()
+    assert "wasn't emailed" in page._pay_status.text()
+    retire(page)
+
+
 def test_premium_key_unlock_and_refusal(qapp, store, tmp_path, monkeypatch):
     page = premium_page(qapp, store, tmp_path, verify=verify_bad,
                         monkeypatch=monkeypatch)

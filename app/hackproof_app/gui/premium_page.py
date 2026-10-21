@@ -626,15 +626,37 @@ class PremiumPage(QWidget):
             self._poll.stop()
             email = self._store.settings.order.email or "your email"
             self._pay_status.setObjectName("Good")
-            self._pay_status.setText(
-                f"Payment confirmed — your license key has been emailed "
-                f"to {email}."
-            )
-            if order.license_key:
+            if order.delivery in ("claim_only", "failed"):
+                # The service's own delivery record says the email
+                # did NOT go out (SMTP off, or the send failed) —
+                # never claim it did. The key itself is shown right
+                # here instead, which is the claim path working as
+                # designed.
                 self._pay_status.setText(
-                    self._pay_status.text()
-                    + " It's also right here — save it to this app:"
+                    "Payment confirmed — your license key wasn't "
+                    "emailed (the delivery email didn't go out), but "
+                    "it is right here:"
+                    if order.license_key else
+                    "Payment confirmed. The delivery email didn't go "
+                    "out — email Sentinelsafeguard@outlook.com with "
+                    "your order ID and Sentinel will send your key."
                 )
+            else:
+                self._pay_status.setText(
+                    f"Payment confirmed — your license key has been "
+                    f"emailed to {email}."
+                )
+            if order.license_key:
+                if order.delivery not in ("claim_only", "failed"):
+                    self._pay_status.setText(
+                        self._pay_status.text()
+                        + " It's also right here — save it to this app:"
+                    )
+                else:
+                    self._pay_status.setText(
+                        self._pay_status.text()
+                        + " Save it to this app:"
+                    )
                 self._arrived_key.setPlainText(order.license_key)
                 self._arrived_key.setVisible(True)
                 self._save_arrived_btn.setVisible(True)
