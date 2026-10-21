@@ -2,10 +2,10 @@
 
 **46 modules, 7 tracks, plain language: from spotting a phish to the knowledge domains behind professional IT and security certifications — in an installable Windows app and in the browser.**
 
-[![App release](https://img.shields.io/github/v/release/TheRealJesusTheHacker/HackProof?filter=app-v*&style=flat-square&label=app%20release)](https://github.com/TheRealJesusTheHacker/HackProof/releases/tag/app-v1.0.4)
+[![App release](https://img.shields.io/github/v/release/TheRealJesusTheHacker/HackProof?filter=app-v*&style=flat-square&label=app%20release)](https://github.com/TheRealJesusTheHacker/HackProof/releases/tag/app-v1.0.5)
 [![App build](https://img.shields.io/github/actions/workflow/status/TheRealJesusTheHacker/HackProof/build-app-windows.yml?style=flat-square&label=app%20build)](https://github.com/TheRealJesusTheHacker/HackProof/actions/workflows/build-app-windows.yml)
 [![License: PROPRIETARY](https://img.shields.io/badge/license-PROPRIETARY-red?style=flat-square)](LICENSE)
-[![Platform: Windows](https://img.shields.io/badge/platform-Windows-blue?style=flat-square)](https://github.com/TheRealJesusTheHacker/HackProof/releases/tag/app-v1.0.4)
+[![Platform: Windows](https://img.shields.io/badge/platform-Windows-blue?style=flat-square)](https://github.com/TheRealJesusTheHacker/HackProof/releases/tag/app-v1.0.5)
 [![Site: GitHub Pages](https://img.shields.io/badge/site-GitHub%20Pages-green?style=flat-square)](https://therealjesusthehacker.github.io/HackProof/)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue?style=flat-square)](payments/README.md)
 
@@ -17,7 +17,7 @@ Every module is written to one curriculum template: stated learning objectives, 
 
 HackProof comes in two forms that run the same course:
 
-- **The Windows app (primary)** — one self-installing `HackProof.exe`, currently **app-v1.0.4**. The course, the final exam, certificate verification, and the premium screens run inside the app, and the unlocked course works fully offline. See [app/README.md](app/README.md).
+- **The Windows app (primary)** — one self-installing `HackProof.exe`, currently **app-v1.0.5**. The course, the final exam, certificate verification, and the premium screens run inside the app, and the unlocked course works fully offline. See [app/README.md](app/README.md).
 - **The website** — a static GitHub Pages site in Sentinel green and black. It is the landing and download front door, the free web preview of the course, and home to the public certificate verify page.
 
 The first **3 modules are free** — no account, no sign-up. The **premium tier is a one-time $5 USD in Bitcoin** and unlocks all 46 modules across 7 tracks, plus the 90-question final exam and a verifiable certificate of completion. There are no accounts anywhere in HackProof: a buyer's Ed25519-signed license key *is* the account, and it is validated offline on the student's own device.
@@ -27,7 +27,7 @@ The first **3 modules are free** — no account, no sign-up. The **premium tier 
 This section is kept honest on purpose. The three states below are different states, and the documentation does not blur them.
 
 - **Live — the website.** The course site runs today on GitHub Pages: the free preview, the course catalog and reader, the buy page, the exam page, and the certificate verify page.
-- **Released — the Windows app.** App release **app-v1.0.4** is published on GitHub Releases with two assets: `HackProof.exe` and `SHA256SUMS.txt`. The release build runs in the `build-app-windows.yml` workflow, which checks the tag against the app version in code, runs the app test suite, builds the exe with PyInstaller, and smoke-tests the built exe before attaching it to the release.
+- **Released — the Windows app.** App release **app-v1.0.5** is published on GitHub Releases with two assets: `HackProof.exe` and `SHA256SUMS.txt`. The release build runs in the `build-app-windows.yml` workflow, which checks the tag against the app version in code, runs the app test suite, builds the exe with PyInstaller, and smoke-tests the built exe before attaching it to the release.
 - **Built and ready — the payments service.** The automated Bitcoin checkout and certificate-issuance service in [`payments/`](payments/README.md) is built and tested: BTC orders with unique satoshi-offset amounts, an esplora/mempool.space chain watcher, minting at 1 confirmation, exactly-once license minting, key delivery by email with an order-status claim path, and automatic certificate issuance for clean exam results. **It is not yet processing live orders:** deployment on the owner's server is an owner step that has not happened yet. The site constants that wire the pages to it — `PAYMENTS_API_BASE` in `game/buy.html` and in `exam.html` — are currently empty, so the live buy page runs its interim mode (live CoinGecko $5 amount plus the manual fulfilment paths) and certificate countersigning runs through the manual tool route until deployment.
 - **Owner-built — the premium pack.** Premium module bodies ship only as an AES-256-GCM encrypted pack. The pack is built locally by the owner with `tools/keygen.py build-pack` from the sources in `content/premium/`; it is never built in CI and its plaintext sources never ship in the app bundle. Premium unlock therefore depends on the owner-built pack being present in an edition — the app treats "pack not built yet" as a designed state with a plain status line, never as an error, and purchases and license keys stay valid across editions.
 
@@ -149,7 +149,7 @@ Open **https://therealjesusthehacker.github.io/HackProof/** — the first 3 modu
 
 ### The Windows app (primary product form)
 
-1. Download `HackProof.exe` and `SHA256SUMS.txt` from the **app-v1.0.4** release: https://github.com/TheRealJesusTheHacker/HackProof/releases/tag/app-v1.0.4
+1. Download `HackProof.exe` and `SHA256SUMS.txt` from the **app-v1.0.5** release: https://github.com/TheRealJesusTheHacker/HackProof/releases/tag/app-v1.0.5
 2. Verify the download (recommended): compare the SHA-256 of your `HackProof.exe` against `SHA256SUMS.txt` — in PowerShell, `Get-FileHash .\HackProof.exe -Algorithm SHA256`.
 3. Run `HackProof.exe`. The course opens and works immediately — installation is not required to learn.
 4. To install, accept the in-app install offer (or Settings → *Install / repair*): the same exe relaunches elevated, Windows shows its standard prompt, and HackProof places a byte-verified copy of itself at `C:\Program Files\Sentinel Safeguard\HackProof\HackProof.exe`, registers an Apps & Features entry, and adds a Start Menu shortcut — then verifies all three before claiming done. Uninstall runs from Apps & Features (`--uninstall`); your settings and saved license key are kept unless you tick the box to remove them.
@@ -241,7 +241,7 @@ The payments suite (29 tests) stubs CoinGecko, the esplora API, and SMTP, and pr
 
 ## Status and Roadmap
 
-- **Now:** website live; Windows app at **app-v1.0.4**; course at 46 modules / 7 tracks; exam and verifiable certificate in place.
+- **Now:** website live; Windows app at **app-v1.0.5**; course at 46 modules / 7 tracks; exam and verifiable certificate in place.
 - **Next owner step:** deploy the payments service on the owner's server and set `PAYMENTS_API_BASE` on the buy and exam pages, which switches fulfilment and certificate delivery from the interim/manual paths to the automated flow described above.
 - **Ongoing:** course and app maintenance under the project's build → audit → fix → re-audit cycle; per-release history is recorded in [CHANGELOG.md](CHANGELOG.md).
 
