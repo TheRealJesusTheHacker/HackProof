@@ -1,4 +1,4 @@
-"""The main window: Sentinel-green chrome around the course.
+"""The main window: academy-emerald chrome around the course.
 
 Left navigation, one stacked content area (the Argus layout
 language): **Course** and **Final Exam** and **Verify** are the

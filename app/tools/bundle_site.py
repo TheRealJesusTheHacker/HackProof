@@ -294,7 +294,7 @@ def _brand_sub(match: re.Match) -> str:
 
 def apply_brand_theme(out: Path) -> dict[str, int]:
     """Apply :data:`BRAND_MAP` to the bundled copies (the app
-    ships Sentinel green-on-black; the website keeps its own
+    ships the academy palette; the website keeps its own
     palette). Returns {file: replacement_count} for the files
     that changed."""
     counts: dict[str, int] = {}
