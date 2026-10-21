@@ -38,6 +38,8 @@ input[type=text],input[type=email],textarea{
 input[type=text]:focus,input[type=email]:focus,textarea:focus{border-color:var(--purple);box-shadow:0 0 0 3px #1e7a3c33}
 textarea{min-height:110px;resize:vertical;font-size:14px;line-height:1.5}
 .hint{font-size:13px;color:var(--dim);margin:6px 0 0}
+.checkrow{display:flex;gap:10px;align-items:flex-start;font-size:13px;color:var(--dim);margin:10px 0;line-height:1.5}
+.checkrow input{margin-top:3px;transform:scale(1.3)}
 .err{display:none;background:#3b0d1a;border:1px solid #7f1d2e;color:#fecaca;border-radius:10px;
   padding:12px 14px;margin:12px 0;font-size:14px}
 .err.show{display:block}
@@ -456,7 +458,7 @@ function shuffled(arr){
   for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); const t=a[i]; a[i]=a[j]; a[j]=t; }
   return a;
 }
-const state = { name:"", lic:null, order:[], optMap:[], answers:new Array(90).fill(-1), cur:0, inProgress:false };
+const state = { name:"", lic:null, licStr:"", order:[], optMap:[], answers:new Array(90).fill(-1), cur:0, inProgress:false };
 
 /* ============ CERTIFICATE DELIVERY SERVICE ============
    On a pass, the student's certificate code can be submitted to the
@@ -526,8 +528,17 @@ window.addEventListener("beforeunload", function(e){
 });
 
 function gateScreen(msg){
-  const savedLic = localStorage.getItem(CONFIG.LICENSE_STORAGE_KEY) || "";
-  const savedName = localStorage.getItem(CONFIG.EXAM_NAME_KEY) || "";
+  /* Saved values are read defensively, like every other storage
+     access on this page: a browser that refuses localStorage must
+     still get a working exam gate (session-only), never a blank
+     page. A saved key can only be here because the student opted
+     in on the course page or at this gate — see the remember
+     checkbox below. */
+  let savedLic = "", savedName = "";
+  try{
+    savedLic = localStorage.getItem(CONFIG.LICENSE_STORAGE_KEY) || "";
+    savedName = localStorage.getItem(CONFIG.EXAM_NAME_KEY) || "";
+  }catch(e){}
   app.innerHTML =
   '<div class="card no-print" id="screen-gate">'+
     '<h2>The Final <span class="accent">Exam</span></h2>'+
@@ -541,6 +552,16 @@ function gateScreen(msg){
     '<input type="text" id="gate-name" placeholder="e.g. Alex Rivera" value="'+esc(savedName)+'" autocomplete="name">'+
     '<label class="field" for="gate-lic">Premium license key</label>'+
     '<textarea id="gate-lic" placeholder="Paste your premium license key here">'+esc(savedLic)+'</textarea>'+
+    /* The PRIVACY.md promise, with the course page's own opt-in:
+       the key is kept ONLY in this page's memory unless the student
+       explicitly checks this box — the same checkbox, wording, and
+       semantics as the course page's license box (checked = store
+       in this browser's localStorage, unchecked = keep this
+       session only and remove any stored copy). Pre-checked when
+       a saved key is already here, because that key only exists
+       by an earlier opt-in — unchecking is how the student takes
+       it back. */
+    '<label class="checkrow"><input type="checkbox" id="gate-remember"'+(savedLic?" checked":"")+'><span>Remember on this device (stored only in this browser — uncheck to keep this session only)</span></label>'+
     '<p class="hint">The exam tests the full premium course, so it requires a premium license. '+
     '<a href="game/buy.html">Get premium — $5 in BTC</a></p>'+
     '<button class="btn primary" id="gate-go">Begin the exam</button>'+
@@ -554,7 +575,24 @@ function gateScreen(msg){
     const btn = $("#gate-go"); btn.disabled = true; btn.textContent = "Verifying license…";
     License.verifyLicense(licStr, CONFIG.LICENSE_PUBLIC_KEY_HEX).then(function(lic){
       state.name = name; state.lic = lic;
-      try{ localStorage.setItem(CONFIG.EXAM_NAME_KEY, name); localStorage.setItem(CONFIG.LICENSE_STORAGE_KEY, licStr); }catch(e){}
+      /* The verified key always lives in this page's memory for
+         the session (certificate delivery and the copy-my-key
+         button read it from there) — exactly what PRIVACY.md
+         promises. It is written to localStorage ONLY when the
+         student checked "Remember on this device" above, mirroring
+         the course page's license box; unchecked also removes any
+         previously stored copy, so opting out takes effect now. */
+      state.licStr = licStr;
+      const remember = !!($("#gate-remember") && $("#gate-remember").checked);
+      try{
+        if(remember){
+          localStorage.setItem(CONFIG.EXAM_NAME_KEY, name);
+          localStorage.setItem(CONFIG.LICENSE_STORAGE_KEY, licStr);
+        }else{
+          localStorage.removeItem(CONFIG.EXAM_NAME_KEY);
+          localStorage.removeItem(CONFIG.LICENSE_STORAGE_KEY);
+        }
+      }catch(e){}
       startExam();
     }).catch(function(e){
       err.textContent = (e && e.message) || "License check failed.";
@@ -712,8 +750,14 @@ async function submitCertDelivery(payload, code){
   if(!PAYMENTS_API_BASE){
     status.textContent = "Automatic email delivery isn't reachable from this page right now. " + manual; return;
   }
-  let licenseKey = "";
-  try{ licenseKey = localStorage.getItem(CONFIG.LICENSE_STORAGE_KEY) || ""; }catch(e){}
+  /* The key from this session's verified gate entry (memory) is
+     the source; the stored copy is only a fallback for a key the
+     student chose to remember. A session-only student — who never
+     opted into storage — still gets certificate delivery. */
+  let licenseKey = state.licStr || "";
+  if(!licenseKey){
+    try{ licenseKey = localStorage.getItem(CONFIG.LICENSE_STORAGE_KEY) || ""; }catch(e){}
+  }
   status.textContent = "Sending…";
   try{
     const ctrl = new AbortController();
@@ -818,7 +862,7 @@ async function renderCert(correct, pct){
   $("#copy-unsigned").onclick=function(){ const t=$("#cert-unsigned"); t.select(); try{document.execCommand("copy");}catch(e){} };
   $("#copy-lickey").onclick=function(){
     try{
-      const k = localStorage.getItem(CONFIG.LICENSE_STORAGE_KEY) || "";
+      const k = state.licStr || localStorage.getItem(CONFIG.LICENSE_STORAGE_KEY) || "";
       if(!k) return;
       if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(k); }
       else{
