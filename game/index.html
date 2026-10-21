@@ -1115,9 +1115,10 @@ function renderHome() {
     'teaches what those exams test — certifications and licenses themselves are earned through their ' +
     'issuing bodies, and hands-on credentials are taught here as pathways.</div>' +
     '<div class="card"><div class="tag">THE HACKPROOF APP</div>' +
-    '<div class="brief">HackProof is becoming an <b>installable Windows app</b> — the same course on your PC, ' +
-    'working offline. The app is in development now; until it ships, this web edition is the full course, ' +
-    'and the free preview lives right here.</div></div>' +
+    '<div class="brief">The HackProof app has <b>shipped — v1.0.5</b> — an <b>installable Windows app</b>: ' +
+    'the same course on your PC, working offline, and the app carries the full course. This web edition ' +
+    'remains available right here, and the free preview lives here too. ' +
+    '<a href="https://github.com/TheRealJesusTheHacker/HackProof/releases/tag/app-v1.0.5" style="color:var(--purple-l)">Get the app — v1.0.5 on GitHub Releases →</a></div></div>' +
     trackCards +
     licenseBoxHtml() +
     '<div class="card"><div class="tag">🎓 FINAL EXAM</div>' +
@@ -1138,9 +1139,12 @@ function renderUpgrade(id) {
     '<div class="brief">This module is part of the <b>full course: 46 modules across 7 tracks</b> — the complete ' +
     'Scam Defense Core, IT Foundations, Security Core, Offensive Security, Systems &amp; Cloud, Physical Installs ' +
     '&amp; Safety, and Professional Pathways — plus the 90-question final exam and certificate.</div>' +
-    '<div class="brief" style="margin-top:10px">One-time <b>$5 in Bitcoin</b>. Pay on the buy page and your license ' +
-    'key is <b>generated and emailed to you automatically</b> once your payment is detected on-chain. ' +
-    'No sign-up, no password — <b>the key is your account</b>.</div>' +
+    '<div class="brief" style="margin-top:10px">One-time <b>$5 in Bitcoin</b>. Pay on the buy page. ' +
+    'Honest note for now: the payment service is not connected to the buy page yet, so the buy page runs in ' +
+    'interim mode — the generic $5 amount via CoinGecko and the email fallback paths. If you paid and have ' +
+    'no key, use the transaction-ID path on the buy page and we\'ll resolve it by hand. Automatic email ' +
+    'delivery — your key generated and emailed once your payment is detected on-chain — starts when the ' +
+    'payment service is connected. No sign-up, no password — <b>the key is your account</b>.</div>' +
     '<a class="btn primary" href="buy.html" style="text-decoration:none">GET PREMIUM — $5 IN BTC</a>' +
     '<div class="brief">Already have a key? Paste it into the license box on the home screen.</div>' +
     '<button class="btn ghost" onclick="renderHome()">← BACK TO COURSE</button></div>';
