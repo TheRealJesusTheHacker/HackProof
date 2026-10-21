@@ -644,5 +644,132 @@ class TestSweep2Regressions(ServiceFixture):
         self.assertIn(b" 401 ", response.split(b"\r\n")[0])
 
 
+class TestSweep3Regressions(ServiceFixture):
+    """Bug-hunt sweep #3 (2026-10-21): emailed-certificate palette,
+    delivered-flag truthfulness, non-object POST bodies."""
+
+    def test_emailed_certificate_contrast_audit(self):
+        # Every text/background pairing in the rendered emailed
+        # certificate must measure >= 4.5:1 (WCAG AA), computed
+        # from the shipped values — against the DARKER cream stop
+        # (#f5efe4), the worst case for text on the stock.
+        import re
+
+        from hackproof_pay.certgen import render_certificate_html
+
+        html = render_certificate_html(
+            {"name": "Test Student", "pct": 90, "score": 81,
+             "date": "2026-10-21", "cert_id": "HP-TST-001"},
+            "https://example.invalid/verify.html")
+
+        def lum(hex6):
+            if len(hex6) == 4:  # #fff -> #ffffff
+                hex6 = "#" + "".join(c * 2 for c in hex6[1:])
+            r, g, b = (int(hex6[i:i + 2], 16) / 255 for i in (1, 3, 5))
+            f = lambda c: (c / 12.92 if c <= 0.04045
+                           else ((c + 0.055) / 1.055) ** 2.4)
+            return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b)
+
+        def ratio(a, b):
+            la, lb = lum(a), lum(b)
+            return (max(la, lb) + 0.05) / (min(la, lb) + 0.05)
+
+        def rule_color(selector):
+            m = re.search(re.escape(selector) + r"\{[^}]*?color:"
+                          r"(#[0-9a-fA-F]{6})", html)
+            self.assertIsNotNone(m, selector)
+            return m.group(1).lower()
+
+        cream = "#f5efe4"       # darker gradient stop = worst case
+        ground = "#050807"      # the page ground behind .verify-note
+        # Text on the cream stock.
+        for sel in (".cert .org", ".cert .sub", ".cert .label",
+                    ".cert .details", ".cert .cid", ".cert .sig"):
+            self.assertGreaterEqual(ratio(rule_color(sel), cream),
+                                    4.5, sel)
+        self.assertGreaterEqual(ratio(rule_color(".cert"), cream),
+                                4.5, ".cert base text")
+        self.assertGreaterEqual(ratio(rule_color(".cert h3"), cream),
+                                4.5, ".cert h3")
+        self.assertGreaterEqual(ratio(rule_color(".cert .name"),
+                                      cream), 4.5, ".cert .name")
+        # The badge: white text on its fill.
+        badge = re.search(r"\.cert \.badge\{([^}]*)\}", html, re.S)
+        self.assertIsNotNone(badge)
+        bg = re.search(r"background:(#[0-9a-fA-F]{3,6})",
+                       badge.group(1)).group(1)
+        fg = re.search(r"color:(#[0-9a-fA-F]{3,6})",
+                       badge.group(1)).group(1)
+        self.assertGreaterEqual(ratio(fg, bg), 4.5, "badge text")
+        # The verify note sits on the dark page ground.
+        self.assertGreaterEqual(ratio(rule_color(".verify-note"),
+                                      ground), 4.5, ".verify-note")
+        self.assertGreaterEqual(ratio(rule_color(".verify-note b"),
+                                      ground), 4.5, ".verify-note b")
+        # The academy precedents from app-v1.0.4, on the light stop:
+        # DEEP 8.44:1 for accents, small-print tone 12.81:1.
+        self.assertAlmostEqual(ratio("#115635", "#fdfbf7"), 8.44,
+                               places=2)
+        self.assertAlmostEqual(ratio("#0c3723", "#fdfbf7"), 12.81,
+                               places=2)
+        self.assertEqual(rule_color(".cert .org"), "#115635")
+        self.assertEqual(rule_color(".cert .label"), "#0c3723")
+        # Certificate gold never carries text on the cream stock
+        # (it measures 2.34:1 there): its only text use in this
+        # file is the verify note's emphasis on the dark ground.
+        self.assertLess(ratio("#c9a227", "#fdfbf7"), 4.5)
+        cert_block = html.split(".verify-note")[0]
+        self.assertNotIn("#c9a227", cert_block)
+        # The retired house-green text tokens and any purple are
+        # gone from the emailed certificate.
+        for tok in ("#14532d", "#2f4536", "#1e7a3c", "#9db3a4",
+                    "#8fd6a4"):
+            self.assertNotIn(tok, html)
+
+    def test_issued_response_reports_delivery_truthfully(self):
+        license_key, lic, S = self.mint_genuine_license()
+        _, code = make_payload(S, lic["id"])
+        certs = CertificateService(self.cfg, self.store, self.keys,
+                                   self.mailer)
+        status, resp = certs.submit(
+            {"certificate_code": code, "license_key": license_key,
+             "email": "student@example.com",
+             "integrity": {"verdict": "clean"}})
+        self.assertEqual(status, 201)
+        # The capture mailer DID send it — the response must say so.
+        self.assertTrue(resp["delivered"])
+        self.assertTrue(self.store.get_certificate(
+            lic["id"], "HP-TST-001")["delivered"])
+        # Resubmission reports the same truth.
+        status2, resp2 = certs.submit(
+            {"certificate_code": code, "license_key": license_key,
+             "email": "student@example.com",
+             "integrity": {"verdict": "clean"}})
+        self.assertEqual(status2, 200)
+        self.assertTrue(resp2["delivered"])
+
+    def test_non_object_post_body_gets_400_not_500(self):
+        import socket
+        import threading
+        server = make_server(self.app, "127.0.0.1", 0)
+        port = server.server_address[1]
+        thread = threading.Thread(target=server.serve_forever,
+                                  daemon=True)
+        thread.start()
+        try:
+            with socket.create_connection(("127.0.0.1", port),
+                                          timeout=5) as sock:
+                sock.sendall(
+                    b"POST /api/admin/review/1/resolve HTTP/1.1\r\n"
+                    b"Host: x\r\nX-Admin-Token: test-admin-token\r\n"
+                    b"Content-Type: application/json\r\n"
+                    b"Content-Length: 5\r\nConnection: close\r\n\r\n"
+                    b"[1,2]")
+                response = sock.recv(4096)
+        finally:
+            server.shutdown()
+        self.assertIn(b" 400 ", response.split(b"\r\n")[0])
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -137,10 +137,14 @@ class CertificateService:
         existing = store.get_certificate(lic_id, cert_id)
         if existing:
             if not existing["delivered"]:
-                self._send_cert_email(
-                    existing, payload,
-                    existing["countersigned_code"])
-                store.set_certificate_delivered(lic_id, cert_id)
+                if self._send_cert_email(
+                        existing, payload,
+                        existing["countersigned_code"]):
+                    store.set_certificate_delivered(lic_id, cert_id)
+                    # Re-read: the response must report the delivery
+                    # state as it now stands, not the stale row's.
+                    existing = (store.get_certificate(lic_id, cert_id)
+                                or existing)
             log.info("certificate resubmission — existing issuance "
                      "returned lic=%s cert=%s", lic_id, cert_id)
             return 200, self._issued_response(existing)
@@ -162,6 +166,11 @@ class CertificateService:
         sent = self._send_cert_email(row, payload, countersigned)
         if sent:
             store.set_certificate_delivered(lic_id, cert_id)
+            # Re-read so the response's "delivered" flag is the
+            # stored truth — the row above predates the send and
+            # would report delivered=false for a certificate that
+            # was in fact just emailed (sweep #3 finding).
+            row = store.get_certificate(lic_id, cert_id) or row
         log.info("certificate ISSUED lic=%s cert=%s delivered=%s",
                  lic_id, cert_id, sent)
         return 201, self._issued_response(row)

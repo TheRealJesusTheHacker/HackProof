@@ -202,6 +202,13 @@ def make_handler(app):
                 body = self._read_json()
             except Exception:
                 return self._send_json(400, {"error": "invalid JSON body"})
+            if not isinstance(body, dict):
+                # Every POST route takes a JSON object. A non-object
+                # body (a list, a string) used to fall through to the
+                # routes' .get() calls and surface as a 500 on the
+                # admin resolve route (sweep #3 finding).
+                return self._send_json(
+                    400, {"error": "JSON object body required"})
             try:
                 if path == "/api/orders":
                     if self._limited("orders_write"):
