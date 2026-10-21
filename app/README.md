@@ -241,7 +241,7 @@ downloads"). The version constant lives in
 python -m pytest app/tests -q
 ```
 
-89 test functions across eight files (pytest collects more cases than
+111 test functions across eleven files (pytest collects more cases than
 function names — the entry-routing test alone is parametrized over
 eight invocations): Ed25519 (RFC vectors, cross-implementation agreement,
 real-keygen interop), license refusals (tamper/expiry/clock),

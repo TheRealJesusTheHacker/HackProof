@@ -234,7 +234,7 @@ python3 payments/service.py --check                  # validate config + key sto
 
 # Windows app
 python app/tools/bundle_site.py      # site tree -> app/build/webroot
-python -m pytest app/tests -q        # 89 test functions across 8 files (see app/README.md)
+python -m pytest app/tests -q        # 111 test functions across 11 files (see app/README.md)
 ```
 
 The payments suite (29 tests) stubs CoinGecko, the esplora API, and SMTP, and proves — against the real `tools/keygen.py` — that service-minted and keygen-minted keys accept each other, that 1 confirmation mints exactly once (including across restarts), and that the certificate accept/refuse matrix matches `sign-cert` exactly. The app suite covers Ed25519 verification against the real keygen, license refusals, the install state machine, the bundler, the service client and proxy shim, and headless GUI tests. Release builds additionally run both exe self-checks (`--self-check`, `--self-check-qt`) in the workflow before any asset is attached.
