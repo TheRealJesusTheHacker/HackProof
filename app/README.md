@@ -80,7 +80,7 @@ app/
     site_bundle.py    finds the bundled website + reads its manifest
     setup_engine.py   the self-install/uninstall state machine
     gui/
-      theme.py        Sentinel green/black theme (zero purple)
+      theme.py        the academy palette: emerald + certificate gold on ink-black (zero purple)
       app.py          GUI bootstrap (scheme first, then windows)
       main_window.py  nav shell: Course / My Premium / Exam / Verify /
                       Settings / About + the install banner
@@ -162,9 +162,10 @@ catalog and reader — while the web buy page stays out (buying
 happens natively in the app; in-app links to it are rewritten
 to an in-app guidance page). The built pack artifact, when
 present, still ships. The bundler rewires the bundled copies'
-service constants to the app origin, applies the Sentinel
-brand pass to the copies (the site's purple design tokens
-become the app's greens — the app ships zero purple), and
+service constants to the app origin, applies the academy
+brand palette to the copies (the site's purple and house-green
+design tokens become the academy's emerald and certificate
+gold — the app ships zero purple), and
 writes `app-manifest.json` (pages present, pack state,
 free-module list, the license public key read from `shared.js`,
 what was rewired, warnings). The repo's own files are never
@@ -193,29 +194,34 @@ modified.
   and the scheme handler proxies to the configured service.
 - **Configuration — one shared name**: the service base URL is
   the `HACKPROOF_SERVICE_BASE_URL` environment variable when set,
-  else the saved setting (Settings screen). The site's page
-  constant is `CERT_SERVICE_BASE_URL` (in repo files it stays
+  else the saved setting (Settings screen). The exam page's
+  constant is `PAYMENTS_API_BASE` (in repo files it stays
   `""`; only bundled copies are rewired). Other env vars:
   `HACKPROOF_DATA_DIR` (portable mode: all data in that folder,
   never installs), `HACKPROOF_WEBROOT` (bundle override).
 
 ### The certificate compatibility shim (documented, deliberate)
 
-The exam page's submission and the service's contract currently
-differ in three ways (found while building this app):
-(1) the page nests `integrity` inside its `payload`; the service
-reads a top-level `integrity` and fail-closes to a hold without
-one; (2) the page sends no `license_key`; the service requires
-it for the HMAC proof; (3) the service answers
-`held_for_review`; the page checks for `held`. `proxy_logic.py`
-bridges all three inside the app only, never overriding a field
-the sender provided. The durable fix belongs to the site/service
-crews; when they converge the shim becomes a no-op. **Current
-tree note:** today's `exam.html` carries no service endpoint
-constant at all (it produces the signed certificate code for the
-manual route), so the bundler warns at build time and in-app
-automatic delivery lights up when the page wiring lands — the
-proxy, client, and tests are already in place.
+While the app was being built, the exam page's submission and
+the service's contract differed in three ways:
+(1) the page nested `integrity` inside its `payload`; the
+service reads a top-level `integrity` and fail-closes to a hold
+without one; (2) the page sent no `license_key`; the service
+requires it for the HMAC proof; (3) the service answers
+`held_for_review`; the page checked for `held`. The page has
+since converged: today's `exam.html` sends a top-level
+`integrity` and the `license_key`, and checks for
+`held_for_review` — exactly the service's contract, as
+`proxy_logic.py`'s own docstring records. The proxy's
+normalizations are no-ops on the current page's native shape and
+are kept, never overriding a field the sender provided, so older
+bundled pages still work. **Current tree note:** today's
+`exam.html` carries its service endpoint constant
+(`PAYMENTS_API_BASE`, `""` in the repo — so on the live site
+the manual countersigning route applies until the service is
+deployed), and the bundler rewires the bundled copy to the app
+origin, so in-app automatic delivery lights up whenever a
+service base URL is configured in the app.
 
 ### Premium pack states
 
