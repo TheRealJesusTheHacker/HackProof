@@ -380,7 +380,7 @@ python3 -m unittest discover -s payments/tests -v
 python3 payments/service.py --selftest
 ```
 
-The suite (29 tests) stubs CoinGecko, the esplora API, and SMTP — no
+The suite (32 tests) stubs CoinGecko, the esplora API, and SMTP — no
 live network. It proves, against the **real** `tools/keygen.py`:
 
 - service-minted keys are accepted by keygen and unwrap the real
